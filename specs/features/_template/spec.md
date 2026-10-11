@@ -59,7 +59,7 @@ What a reader might expect here that this feature deliberately does not do, and 
 
 ## Open questions
 
-Each with the spike or check that answers it. A spec reaches Approved only with none left.
+Each with the spike or check that answers it, and whether it blocks (a requirement depends on it). A spec reaches Approved only with no blocking question left.
 
 - [ ] **Fxx-Q1** …
 

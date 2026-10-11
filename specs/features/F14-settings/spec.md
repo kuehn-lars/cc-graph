@@ -86,7 +86,7 @@ None.
 
 ## Open questions
 
-- [ ] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Answered in the red phase of v0.1 by F14-AC5.
+- [ ] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Does not block: F14-R3 clamps either way, and F14-AC5 records which behaviour the engine has in the red phase of v0.1.
 
 ## Changelog
 

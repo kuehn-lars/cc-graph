@@ -89,7 +89,7 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 
 ## Open questions
 
-- [ ] **F03-Q1** What text does a `file` attachment carry after a compaction, and does it name the path in a stable form? Are some files re-attached only as a reference (`compact_file_reference` in session transcripts), which would mean Claude has the path but not the content? Spike S1: compact a session in `fixtures/sample-app` after five reads and edits, log every `prompt.attachment` that follows (type, origin, first 200 characters), and record the result next to this spec.
+- [ ] **F03-Q1** What text does a `file` attachment carry after a compaction, and does it name the path in a stable form? Are some files re-attached only as a reference (`compact_file_reference` in session transcripts), which would mean Claude has the path but not the content? Spike S1: compact a session in `fixtures/sample-app` after five reads and edits, log every `prompt.attachment` that follows (type, origin, first 200 characters), and record the result next to this spec. Blocks approval (F03-R3 depends on it).
 
 ## Changelog
 

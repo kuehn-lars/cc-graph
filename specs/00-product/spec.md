@@ -220,9 +220,9 @@ The largest risk is the Mods API itself: it is early access and moves between re
 
 Feature questions live in their feature specs as `Fxx-Qn`. Spikes that answer them are scheduled in the [roadmap](../../ROADMAP.md#spikes).
 
-- [ ] **REL-Q1** Is `cc-graph` still free in the community catalog when v0.1 goes public? Checked free on 2026-10-11; check again before the first public tag.
-- [ ] **REL-Q2** How does a community-listed plugin move past the commit its listing is pinned to? Ask through the submission form before v1.0.
-- [ ] **UX-Q1** Should CC Graph offer to open its pane by itself when the terminal is 144 columns or wider, or only ever on `/graph`?
+- [ ] **REL-Q1** Is `cc-graph` still free in the community catalog when v0.1 goes public? Checked free on 2026-10-11; check again before the first public tag. Does not block: a release check in the v0.1 gate.
+- [ ] **REL-Q2** How does a community-listed plugin move past the commit its listing is pinned to? Ask through the submission form before v1.0. Does not block: a release check in the v1.0 gate.
+- [ ] **UX-Q1** Should CC Graph offer to open its pane by itself when the terminal is 144 columns or wider, or only ever on `/graph`? Does not block: F08 opens the pane only on `/graph` until this is decided.
 
 ## Changelog
 

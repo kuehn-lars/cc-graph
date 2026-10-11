@@ -44,7 +44,7 @@ When and in which order they ship: [ROADMAP.md](../ROADMAP.md).
 | --- | --- | --- |
 | Draft | Being written. Not yet checked against the Mods API types | Anyone |
 | Review | Complete, and every API claim checked against the types of the version in its header. Open questions are listed with the spike that answers them | The spec's author |
-| Approved | No open questions left. Tests may be written | The owner |
+| Approved | No open question left that a requirement depends on. Tests may be written | The owner |
 | Implemented | Every acceptance criterion has a passing test, the checks pass, the manual check is done | The implementer, with the owner for the manual check |
 | Verified | CI is green on `main`, the trace check passes, and CHANGELOG names the change | CI |
 
@@ -76,7 +76,7 @@ Conventions:
 | Reference-session checkpoint | `RS-n` | `RS-3` |
 | Spike | `Sn` (in the roadmap) | `S1` |
 
-An ID is never reused. Once a spec is Approved its IDs are frozen: a dropped requirement is struck through and kept, and a new one takes the next free number. An answered question stays in its spec, checked, with its answer; Approved means no unchecked question is left.
+An ID is never reused. Once a spec is Approved its IDs are frozen: a dropped requirement is struck through and kept, and a new one takes the next free number. An answered question stays in its spec, checked, with its answer. Every open question says whether it blocks: one a requirement depends on keeps the spec at Review; one that does not (a release check, a later product choice) may stay open after Approved.
 
 ## Traceability
 

@@ -4,7 +4,7 @@ A Claude Code mod (plugin `cc-graph`) that draws a live pane of what Claude read
 
 ## The loop, one feature at a time
 
-1. **Spec.** The feature's `specs/features/Fxx-*/spec.md` reaches Status: Approved: every requirement checked against `.claude-plugin/types/claude-code/index.d.ts`, no open questions left. Code for a requirement waits until its spec is Approved.
+1. **Spec.** The feature's `specs/features/Fxx-*/spec.md` reaches Status: Approved: every requirement checked against `.claude-plugin/types/claude-code/index.d.ts`, no blocking open question left. Code for a requirement waits until its spec is Approved.
 2. **Red.** One test per acceptance criterion, the name starting with its ID (`test('F03-AC4 …')`). Run `claude plugin test` and see each new test fail.
 3. **Green.** The smallest change in `hooks/` that passes them.
 4. **Checks.** The check command below passes.

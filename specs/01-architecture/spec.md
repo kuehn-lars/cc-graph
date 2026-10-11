@@ -242,7 +242,7 @@ Before the first public tag: the README carries a screenshot per surface, the in
 
 ## Open questions
 
-- [ ] **ARCH-Q1** May a `$.clock.after` callback scheduled by a hook call `$.process.run` and `$.state` (through `update`) after that hook returned, and do those writes redraw the pane? Spike S0 in M0 with a two-hook probe mod. If not, `git` work moves to a `turn.complete` hook that schedules nothing and awaits within its budget, and layout runs inside the writing hook under NFR-P1's limit.
+- [ ] **ARCH-Q1** May a `$.clock.after` callback scheduled by a hook call `$.process.run` and `$.state` (through `update`) after that hook returned, and do those writes redraw the pane? Spike S0 in M0 with a two-hook probe mod. Blocks approval (D5 depends on it). If not, `git` work moves to a `turn.complete` hook that schedules nothing and awaits within its budget, and layout runs inside the writing hook under NFR-P1's limit.
 
 ## Changelog
 
