@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01 |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01 |
 
 ## Problem
 
@@ -89,3 +89,4 @@ Adds the `search` state and the `hits` field.
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types: no `Grep` tool. Added the single-operand form, standard-input and count-only exclusions, `cd` handling, the parse limit, and inline-only output.
+- 2026-10-11 Approved by the owner.

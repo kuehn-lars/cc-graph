@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
 
 ## Problem
 
@@ -122,3 +122,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added the key map (every key a digit or lowercase letter, the only hotkeys a `Button` takes), rows as plain buttons, renderer choice by element table, the text summary where nothing draws, the `isPlaced: false` reason, and path cutting.
+- 2026-10-11 Approved by the owner.

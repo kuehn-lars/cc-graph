@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
 
 ## Problem
 
@@ -80,3 +80,4 @@ Adds `MemoryNote` (with `reason`) and the `memory` key.
 
 - 2026-10-11 Draft. Memory nodes are squares, not diamonds, so they never look like decisions.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Refresh moved to `session.measure`; added `classic.InstructionsLoaded` for immediate nested loads and their reason; memory kept outside the file meter.
+- 2026-10-11 Approved by the owner.

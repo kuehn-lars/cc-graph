@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
+| Approved | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
 
 ## Problem
 
@@ -92,3 +92,4 @@ None.
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the manifest schema (`title` and `description` are required). Each field now ships with its feature; "off" means "not registered"; added empty and `{path}`-less editor commands, and the argument rule shared with F11.
+- 2026-10-11 Approved by the owner.

@@ -2,7 +2,7 @@
 
 | Status | Owner | Checked against |
 | --- | --- | --- |
-| Review | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
+| Approved | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
 
 The graph is a handful of small records held in `$.state` for the conversation. A file node moves through six states, a separate change mark survives every move, and every reducer keeps the invariants below true at every version a reader can see.
 
@@ -189,3 +189,4 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Graph fields merged into one `graph` key written atomically (I9); positions moved to their own `layout` key; added `readId`, `hits`, `line`, `touched` and `Graph.seq` (a stable "most recent first"), `turn`, `agents`, `notes`, `Timeline.base` (replay stays exact after pruning) and `Why.failure`; `unread` and `ghost` meanings sharpened; eviction order completed; symbolic links named as a known limit.
+- 2026-10-11 Approved by the owner.

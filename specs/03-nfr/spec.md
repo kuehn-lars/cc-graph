@@ -2,7 +2,7 @@
 
 | Status | Owner | Checked against |
 | --- | --- | --- |
-| Review | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
+| Approved | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
 
 CC Graph must be invisible in cost. It adds no noticeable latency to tool calls or streaming, sends nothing off the machine, asks the engine for very little, and never breaks a session when it fails.
 
@@ -72,3 +72,4 @@ CC Graph handles the most sensitive things in a session: file contents in tool r
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. NFR-S1 became an allowlist that `validate --json` can check; added NFR-S6 (model and usage calls), the threat model, NFR-R5 (parallel writes), NFR-R6 (hot reload), NFR-C3 (non-drawing hosts), NFR-C4 (paths), NFR-A3 and NFR-A4, and the "From" milestone for each.
+- 2026-10-11 Approved by the owner.

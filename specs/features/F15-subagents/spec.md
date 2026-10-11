@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
 
 ## Problem
 
@@ -79,3 +79,4 @@ None.
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Moved to v0.1 so the first meter is honest; names cached on first sight; main-loop compaction leaves subagent-only nodes alone; unknown agent ids named.
+- 2026-10-11 Approved by the owner.

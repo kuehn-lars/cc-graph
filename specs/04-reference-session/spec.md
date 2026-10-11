@@ -2,7 +2,7 @@
 
 | Status | Owner | Checked against |
 | --- | --- | --- |
-| Review | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
+| Approved | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
 
 One small project and one short story that every check replays. The story touches every node state, every change mark, a blind spot, a compaction, a nested memory file and two turns, so a single replay proves most of the product works together. Feature specs refer to it as "the reference session".
 
@@ -109,3 +109,4 @@ Footer, newest first: `package-lock.json`, `package.json`, `src/api/users.ts`.
 ## Changelog
 
 - 2026-10-11 Review. First version: a self-contained project, story, checkpoints and golden graph for every scenario test and manual check.
+- 2026-10-11 Approved by the owner.

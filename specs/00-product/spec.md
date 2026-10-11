@@ -2,7 +2,7 @@
 
 | Status | Owner | Checked against |
 | --- | --- | --- |
-| Review | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
+| Approved | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
 
 CC Graph is a Claude Code mod. It draws a live pane beside the conversation that shows which files Claude read, searched and changed, what is still in its context window, which memory files it works under, what it was thinking, and which code that depends on its changes it never opened.
 
@@ -228,3 +228,4 @@ Feature questions live in their feature specs as `Fxx-Qn`. Spikes that answer th
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added problem statement, solution, user stories, success checks and platform facts; principles P2 and P6 tightened; milestones moved to the roadmap.
+- 2026-10-11 Approved by the owner.

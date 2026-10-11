@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 (to show it), F15 (agent marks) |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 (to show it), F15 (agent marks) |
 
 ## Problem
 
@@ -106,3 +106,4 @@ None.
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added the `image`, `pdf`, `parts`, `notebook` and `file_unchanged` result kinds, `staged` results, line counts from `structuredPatch`, ranged and PDF mentions, and turn bookkeeping.
+- 2026-10-11 Approved by the owner.
