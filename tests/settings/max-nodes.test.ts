@@ -7,7 +7,7 @@ test('F14-AC5 maxNodes 500 is refused at load, naming the bound', { options: { m
   await expect(start($)).rejects.toThrow(/Most files in the graph must be at most 200/)
 })
 
-test('F14-AC5 maxNodes 20 and the default load', async ($, on) => {
+test('F14-AC5 the lowest allowed maxNodes, 20, loads', { options: { maxNodes: 20 } }, async ($, on) => {
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   await start($)
 })

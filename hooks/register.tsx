@@ -88,7 +88,7 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
 let maxNodes = 60
 
 export const register: Register = (on, options) => {
-  maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes) || 60))
+  maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
