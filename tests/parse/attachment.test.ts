@@ -5,7 +5,7 @@ import { reattachedAction } from '../../hooks/parse/attachment'
 
 const cwd = (reference.events[0]!.input as any).cwd
 const rows = reference.events.filter(e => e.event === 'prompt.attachment' && e.process === 3 && e.input.type === 'file')
-const login = (rows.find(r => r.input.text.includes('src/auth/login.ts'))!.input as any).text
+const login = (rows.find(r => (r.input as any).text.includes('src/auth/login.ts'))!.input as any).text
 
 test('F03-R3 the absolute path inside the cwd comes out relative, with the text\'s tokens', () => {
   expect(reattachedAction(login, cwd)).toEqual({ type: 'reattached', path: 'src/auth/login.ts', tokens: estimateTokens(login) })

@@ -21,4 +21,4 @@ Requirements: F03-R3.
 - [ ] A `file` attachment naming a `read`, `search` or missing node changes nothing
 - [ ] A `file` attachment for `src/auth/CLAUDE.md` changes nothing, and so does one with `agentId`
 - [ ] Every case returns what the handler beneath returned
-- [ ] The check command passes
+- [x] The check command passes
