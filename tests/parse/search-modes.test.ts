@@ -65,3 +65,8 @@ test('F02-R2 hitsIn: -l as --files-with-matches, and in a cluster', () => {
   for (const cmd of ['grep -rl verify src', 'rg --files-with-matches verify'])
     expect(keys(hitsIn(out['rg-l-verify'].stdout, searchesIn(cmd)[0]!))).toEqual(lines('rg-l-verify'))
 })
+
+// DERIVED: with -t, the single path operand is still the second operand; stdout has no path.
+test('F02-R2 hitsIn: rg -t ts verify src/a.ts 2>&1 gives the lines to src/a.ts', () => {
+  expect(hitsIn('const x = verify(a)\n', searchesIn('rg -t ts verify src/a.ts 2>&1')[0]!)).toEqual({ 'src/a.ts': { hits: 1, chars: 'const x = verify(a)'.length } })
+})

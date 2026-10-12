@@ -142,3 +142,44 @@ for (const [name, command, expected] of dirs)
   test(`F02-R8 searchesIn: dir of ${name}`, () => {
     expect(searchesIn(command).map(s => s.dir)).toEqual(expected)
   })
+
+// F02-R2 / F02-R3: a flag's value and a redirection are no operand. The operands are the pattern, then the paths;
+// a pattern given by -e or -f takes the first slot and every positional operand is a path.
+const operands: [name: string, command: string, expected: string[]][] = [
+  ['-t takes a value', 'rg -t ts verify src/a.ts', ['verify', 'src/a.ts']],
+  ['-g takes a value', "rg -g '*.ts' verify src", ['verify', 'src']],
+  ['-m takes a value', 'rg -m 5 verify', ['verify']],
+  ['-A, -B and -C take a value', 'rg -A 1 -B 2 -C 3 verify src', ['verify', 'src']],
+  ['a cluster ending in a value flag', 'rg -nA 2 verify src', ['verify', 'src']],
+  ['an attached value', 'rg -tts -m5 -A2 verify src', ['verify', 'src']],
+  ['-e is the pattern, so a positional operand is a path', 'rg -e a src', ['a', 'src']],
+  ['two -e patterns and no path', 'rg -e a -e b', ['a']],
+  ['-f is the pattern file', 'rg -f pats src', ['pats', 'src']],
+  ['an attached -e', 'rg -eabc src', ['abc', 'src']],
+  ['long flags with a separate value', 'rg --type ts --glob "*.ts" --max-count 5 --context 2 --after-context 1 --before-context 1 verify src', ['verify', 'src']],
+  ['long flags with =', 'rg --type=ts --max-count=5 --regexp=abc src', ['abc', 'src']],
+  ['--regexp and --file with a separate value', 'rg --regexp a --file f src', ['a', 'src']],
+  ['2>&1', 'rg verify src/a.ts 2>&1', ['verify', 'src/a.ts']],
+  ['2>/dev/null', 'rg verify src 2>/dev/null', ['verify', 'src']],
+  ['>file', 'rg verify src >out.txt', ['verify', 'src']],
+  ['> file', 'rg verify src > out.txt', ['verify', 'src']],
+  ['&>file and >>file', 'rg verify src &>out.txt >>log', ['verify', 'src']],
+  ['a quoted pattern that starts with > is an operand', "rg '>= 5' src", ['>= 5', 'src']],
+  ['-- ends the flags', 'rg -n verify -- -t src', ['verify', '-t', 'src']],
+]
+
+for (const [name, command, expected] of operands)
+  test(`F02-R2 searchesIn: operands of ${name}`, () => {
+    expect(searchesIn(command)[0]!.operands).toEqual(expected)
+  })
+
+test('F02-R3 searchesIn: a value flag or -e pattern with no path reads standard input', () => {
+  expect(searchesIn('cat f | rg -m 5 verify')).toEqual([])
+  expect(searchesIn('cat f | rg -e a -e b')).toEqual([])
+  expect(searchesIn('cat f | rg verify 2>&1')).toEqual([])
+})
+
+test('F02-R3 searchesIn: a value flag or redirection with a path still reads the path', () => {
+  expect(searchesIn('cat f | rg -t ts verify src/a.ts')).toHaveLength(1)
+  expect(searchesIn('cat f | rg -e a src 2>&1')).toHaveLength(1)
+})

@@ -10,7 +10,8 @@ export type Hits = Record<string, { hits: number; chars: number }>
 const TOOLS = ['rg', 'grep', 'egrep', 'fgrep']
 const MAX_LINES = 1000
 
-type Segment = { words: string[]; piped: boolean; sep: string }
+/** `redirs`: indices of the unquoted words that are redirections (`2>&1`, `>file`). */
+type Segment = { words: string[]; piped: boolean; sep: string; redirs: Set<number> }
 
 /** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `piped`: a `|` precedes the segment. */
 function segments(command: string): Segment[] {
@@ -21,7 +22,14 @@ function segments(command: string): Segment[] {
   let quote = ''
   let piped = false
   let sep = ''
-  const word = () => { if (has) words.push(cur); cur = ''; has = false }
+  let quoted = false
+  let redirs = new Set<number>()
+  const word = () => {
+    if (has) (!quoted && /^(\d*|&)(>>?|<)/.test(cur) && redirs.add(words.length), words.push(cur))
+    cur = ''
+    has = false
+    quoted = false
+  }
   for (let i = 0; i < command.length; i++) {
     const c = command[i]!
     if (quote === "'") c === "'" ? (quote = '') : (cur += c)
@@ -29,12 +37,13 @@ function segments(command: string): Segment[] {
       if (c === '"') quote = ''
       else if (c === '\\' && '"\\$`'.includes(command[i + 1] ?? ' ')) cur += command[++i]
       else cur += c
-    } else if (c === '\\') (cur += command[++i] ?? ''), (has = true)
-    else if (c === "'" || c === '"') (quote = c), (has = true)
+    } else if (c === '\\') (cur += command[++i] ?? ''), (has = true), (quoted = true)
+    else if (c === "'" || c === '"') (quote = c), (has = true), (quoted = true)
     else if (c === ';' || c === '|' || c === '\n' || (c === '&' && command[i + 1] === '&')) {
       word()
-      out.push({ words, piped, sep })
+      out.push({ words, piped, sep, redirs })
       words = []
+      redirs = new Set()
       piped = c === '|' && command[i + 1] !== '|'
       sep = c
       if (c !== ';' && c !== '\n' && command[i + 1] === c) (sep += c), i++
@@ -42,27 +51,60 @@ function segments(command: string): Segment[] {
     else (cur += c), (has = true)
   }
   word()
-  out.push({ words, piped, sep })
+  out.push({ words, piped, sep, redirs })
   return out
 }
 
-/** Does this search name a path to read? Without one, a piped-into search reads standard input (F02-R3). The pattern is an operand too (a flag's value is no flag), so a path is a second one. */
-// ponytail: `--regexp=pat` and `-epat` carry the pattern in a flag, so their one operand is a path read as none; add when seen.
+/** Does this search name a path to read? Without one, a piped-into search reads standard input (F02-R3). The pattern is the first operand (searchIn puts one given by -e, -f, --regexp or --file there), so a path is a second one. */
 function hasPath({ operands }: Search): boolean {
   return operands.length > 1
 }
 
-function searchIn({ words: w }: Segment): Search | null {
+/** Flags that take a value, short (`-A 2`, `-tts`) and long (`--type ts`, `--type=ts`). `-r` and `-E` mean different things to rg and grep, so they are left out. */
+// ponytail: a fixed list; a value flag missing from it leaves its value as an operand. Add when seen.
+const VALUE_SHORT = 'ABCDMdefgjmtT'
+const VALUE_LONG = ['--type', '--glob', '--max-count', '--regexp', '--file', '--context', '--after-context', '--before-context']
+
+function searchIn({ words: w, redirs }: Segment): Search | null {
   let i = 0
   while (/^[A-Za-z_]\w*=/.test(w[i] ?? '')) i++
   const first = w[i] ?? ''
   // Joined: a lone quoted git word in hooks/ makes check-calls.mjs ask for GIT_OPTIONAL_LOCKS (NFR-S5), and this runs nothing.
   const tool = w.slice(i, i + 2).join(' ') === 'git grep' ? 'git grep' : TOOLS.includes(first) ? first : ''
   if (!tool) return null
-  const args = w.slice(i + (tool === 'git grep' ? 2 : 1))
-  const end = args.indexOf('--')
-  const isFlag = (a: string, j: number) => a.length > 1 && a[0] === '-' && (end < 0 || j < end)
-  return { tool, flags: args.filter(isFlag), operands: args.filter((a, j) => !isFlag(a, j) && j !== end) }
+  const flags: string[] = []
+  const operands: string[] = []
+  let pattern: string | undefined // from -e, -f, --regexp or --file (the first): it becomes the first operand, so operands read [pattern, ...paths]
+  let ended = false
+  for (let j = i + (tool === 'git grep' ? 2 : 1); j < w.length; j++) {
+    const a = w[j]!
+    if (redirs.has(j)) { if (/^(\d*|&)(>>?|<)$/.test(a)) j++; continue } // `> file` has its file in the next word
+    if (!ended && a === '--') { ended = true; continue }
+    if (ended || a.length < 2 || a[0] !== '-') { operands.push(a); continue }
+    flags.push(a)
+    let value: string | undefined
+    let takes = false
+    let isPattern = false
+    if (a[1] === '-') {
+      const eq = a.indexOf('=')
+      const name = eq < 0 ? a : a.slice(0, eq)
+      value = eq < 0 ? undefined : a.slice(eq + 1)
+      takes = VALUE_LONG.includes(name)
+      isPattern = name === '--regexp' || name === '--file'
+    } else {
+      const k = a.slice(1).search(new RegExp(`[${VALUE_SHORT}]`))
+      if (k >= 0) {
+        takes = true
+        isPattern = 'ef'.includes(a[1 + k]!)
+        value = a.length > k + 2 ? a.slice(k + 2) : undefined // `-tlua`, `-m5`: attached
+      }
+    }
+    if (!takes) continue
+    value ??= w[++j]
+    if (isPattern && pattern === undefined && value !== undefined) pattern = value
+  }
+  if (pattern !== undefined) operands.unshift(pattern)
+  return { tool, flags, operands }
 }
 
 const isAbs = (p: string) => /^([a-z]:)?[\\/]/i.test(p)
