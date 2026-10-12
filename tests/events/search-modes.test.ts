@@ -64,6 +64,23 @@ test('F02-R9 the persisted-output wrapper lines in text are no hits of the one p
   expect(await nodeOf('big.log')).toMatchObject({ state: 'search', hits: 2, tokens: Math.ceil(lines.reduce((n, l) => n + l.length, 0) / 4) })
 })
 
+test('F02-AC16 grep -rL changes nothing (DERIVED: its output is the paths without a match); rg -L counts its hits', async ($, on) => {
+  const answer = setup(on, out['rg-l-verify'].stdout)
+  await start($)
+  expect(await bash($, 'grep -rL verify src')).toEqual(answer)
+  expect(await graphOf()).toBe(undefined)
+  Object.assign(answer, { result: bashResult(out['rg-n-verify-src-auth'].stdout) })
+  await bash($, 'rg -L verify src/auth')
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
+})
+
+test('F02-AC17 two searches in one command change nothing (DERIVED: their outputs run together)', async ($, on) => {
+  const answer = setup(on, out['rg-n-verify-src-auth'].stdout)
+  await start($)
+  expect(await bash($, 'rg -n verify src/auth; rg -n error tests')).toEqual(answer)
+  expect(await graphOf()).toBe(undefined)
+})
+
 test('F02-R9 without persistedOutputPath, text is not parsed (it also carries stderr)', async ($, on) => {
   const answer = setup(on, out['rg-n-verify-src-auth'].stdout)
   Object.assign(answer, { text: 'src/other/file.ts:1:from stderr\n' + out['rg-n-verify-src-auth'].stdout })

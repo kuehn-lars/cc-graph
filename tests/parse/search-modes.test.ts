@@ -50,9 +50,19 @@ for (const [flag, name] of [['--files', 'rg-files'], ['-c', 'rg-c-verify-src']] 
     expect(hitsOf(name)).toEqual({})
   })
 
-for (const flag of ['--files', '-c', '--count', '--json', '-q', '--quiet', '-L', '-rc', '-nc', '-cn', '-rL'])
+for (const flag of ['--files', '-c', '--count', '--json', '-q', '--quiet', '--files-without-match', '--count-matches', '-rc', '-nc', '-cn'])
   test(`F02-R3 hitsIn: ${flag} adds nothing, even with path-like lines`, () => {
     expect(hitsIn(out['rg-n-verify-src-auth'].stdout, searchesIn(`rg ${flag} verify src/auth`)[0]!)).toEqual({})
+  })
+
+// -L is files-without-match for grep and git grep, --follow for rg.
+for (const cmd of ['grep -rL verify src/auth', 'grep -L verify src/auth', 'git grep -L verify'])
+  test(`F02-AC16 hitsIn: ${cmd} adds nothing`, () => {
+    expect(hitsIn(out['rg-n-verify-src-auth'].stdout, searchesIn(cmd)[0]!)).toEqual({})
+  })
+for (const cmd of ['rg -L verify src/auth', 'rg -nL verify src/auth'])
+  test(`F02-AC16 hitsIn: ${cmd} still counts its hits`, () => {
+    expect(keys(hitsIn(out['rg-n-verify-src-auth'].stdout, searchesIn(cmd)[0]!))).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
   })
 
 test('F02-R3 hitsIn: -n alone, and a value flag whose letters spell a mode, do not turn the mode on', () => {

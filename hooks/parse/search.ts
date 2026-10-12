@@ -137,9 +137,8 @@ const has = (search: Search, short: string, ...long: string[]) =>
 
 /** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, is no hit. F02-R3: modes that print no hits give none. */
 export function hitsIn(stdout: string, search: Search): Hits {
-  // ponytail: F02-R3 says -L; for rg that is --follow (hits as usual). Spec proposal pending with the owner.
-  // ponytail: --count-matches prints path:N like -c, so it adds nothing; F02-R3 should list it (spec proposal pending with the owner).
-  if (has(search, 'c', '--count', '--count-matches') || has(search, 'q', '--quiet') || has(search, 'L', '--files-without-match') || search.flags.some(f => f === '--files' || f === '--json')) return {}
+  // F02-R3: -L lists files without a match for grep and git grep; for rg it is --follow and hits print as usual.
+  if (has(search, 'c', '--count', '--count-matches') || has(search, 'q', '--quiet') || (search.tool !== 'rg' && has(search, 'L')) || search.flags.includes('--files-without-match') || search.flags.some(f => f === '--files' || f === '--json')) return {}
   const listing = has(search, 'l', '--files-with-matches')
   const hits: Hits = {}
   const add = (path: string, line: string) => {
@@ -164,8 +163,9 @@ const preview = (text: string) => text.split('\n').filter(l => !/^(<\/?persisted
 
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
 export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
-  const search = searchesIn(command)[0]
-  if (!search || search.dir === null || result.interrupted) return null
+  const all = searchesIn(command)
+  const search = all[0]
+  if (all.length !== 1 || !search || search.dir === null || result.interrupted) return null // F02-R10: two searches' outputs run together
   const files: Searched['files'] = {}
   // F02-R8: a relative hit is under the search's directory, which is under the session's unless absolute.
   const from = (p: string) => (isAbs(p) ? [p] : isAbs(search.dir ?? '') ? [search.dir, p] : [cwd, search.dir, p]).filter(Boolean).join('/')
