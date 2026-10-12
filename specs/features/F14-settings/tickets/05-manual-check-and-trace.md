@@ -6,9 +6,9 @@ Walk the spec's manual check with the person: install from the local marketplace
 
 **Blocked by:** 03, 04
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Manual check done in a terminal and in the desktop app
-- [ ] Spec Status: Implemented, with a note that only `maxNodes` is in v0.1
-- [ ] `node scripts/trace.mjs --check` passes
-- [ ] CHANGELOG entry for F14 (`maxNodes`)
+- [x] Manual check done in a terminal and in the desktop app
+- [x] Spec Status: Implemented, with a note that only `maxNodes` is in v0.1
+- [x] `node scripts/trace.mjs --check` passes
+- [x] CHANGELOG entry for F14 (`maxNodes`)
