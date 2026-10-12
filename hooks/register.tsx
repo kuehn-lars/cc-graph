@@ -74,7 +74,7 @@ async function apply($: StateDollar, action: Action) {
   // I5: what could not be evicted is said in the footer. A write of `notes` only when the note changes.
   const files = Object.keys(graph.files).length
   const notes = (await read($, NOTES)) ?? []
-  if (withCapNote(notes, files, maxNodes).join('\n') !== notes.join('\n')) await update($, NOTES, ns => withCapNote(ns ?? [], files, maxNodes))
+  if (withCapNote(notes, files, maxNodes) !== notes) await update($, NOTES, ns => withCapNote(ns ?? [], files, maxNodes))
 }
 
 // F15-R9: a change made in a worktree carries its name.
