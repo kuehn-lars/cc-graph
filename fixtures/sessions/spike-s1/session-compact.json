@@ -1,0 +1,22 @@
+{
+  "event": "session.compact",
+  "trigger": "manual",
+  "resultKeys": [
+    "messages",
+    "tokensBefore",
+    "tokensAfter",
+    "usage"
+  ],
+  "tokensBefore": 33942,
+  "tokensAfter": 5616,
+  "keptMessages": 2,
+  "keptToolUses": [],
+  "keptRoles": [
+    "user",
+    "assistant"
+  ],
+  "keptText": [
+    "This session is being continued from a previous conversation that ran out of context. The summary below covers the earlier portion of the conversation.\n\nOK\n\nIf you need specific details from before co…",
+    "OK"
+  ]
+}

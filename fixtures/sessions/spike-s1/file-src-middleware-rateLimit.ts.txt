@@ -1,0 +1,20 @@
+Called the Read tool with the following input: {"file_path":"/private/var/folders/0y/7y886dnx4fbgfsh126btr1qr0000gn/T/tmp.ni1zKBXngJ/sample-app/src/middleware/rateLimit.ts"}
+Result of calling the Read tool:
+1	// A fixed-window rate limiter kept in memory: one counter per key.
+2	type Window = { count: number; resetAt: number }
+3	
+4	const windows = new Map<string, Window>()
+5	
+6	// Returns false once a key has used up its limit for the current window.
+7	// ponytail: expired keys are never swept, so memory grows with distinct keys. Add a sweep or a shared store when that matters.
+8	export function rateLimit(key: string, limit: number, windowMs: number): boolean {
+9	  const now = Date.now()
+10	  const window = windows.get(key)
+11	  if (!window || window.resetAt <= now) {
+12	    windows.set(key, { count: 1, resetAt: now + windowMs })
+13	    return true
+14	  }
+15	  window.count += 1
+16	  return window.count <= limit
+17	}
+18	
