@@ -7,10 +7,7 @@ const fresh = (path: string, turn: number): FileNode => ({
 })
 
 // F15-R8: the fields that describe what the main conversation holds.
-const owned = ['state', 'tokens', 'seen', 'readId', 'hits'] as const
-
-const pick = (n: Partial<FileNode>) => Object.fromEntries(owned.filter(k => k in n).map(k => [k, n[k]]))
-const omit = (n: Partial<FileNode>) => Object.fromEntries(Object.entries(n).filter(([k]) => !(owned as readonly string[]).includes(k)))
+const owned = ({ state, tokens, seen, readId, hits }: FileNode) => ({ state, tokens, seen, readId, hits })
 
 /**
  * Creates the node when missing, merges `patch(old)` over it, stamps `lastTurn` and `touched`, bumps `seq`.
@@ -22,11 +19,12 @@ export function touch(g: Graph, path: string, turn: number, patch: (old: FileNod
   const seq = g.seq + 1
   const agents = old?.agents ?? []
   const who = { agents: agentId && !agents.includes(agentId) ? [...agents, agentId] : agents, mainLoop: agentId ? old?.mainLoop ?? false : true }
-  const change = patch(old)
-  const merged = agentId && old?.mainLoop ? omit(change)
-    : !agentId && old && !old.mainLoop ? { ...omit(change), ...pick(fresh(path, turn)), ...pick(patch(undefined)) }
-    : change
-  return { ...g, seq, files: { ...g.files, [path]: { ...(old ?? fresh(path, turn)), ...merged, ...who, path, lastTurn: turn, touched: seq } } }
+  // Whose view of `owned` wins over the patch: the main loop's kept one, a new node's, or the patch's own (none).
+  const owner = agentId && old?.mainLoop ? old
+    : !agentId && old && !old.mainLoop ? { ...fresh(path, turn), ...patch(undefined) }
+    : null
+  const node = { ...(old ?? fresh(path, turn)), ...patch(old), ...(owner && owned(owner)), ...who, path, lastTurn: turn, touched: seq }
+  return { ...g, seq, files: { ...g.files, [path]: node } }
 }
 
 /** F15-R9: a change in a worktree says so, unless this tree already has a change of its own (`change` set, `reason` null). */
