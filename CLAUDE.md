@@ -28,7 +28,7 @@ When the code shows the spec is wrong, stop and propose the spec change. Then up
 ## Commands
 
 - Run: copy `fixtures/sample-app` to a temporary folder, `git init` and commit it there, then `claude --plugin-dir <path to this repository>`.
-- Check: `npx tsc -p . && claude plugin test && node scripts/check-calls.mjs` (`check-calls.mjs` runs `claude plugin validate --json .` and fails on any error or warning except the one for this file at the plugin root)
+- Check: `npx -y -p typescript@5 tsc -p . && claude plugin test && node scripts/check-calls.mjs` (`check-calls.mjs` runs `claude plugin validate --json .` and fails on any error or warning except the one for this file at the plugin root)
 - Trace: `node scripts/trace.mjs --check`
 
 Start each implementation session with `/plugin-authoring`: it knows this build's events and methods.
