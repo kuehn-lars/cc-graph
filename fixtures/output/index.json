@@ -89,5 +89,10 @@
     "cwd": "(not a repository)",
     "exitCode": 128,
     "stderr": true
+  },
+  "cat-log-rg-n-error": {
+    "command": "cat log.txt | rg -n error",
+    "cwd": ".",
+    "exitCode": 0
   }
 }
