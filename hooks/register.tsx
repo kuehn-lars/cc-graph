@@ -87,7 +87,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, (await read($, GRAPH)) ?? emptyGraph)}
+        {renderList(table, (await read($, GRAPH)) ?? emptyGraph, e.props.bodyColumns)}
       </Box>
     )
   })

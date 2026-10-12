@@ -66,3 +66,32 @@ test('F08-R5 a row reads "≈tokens · seen", and "≈?" when tokens is null', a
   expect(a).toContain('a.ts')
   expect(a).toContain('≈414 · 49 lines')
 })
+
+/** Terminal columns of a string: 2 for CJK and fullwidth, 1 otherwise. Written apart from the code under test. */
+const cols = (s: string) => [...s].reduce((w, c) => w + (/[ᄀ-ᅟ⺀-꓏가-힣＀-｠]/.test(c) ? 2 : 1), 0)
+const mountAt = ($: any, bodyColumns: number) =>
+  $.ui.mount({ plugin: 'cc-graph', surface: 'terminal', component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns) })
+const drawn = async (pane: any): Promise<string[]> => (await pane.findAll({ type: 'Text' })).map((r: any) => r.text)
+
+test('F08-AC3 at bodyColumns 40, no drawn row is wider than 40 columns', async ($, on) => {
+  ui(on)
+  seed(on,
+    node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 }),
+    node('src/auth/a-very-long-directory-name/sessions.ts', 2, { change: 'edited', added: 3, removed: 1 }),
+    node('docs/日本語のドキュメント/設計書.md', 3, { tokens: null, seen: 'image' }),
+    node('a.ts', 4),
+  )
+  await start($)
+  const got = await drawn(await mountAt($, 40))
+  expect(got.length).toBeGreaterThan(4)
+  for (const r of got) expect(cols(r)).toBeLessThanOrEqual(40)
+})
+
+test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "…" and ends with rateLimit.ts', async ($, on) => {
+  ui(on)
+  seed(on, node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 }))
+  await start($)
+  const r = (await rows(await mountAt($, 30)))[0] ?? ''
+  expect(r.slice(2).split('  ')[0]).toMatch(/^….*rateLimit\.ts$/)
+  expect(cols(r)).toBeLessThanOrEqual(30)
+})

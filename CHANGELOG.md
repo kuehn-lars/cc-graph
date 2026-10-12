@@ -22,3 +22,4 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 - F08 views: `/graph list` and `/graph graph`, and the `l` and `g` buttons, set `view` in `$.state`; every surface draws the list until F09 or F10 ships (F08-AC4, AC5, R2, R9..R11, NFR-C2).
 - F08 list view: every file in the graph is one row in Files, newest first: state glyph, path, change badge and "≈tokens · seen" ("≈?" when unknown) (F08-AC2, R5, NFR-A1). AC2 seeds its `search` node until F02 ships.
 - F08 text summary: with no surface, `/graph` opens no pane and answers the count of files per state, then per change, zero counts left out (F08-AC8, R4, NFR-C3). AC8 seeds its RS-1 graph until F02 ships.
+- F08 list view: rows fit `bodyColumns`, counted in terminal columns: a long path is cut from its start and led by "…" so the file name stays; if the name alone does not fit with the badge and size, those are dropped from the end (F08-AC3, AC10, R6).
