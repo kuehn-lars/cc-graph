@@ -4,6 +4,8 @@ The specs are the source of truth for CC Graph. Code follows them, never the rev
 
 Each spec lives in its own folder as `spec.md`, so the evidence it gathers (spike notes, captured tool output, screenshots for the manual check) sits next to it.
 
+A feature folder may also hold `tickets/`: one file per vertical slice, numbered in dependency order, citing requirement and criterion IDs instead of restating them. The folder is deleted once the feature is Verified.
+
 ## Index
 
 ### Foundation
