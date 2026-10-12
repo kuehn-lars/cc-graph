@@ -21,6 +21,7 @@ const resetState = async ($: StateDollar) => {
   await update($, GRAPH, () => emptyGraph)
   await update($, TURN, () => 0)
   await update($, SELECTED, () => null)
+  await update($, FILL, () => null)
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)

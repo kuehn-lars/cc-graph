@@ -15,6 +15,6 @@ Requirements: F03-R7.
 - [x] F03-AC8 a graph with nodes and `view: 'graph'`, then `source: 'clear'`: the graph is empty and `view` is still `'graph'`
 - [x] `resume` and `fork` reset the same way; `turn` and `selected` are emptied too
 - [x] F03-AC10 `source: 'compact'` changes nothing, nor does `startup`
-- [ ] If ticket 03 has landed: `fill` is reset to `null`
+- [x] If ticket 03 has landed: `fill` is reset to `null`
 - [x] Every case returns what the handler beneath returned
 - [x] The check command passes
