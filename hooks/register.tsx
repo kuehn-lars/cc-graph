@@ -6,6 +6,7 @@ import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
 import { normalize } from './parse/path'
 import { renderList } from './render/list'
+import { summarize } from './render/summary'
 
 const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
 const PANE = 'cc-graph'
@@ -66,6 +67,8 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'graph' }, async ($, e) => {
+    // F08-R4 / NFR-C3: where nothing draws, answer in text and open nothing.
+    if ((await $.session.surfaces()).length === 0) return { text: summarize((await read($, GRAPH)) ?? emptyGraph) }
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg)
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })

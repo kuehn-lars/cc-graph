@@ -8,9 +8,9 @@ Requirements: F08-R4, NFR-C3.
 
 **Blocked by:** 01 `/graph` opens the pane, 02 File rows, newest first (the state order and the badge words)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC8 with no surface and the graph at RS-1, `/graph` opens no pane and answers a text holding "1 read, 1 partial, 1 search" (seeded graph, marked derived)
-- [ ] NFR-C3 with no surface, every F01 hook and `/graph` run without error
-- [ ] Change counts follow the state counts and zero counts are left out (F08-R4; one test)
-- [ ] The check command passes
+- [x] F08-AC8 with no surface and the graph at RS-1, `/graph` opens no pane and answers a text holding "1 read, 1 partial, 1 search" (seeded graph, marked derived)
+- [x] NFR-C3 with no surface, every F01 hook and `/graph` run without error
+- [x] Change counts follow the state counts and zero counts are left out (F08-R4; one test)
+- [x] The check command passes

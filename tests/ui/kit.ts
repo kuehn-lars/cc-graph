@@ -15,11 +15,12 @@ export const run = ($: any, args = '') =>
   $.command.run({ command: 'graph', args, origin: { kind: 'composer' }, presentation: { isFullscreen: true, columns: 160 } })
 
 /** The bottom hooks for `/graph`: `ui.open` answers `placed` and records its calls, `ui.toast` records its text, `command.register` records the command. */
-export function ui(on: On, placed: { isPlaced: true } | { isPlaced: false; reason: string } = { isPlaced: true }) {
+export function ui(on: On, placed: { isPlaced: true } | { isPlaced: false; reason: string } = { isPlaced: true }, surfaces: readonly RenderSurface[] = ['terminal']) {
   const opened: any[] = []
   const toasts: string[] = []
   const registered: any[] = []
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('session.surfaces', () => ({ value: surfaces }))
   on('command.register', (_$, e) => (registered.push(e), { value: { command: e.name } }))
   on('ui.open', (_$, e) => (opened.push(e), { value: placed }))
   on('ui.toast', (_$, e) => (toasts.push(e.text), { value: undefined }))
