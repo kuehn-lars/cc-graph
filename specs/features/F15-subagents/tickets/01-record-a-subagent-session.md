@@ -22,9 +22,9 @@ If an answer contradicts F15-R4 or F15-R9, stop and propose the spec change befo
 
 **Touches:** `fixtures/sessions/`, `scripts/`. No hook code, so it runs in parallel with 02 without conflicts.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] `fixtures/sessions/subagents.ts` recorded from a real run, nothing edited
-- [ ] README section: how to record again, how the run differed, the answers above
-- [ ] No personal text in the fixture
-- [ ] The check command passes
+- [x] `fixtures/sessions/subagents.ts` recorded from a real run, nothing edited
+- [x] README section: how to record again, how the run differed, the answers above
+- [x] No personal text in the fixture
+- [x] The check command passes
