@@ -204,7 +204,7 @@ The **secondary seam** is the pure functions of `parse` and `layout`, imported d
 `.github/workflows/ci.yml` runs on push and pull request, with the matrix `claude: ['2.1.296', 'latest']`:
 
 1. Install Claude Code at the matrix version: `curl -fsSL https://claude.ai/install.sh | bash -s <version>`.
-2. `npx -y typescript@5 tsc -p .`
+2. `npx -y -p typescript@5 tsc -p .`
 3. `claude plugin test`
 4. `node scripts/check-calls.mjs`
 5. `node scripts/trace.mjs --check`
