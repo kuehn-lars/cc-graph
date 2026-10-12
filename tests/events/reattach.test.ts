@@ -1,4 +1,5 @@
 import reference from '../../fixtures/sessions/reference'
+import { estimateTokens } from '../../hooks/parse/measure'
 import { expect, test } from 'claude-code/testing'
 import type { FileNode, Graph } from '../../types'
 import { engine, graphOf, seedGraph, writes } from './kit'
@@ -34,7 +35,7 @@ test('F03-AC11 a compacted src/auth/login.ts re-attached is read, "re-attached a
   const { answer, out } = await attach($, on, graphWith(node('src/auth/login.ts')), login)
   expect(out).toEqual(answer)
   expect((await graphOf())!.files['src/auth/login.ts']).toMatchObject({
-    state: 'read', seen: 're-attached after compaction', tokens: Math.ceil(login.text.length / 4),
+    state: 'read', seen: 're-attached after compaction', tokens: estimateTokens(login.text),
   })
   expect(writes.filter(k => k === 'graph')).toHaveLength(1)
 })
