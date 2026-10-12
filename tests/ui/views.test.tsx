@@ -62,7 +62,7 @@ test('F08-R2 /graph list sets view even when no surface is attached, and still a
   const out = await run($, 'list')
   expect(views(seen)).toEqual(['list'])
   expect(opened).toEqual([])
-  expect(out.text).toBe('Nothing read yet.')
+  expect(out.text).toBe('≈0 in 0 files · window –\nNothing read yet.')
 })
 
 test('F08-R9 the l and g buttons are drawn apart, not run together', async ($, on) => {
