@@ -1,11 +1,11 @@
 // Pure: an Edit's or NotebookEdit's result becomes a `fileEdited` action, or null when nothing was written.
 import type { FileEdited } from '../model/fileEdited'
 
-type Hunk = { newStart: number; lines: string[] }
+export type Hunk = { newStart: number; lines: string[] }
 type EditResult = { structuredPatch: Hunk[]; staged?: boolean }
 type NotebookResult = { new_source: string; old_source?: string; error?: string }
 
-const count = (hunks: Hunk[], sign: '+' | '-') => hunks.reduce((n, h) => n + h.lines.filter(l => l[0] === sign).length, 0)
+export const count =(hunks: Hunk[], sign: '+' | '-') => hunks.reduce((n, h) => n + h.lines.filter(l => l[0] === sign).length, 0)
 const lines = (s = '') => (s === '' ? 0 : s.split('\n').length)
 
 export function editAction(path: string, r: EditResult): FileEdited | null {
