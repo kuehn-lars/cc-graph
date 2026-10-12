@@ -1,6 +1,7 @@
 import { read, update, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
+import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
@@ -91,6 +92,14 @@ export const register: Register = on => {
       const keptIds = out.messages.flatMap(m => m.toolUses.map(t => t.tool_use_id))
       await apply($, { type: 'compacted', keptIds, trigger: e.trigger, tokensBefore: out.tokensBefore ?? null, tokensAfter: out.tokensAfter ?? null })
     }
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F03-R3: a file Claude Code re-attached after a compaction. The reducer skips every node but a compacted one.
+  on('prompt.attachment', { type: 'file' }, async ($, e, next) => {
+    const out = await next(e)
+    const action = e.agentId ? null : reattachedAction(e.text, cwd)
+    if (action) await apply($, action)
     return out
   }).catch(($, e, next) => next(e))
 
