@@ -4,11 +4,11 @@
 
 **Blocked by:** 01 to 06, 08
 
-**Status:** blocked (needs 01 to 06, 08)
+**Status:** in progress: steps 1 to 4 and 6 walked in a terminal; step 5 (desktop app) waits for the merge to main
 
 - [ ] Manual check walked with the owner, in a terminal and in the desktop app
 - [ ] Spec status set to Implemented
-- [ ] `node scripts/trace.mjs --check` passes
-- [ ] CHANGELOG has an F08 entry
+- [x] `node scripts/trace.mjs --check` passes
+- [x] CHANGELOG has an F08 entry
 - [ ] Spec status set to Verified once CI is green
 - [ ] This `tickets/` folder is deleted

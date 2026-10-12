@@ -6,8 +6,8 @@ Requirements: F08-R13, NFR-A1.
 
 **Blocked by:** 04 Selecting a row
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC11 after pressing `3` only the third row begins with "▸ "; pressing `1` moves it to the first
-- [ ] F08-AC3 and F08-AC10 still hold with the marker's 2 columns counted
-- [ ] The check command passes
+- [x] F08-AC11 after pressing `3` only the third row begins with "▸ "; pressing `1` moves it to the first
+- [x] F08-AC3 and F08-AC10 still hold with the marker's 2 columns counted
+- [x] The check command passes
