@@ -1,7 +1,7 @@
 import subagents from '../../fixtures/sessions/subagents'
 import { expect, test } from 'claude-code/testing'
 import type { FileNode } from '../../types'
-import { engine, graphOf, nodeOf, seedGraph, writes } from './kit'
+import { engine, graphOf, nodeOf, seedGraph, written, writes } from './kit'
 
 // The recorded Explore agent (fixtures/sessions/subagents.ts) and the main loop's partial Read of login.ts (step 2).
 const cwd = (subagents.events[0]!.input as any).cwd as string
@@ -135,4 +135,52 @@ test('F15-R8 a main-loop @-mention of a subagent-only node sizes it from the men
   await call(agentReadPassword)
   await $.prompt.mention({ mention: 'src/auth/password.ts', path: `${cwd}/src/auth/password.ts` })
   expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'read', tokens: null, seen: 'mentioned by you', mainLoop: true, agents: [AGENT] })
+})
+
+// F15-R4: the first call of an agent id asks `$.agent.list()` once; a hook beneath answers it and counts the calls.
+const listed = (on: any, rows: object[]) => {
+  const n = { calls: 0 }
+  on('agent.list', () => (n.calls++, { value: rows }))
+  return n
+}
+const exploreRow = (rg.agentListAtFirstCall as any[])[0]
+
+test('F15-AC4 two reads by one agent call agent.list once and store its type and description', async ($, on) => {
+  const list = listed(on, rg.agentListAtFirstCall)
+  const { call } = await session($, on)
+  await call(agentReadPassword)
+  await call(agentReadLogin)
+  expect(list.calls).toBe(1)
+  expect(written.agents[AGENT]).toEqual({ id: AGENT, type: exploreRow.type, description: exploreRow.description })
+})
+
+test('F15-AC6 an agent the list does not name is stored as type agent, described by the first 8 characters of its id (DERIVED)', async ($, on) => {
+  listed(on, [])
+  const { call } = await session($, on)
+  await call(agentReadPassword, { agentId: '7f3a9c21e0' })
+  expect(written.agents['7f3a9c21e0']).toEqual({ id: '7f3a9c21e0', type: 'agent', description: '7f3a9c21' })
+})
+
+test('F15-R4 two calls of a new agent raised together call agent.list once', async ($, on) => {
+  const list = listed(on, rg.agentListAtFirstCall)
+  const { call } = await session($, on)
+  await Promise.all([call(agentReadPassword), call(agentReadLogin)])
+  expect(list.calls).toBe(1)
+})
+
+test('F15-R4 a main-loop call never calls agent.list', async ($, on) => {
+  const list = listed(on, rg.agentListAtFirstCall)
+  const { call } = await session($, on)
+  await call(mainReadLogin)
+  expect(list.calls).toBe(0)
+  expect(writes).not.toContain('agents')
+})
+
+test('F15-R4 after a reload the list no longer names the agent: the stored name stays', async ($, on) => {
+  const stored = { id: AGENT, type: 'Explore', description: 'Find uses of verify' }
+  on('state.get', (_$: any, e: any, next: any) => (e.key === 'agents' ? { value: { value: { [AGENT]: stored }, version: 0 } } : next(e)))
+  listed(on, [])
+  const { call } = await session($, on)
+  await call(agentReadPassword)
+  expect(written.agents[AGENT]).toEqual(stored)
 })

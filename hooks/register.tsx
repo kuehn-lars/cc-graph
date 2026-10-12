@@ -16,6 +16,7 @@ const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
 const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
+const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -23,6 +24,8 @@ const resetState = async ($: StateDollar) => {
   await update($, TURN, () => 0)
   await update($, SELECTED, () => null)
   await update($, FILL, () => null)
+  await update($, AGENTS, () => ({}))
+  named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
@@ -32,6 +35,16 @@ const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
 let cwd = ''
+// F15-R4: agent ids already asked for, marked before the list is awaited so parallel calls ask once. A reload asks again, and keeps a name already stored (the list forgets ended agents).
+const named = new Set<string>()
+
+// The name is written by its own update, outside the call that writes `graph` (I9). An id the list does not name is "agent".
+async function nameAgent($: any, id: string) {
+  if (named.has(id)) return
+  named.add(id)
+  const row = (await $.agent.list().catch(() => [])).find((a: any) => a.id === id)
+  await update($, AGENTS, as => ({ ...as, [id]: as?.[id] ?? { id, type: row?.type ?? 'agent', description: row?.description ?? id.slice(0, 8) } }))
+}
 
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
 async function apply($: StateDollar, action: Action) {
@@ -74,7 +87,10 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
-      if (action) await apply($, e.agentId ? { ...action, agentId: e.agentId } as Action : action)
+      if (action) {
+        await apply($, e.agentId ? { ...action, agentId: e.agentId } as Action : action)
+        if (e.agentId) await nameAgent($, e.agentId) // F15-R4: a node was touched
+      }
     }
     return out
   }).catch(($, e, next) => next(e))

@@ -5,7 +5,7 @@ import { written, writes } from './kit'
 
 // Everything the mod holds when a conversation is mid-way: a graph with a node, turn 4, a selection, view 'graph'.
 const graph: Graph = { seq: 1, files: { 'a.ts': node('a.ts', 1) }, edges: [], decisions: [], compactions: [] }
-const held: Record<string, unknown> = { graph, turn: 4, selected: 'a.ts', view: 'graph' }
+const held: Record<string, unknown> = { graph, turn: 4, selected: 'a.ts', view: 'graph', agents: { ag1: { id: 'ag1', type: 'Explore', description: 'x' } } }
 const canary = { stopReason: 'unknown to every hook' }
 
 /** The test's bottom hooks: `state.get` answers `held`, `classic.SessionStart` answers `canary`, `state.set` is recorded. */
@@ -27,11 +27,11 @@ test('F03-AC8 a graph with nodes and view graph, then source clear: the graph is
 })
 
 for (const source of ['resume', 'fork'] as const) {
-  test(`F03-AC8 source ${source} empties graph, turn, selected and fill, and leaves view`, async ($, on) => {
+  test(`F03-AC8 source ${source} empties graph, turn, selected, fill and agents, and leaves view`, async ($, on) => {
     setup(on)
     await $.classic.SessionStart({ source })
-    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null })
-    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill'])
+    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null, agents: {} })
+    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill', 'agents'])
   })
 }
 
