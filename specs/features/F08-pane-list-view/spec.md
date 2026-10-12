@@ -37,6 +37,7 @@ The facts the other features gather need one place to live that works on every s
 - **F08-R10** The mod picks the renderer by the element table `$.ui.resolve(e)` returned (D4): while `view` is `graph`, a table with `Raster` gets the terminal graph (F09), else one with `Svg` gets the vector graph (F10), else the list.
 - **F08-R11** The mod keeps `view` in `$.state`, so it survives a hot reload and `/clear`.
 - **F08-R12** The mod's `ui.render` hook matches only `{ component: 'Pane', requestId: 'cc-graph' }` (NFR-R4).
+- **F08-R13** The file row whose path is `selected` begins with the marker "▸ "; every other row begins with two spaces, so rows stay aligned and the selection is not told by color alone (NFR-A1). The marker takes 2 columns of the row's width (F08-R6). Until the card of F11 draws the selection, this marker is the only sign of it.
 
 ### Key map
 
@@ -69,6 +70,7 @@ Every key is one digit or one lowercase letter, the only hotkeys a `Button` acce
 - **F08-AC8** Given no surface is attached and the graph at RS-1, then `/graph` opens no pane and answers a text holding "1 read, 1 partial, 1 search". The meter line in it is F03-AC13.
 - **F08-AC9** Pressing the row `Button` keyed `src/auth/login.ts` sets `selected` to `src/auth/login.ts`.
 - **F08-AC10** At `bodyColumns` 30, the row for `src/middleware/rateLimit.ts` shows a path that starts with "…" and ends with `rateLimit.ts`.
+- **F08-AC11** After pressing `3`, only the third file row begins with "▸ "; pressing `1` then moves the marker to the first row.
 
 ## Implementation decisions
 
@@ -106,7 +108,7 @@ Adds the `view` and `selected` keys.
 1. Run `claude --plugin-dir <this repository>` in a copy of `fixtures/sample-app` at 160 columns. `/graph` opens the pane showing "Nothing read yet."
 2. Run the F01 manual sequence. Rows appear newest first.
 3. Narrow the terminal. Rows shorten from the start of the path and never wrap.
-4. Press Tab and Enter on a row, then press `3`: each selects a row.
+4. Focus the pane (click it or press Tab; other keys go to the prompt). Press Tab and Enter on a row, then `3`, then `1`: each selects a row, and the "▸ " marker moves to it.
 5. Open the desktop app on the same folder and repeat step 1; click a row.
 6. Run `claude -p "/graph"` in the same folder: it prints the text summary.
 
@@ -125,3 +127,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added the key map (every key a digit or lowercase letter, the only hotkeys a `Button` takes), rows as plain buttons, renderer choice by element table, the text summary where nothing draws, the `isPlaced: false` reason, and path cutting.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Ticketing. `g` ships in v0.1 and sets `view`, drawn as the list until F09 or F10 ships (F08-AC4 presses it). The meter line of the text summary moves to F03 (F03-AC13), which ships after F08; F08-AC8 checks the counts. F08-AC2 seeds its `search` node until F02 ships. Approved by the owner.
+- 2026-10-12 Manual check. Selecting a row drew nothing until F11's card, so the check could not be seen. Added F08-R13 and F08-AC11: the selected row carries a "▸ " marker. Approved by the owner.
