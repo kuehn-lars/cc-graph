@@ -84,7 +84,11 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
-export const register: Register = on => {
+// F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
+let maxNodes = 60
+
+export const register: Register = (on, options) => {
+  maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes) || 60))
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
