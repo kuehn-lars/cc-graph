@@ -196,3 +196,34 @@ for (const command of [`cd $DIR && ${inSrc.command}`, `cd - && ${inSrc.command}`
     expect(await bash($, command)).toEqual(answer)
     expect(await graphOf()).toBe(undefined)
   })
+
+// F02-R4: the other states a search meets. The graph is seeded, as for `compacted` (only other features produce these).
+const seeded = (state: FileNode['state'], over: Partial<FileNode> = {}): FileNode => ({ ...compacted('src/auth/login.ts', 0), state, ...over })
+const graphWith = (node: FileNode) => ({ seq: 5, files: { [node.path]: node }, edges: [], decisions: [], compactions: [] })
+
+test('F02-R4 a partial node hit by a search stays partial, keeps tokens, seen and readId, and its hits grow', async ($, on) => {
+  setup(on, rgN.stdout)
+  seedGraph(on, graphWith(seeded('partial', { hits: 1, seen: 'lines 1 to 20 of 49', readId: 'toolu_seed' })))
+  await start($)
+  await bash($, rgN.command)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'partial', hits: 3, tokens: 414, seen: 'lines 1 to 20 of 49', readId: 'toolu_seed' })
+})
+
+for (const state of ['ghost', 'unread'] as const)
+  test(`F02-R4 a ${state} node hit by a search becomes search with this call's hits`, async ($, on) => {
+    const { seen } = setup(on, rgN.stdout)
+    seedGraph(on, graphWith(seeded(state, { hits: 7, tokens: null, seen: '' })))
+    await start($)
+    await bash($, rgN.command)
+    expect(await nodeOf('src/auth/login.ts')).toMatchObject({
+      state: 'search', hits: 2, tokens: Math.ceil(159 / 4), seen: '2 search hits, never opened', readId: seen.ids[0],
+    })
+  })
+
+test('F02-R9 a search whose output has 1,200 hit lines counts the first 1,000', async ($, on) => {
+  setup(on, Array.from({ length: 1200 }, (_, i) => `src/f${i % 2}.ts:${i}:x`).join('\n'))
+  await start($)
+  await bash($, 'rg -n x src')
+  const files = (await graphOf())!.files
+  expect(files['src/f0.ts']!.hits + files['src/f1.ts']!.hits).toBe(1000)
+})
