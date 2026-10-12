@@ -5,9 +5,10 @@ import { engine } from './kit'
 // F01-AC8: observation only. Each tool call of the reference session is answered, beneath the mod, with the result
 // Claude Code returned, plus one field no hook knows ("canary"); whatever the F01 hook does with it, what comes back is
 // that answer, field for field.
-// ponytail: not `toBe`. The kit hands `$.tool.call` a copy of what the chain returned (no event keeps identity, with or
-// without a hook above it), so identity cannot be observed from a test. Strict equality catches a hook that rebuilds
-// the answer from a list of fields, drops one, or adds one; it cannot catch a plain `{ ...out }`. See the F01 ticket 07 report.
+// The canary is DERIVED (added to the recorded result). F01-AC8 is deep equality, not identity (spec, Testing
+// decisions): the kit hands `$.tool.call` a copy of what the chain returned (no event keeps identity, with or without a
+// hook above it), so identity cannot be observed from a test. Strict equality catches a hook that rebuilds the answer
+// from a list of fields, drops one, or adds one; it cannot catch a plain `{ ...out }`.
 const calls = reference.events.filter(e => e.event === 'tool.call')
 
 test('F01-AC8 the reference session has its 14 recorded tool calls', () => {

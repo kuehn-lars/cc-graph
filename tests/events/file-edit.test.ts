@@ -7,21 +7,21 @@ import { engine, graphOf, nodeOf, start } from './kit'
 const edit = ($: any, file_path: string) => $.tool.call({ tool: 'Edit', file_path, old_string: 'users', new_string: 'accounts', replace_all: true })
 const notebook = ($: any, notebook_path: string) => $.tool.call({ tool: 'NotebookEdit', ...notebookEdit.input, notebook_path })
 
-// ponytail: no recording of an Edit that turns 1 line into 3 exists (the README lists one Edit). The recorded
-// replace_all patch has 6 plus and 6 minus lines in three hunks; this test proves the same rule
-// (counts come from the patch, state stays) with it. Re-record to get +3 -1.
-test('F01-AC4 (recorded patch, no +3 -1 recording) a read node stays read, becomes edited, counts the patch and points at the first hunk', async ($, on) => {
+// The recorded replace_all Edit is the one Edit recording; AC4 asserts what its written patch holds (6 plus, 6 minus lines).
+const patchLines = (sign: string) => editReplaceAll.result.structuredPatch.flatMap(h => h.lines).filter(l => l[0] === sign).length
+test('F01-AC4 a read node stays read, becomes edited, counts the + and - lines of the written patch and points at the first hunk', async ($, on) => {
   const answer = engine(on, readWhole)
   await start($)
   await $.tool.call({ tool: 'Read', file_path: '/w/src/auth/login.ts' })
   answer.result = editReplaceAll.result as any
   await edit($, '/w/src/auth/login.ts')
   const n = await nodeOf('src/auth/login.ts')
-  expect(n).toMatchObject({ state: 'read', change: 'edited', seen: '49 lines', added: 6, removed: 6, line: 8 })
+  expect(n).toMatchObject({ state: 'read', change: 'edited', seen: '49 lines', added: patchLines('+'), removed: patchLines('-'), line: 8 })
+  expect([n?.added, n?.removed]).toEqual([6, 6])
   expect(n?.tokens).toBe(Math.ceil(readWhole.result.file.content.length / 4))
 })
 
-test('F01-AC14 replace_all counts every hunk of the patch (recorded: 3 hunks, 6 plus and 6 minus lines)', async ($, on) => {
+test('F01-AC14 replace_all counts the + and - lines across all hunks (recorded: 3 hunks, +6 -6)', async ($, on) => {
   engine(on, editReplaceAll)
   await start($)
   await edit($, '/w/src/auth/login.ts')
@@ -53,7 +53,7 @@ test('F01-R5 a notebook edit counts the lines of new and old source', async ($, 
   expect(await nodeOf('notes.ipynb')).toMatchObject({ state: 'partial', seen: 'only the edited lines', change: 'edited', added: 1, removed: 2 })
 })
 
-// The staged and error results are the recorded ones with the one field set (the README records no such call).
+// DERIVED: the staged and error results are the recorded ones with the one field set (no session returns them by itself).
 test('F01-R8 a staged Edit leaves the graph unchanged', async ($, on) => {
   engine(on, { ...editReplaceAll, result: { ...editReplaceAll.result, staged: true } })
   await start($)
