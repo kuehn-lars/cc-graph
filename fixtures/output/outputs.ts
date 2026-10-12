@@ -108,5 +108,11 @@ export default {
     "exitCode": 128,
     "stderr": true,
     "stdout": "fatal: not a git repository (or any of the parent directories): .git\n"
+  },
+  "cat-log-rg-n-error": {
+    "command": "cat log.txt | rg -n error",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "2:error: token expired\n4:error: store down\n"
   }
 }
