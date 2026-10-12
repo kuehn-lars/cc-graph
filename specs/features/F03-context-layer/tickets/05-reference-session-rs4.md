@@ -15,6 +15,6 @@ Checkpoint: RS-4 (04 Reference session).
 
 **Status:** ready-for-agent
 
-- [ ] RS-4 asserted in its own scenario test, replaying the recorded processes 1 to 3 up to the re-attachments
-- [ ] RS-1 still passes on the extended helper
-- [ ] The check command passes
+- [x] RS-4 asserted in its own scenario test, replaying the recorded processes 1 to 3 up to the re-attachments
+- [x] RS-1 still passes on the extended helper
+- [x] The check command passes
