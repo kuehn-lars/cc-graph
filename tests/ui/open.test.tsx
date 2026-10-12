@@ -1,7 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import { SURFACES, mount, paneProps, run, start, ui } from './kit'
 
-
 for (const surface of SURFACES) {
   test(`F08-AC1 /graph opens the pane and an empty graph shows "Nothing read yet." on ${surface}`, async ($, on) => {
     const { opened } = ui(on)

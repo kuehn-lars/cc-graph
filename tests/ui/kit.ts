@@ -47,3 +47,13 @@ export function seed(on: On, ...nodes: FileNode[]) {
   }
   on('state.get', async (_$, e: any, next) => (e.key === 'graph' ? ({ value: { value: graph, version: 0 } } as any) : next(e)))
 }
+
+/** What the mod wrote to state: every `state.set`, by key (the test `$` has no `state` noun). */
+export function writes(on: On) {
+  const seen: { key: string; value: unknown }[] = []
+  on('state.set', (_$, e: any, next) => (seen.push({ key: e.key, value: e.value }), next(e)))
+  return seen
+}
+
+/** The file row Buttons, in drawn order: the ones not keyed `view-*`. */
+export const rowButtons = async (pane: any): Promise<any[]> => (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))

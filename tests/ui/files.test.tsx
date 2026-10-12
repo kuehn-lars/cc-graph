@@ -1,5 +1,5 @@
 import { expect, test } from 'claude-code/testing'
-import { SURFACES, mount, node, seed, start, ui } from './kit'
+import { SURFACES, mount, node, rowButtons, seed, start, ui, writes } from './kit'
 
 /** The file rows: Text elements that begin with a state glyph. */
 const rows = async (pane: any): Promise<string[]> =>
@@ -70,7 +70,7 @@ const drawn = async (pane: any): Promise<string[]> => (await pane.findAll({ type
 
 /** The file rows' widths as drawn: a Button with a hotkey draws "N: " (3 columns) before its text. */
 const rowWidths = async (pane: any) => {
-  const buttons = (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))
+  const buttons = await rowButtons(pane)
   return (await rows(pane)).map((r, i) => cols(r) + (buttons[i].props.hotkey ? 3 : 0))
 }
 
@@ -111,15 +111,6 @@ test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "â€
   expect(r.slice(2).split('  ')[0]).toMatch(/^â€¦.*rateLimit\.ts$/)
   expect(cols(r)).toBeLessThanOrEqual(30)
 })
-
-/** What the mod wrote to state: every `state.set`, by key. */
-function writes(on: any) {
-  const seen: { key: string; value: any }[] = []
-  on('state.set', (_$: any, e: any, next: any) => (seen.push({ key: e.key, value: e.value }), next(e)))
-  return seen
-}
-/** The row Buttons, in drawn order: the ones not keyed `view-*`. */
-const rowButtons = async (pane: any) => (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))
 
 test('F08-AC6 pressing 3 sets selected to the third file row path', async ($, on) => {
   ui(on)
