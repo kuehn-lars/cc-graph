@@ -37,6 +37,9 @@ function row(n: FileNode, columns: number) {
 // F08-R6: the meter is cut from its end and closed by "…". ponytail: the line is ASCII plus "≈ · –", one column each; no width table.
 const fit = (line: string, columns: number) => (cols(line) <= columns ? line : `${[...line].slice(0, columns - 1).join('')}…`)
 
+// F08-R5, 02 Data model (retention): the footer shows the newest five notes, one line each.
+const FOOTER_NOTES = 5
+
 // F04-R4: `Memory  ≈150 (+1 unknown)`; a note of unknown size is counted apart, as the meter does (I1).
 function memoryTotal(notes: MemoryNote[]) {
   const unknown = notes.filter(n => n.tokens === null).length
@@ -45,7 +48,7 @@ function memoryTotal(notes: MemoryNote[]) {
 
 const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.tokens === null ? '?' : count(n.tokens)}`].filter(Boolean).join('  ')}`
 
-export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], columns: number, selected: string | null, select: (path: string) => void) {
+export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   return (
     <Box flexDirection="column">
@@ -61,6 +64,7 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       ))}
       {memory.length > 0 && <Text bold>{fit(memoryTotal(memory), columns)}</Text>}
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
+      {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
   )
 }

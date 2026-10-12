@@ -4,8 +4,8 @@
 
 **Blocked by:** 02 (the many-changes recording), 03 (eviction)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F14-AC8: test named `F14-AC8 …` replays the many-changes session with `{ options: { maxNodes: 20 } }`, failing first, then keeping every changed file and showing the note
-- [ ] The footer draws only when there is a note
-- [ ] The check command passes
+- [x] F14-AC8: test named `F14-AC8 …` replays the many-changes session with `{ options: { maxNodes: 20 } }`, failing first, then keeping every changed file and showing the note
+- [x] The footer draws only when there is a note
+- [x] The check command passes
