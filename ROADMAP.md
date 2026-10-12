@@ -8,7 +8,7 @@ The specs behind every line are in [`specs/`](specs/README.md). A feature moves 
 
 | Milestone | Theme | Features | Status |
 | --- | --- | --- | --- |
-| [M0](#m0-foundations) | Foundations | none | In progress |
+| [M0](#m0-foundations) | Foundations | none | Done |
 | [v0.1](#v01-what-claude-knows) | What Claude knows | F01, F02, F03, F04, F08, F14 (`maxNodes`), F15 | Planned |
 | [v0.2](#v02-the-graph) | The graph | F06, F09 | Planned |
 | [v0.3](#v03-blind-spots) | Blind spots | F07, F14 (`blindSpots`) | Planned |
@@ -25,13 +25,13 @@ Set up everything the first feature needs, and answer the questions that could c
 
 - [x] Spec set drafted and checked against the Claude Code 2.1.296 types
 - [x] Owner approves specs 00, 02, 03, 04 and the v0.1 features F01, F02, F04, F08, F14, F15
-- [ ] Owner approves 01 Architecture and F03 once spikes S0 and S1 answer their blocking questions
-- [ ] `.claude-plugin/plugin.json` (`cc-graph`, `types`), `marketplace.json`, `hooks/hooks.json`, an empty `hooks/register.tsx`, `types/index.d.ts` with the [state contract](specs/02-data-model/spec.md#state-contract), and `tsconfig.json` from the types header
-- [ ] Load once with `claude --plugin-dir .` so Claude Code writes `.claude-plugin/types/`, then commit them
-- [ ] `fixtures/sample-app` as specified in [04 Reference session](specs/04-reference-session/spec.md), and real tool output captured into `fixtures/output/`
-- [ ] `scripts/trace.mjs`, `scripts/check-calls.mjs` and the CI workflow; a first green run on an empty suite
-- [ ] `CHANGELOG.md`
-- [ ] Spikes S0 and S1 recorded next to their specs
+- [x] Owner approves 01 Architecture and F03 once spikes S0 and S1 answer their blocking questions
+- [x] `.claude-plugin/plugin.json` (`cc-graph`, `types`), `marketplace.json`, `hooks/hooks.json`, an empty `hooks/register.tsx`, `types/index.d.ts` with the [state contract](specs/02-data-model/spec.md#state-contract), and `tsconfig.json` from the types header
+- [x] Load once with `claude --plugin-dir .` so Claude Code writes `.claude-plugin/types/`, then commit them
+- [x] `fixtures/sample-app` as specified in [04 Reference session](specs/04-reference-session/spec.md), and real tool output captured into `fixtures/output/`
+- [x] `scripts/trace.mjs`, `scripts/check-calls.mjs` and the CI workflow; a first green run on an empty suite
+- [x] `CHANGELOG.md`
+- [x] Spikes S0 and S1 recorded next to their specs
 
 **Exit gate:** CI green on the pinned version and `latest`; S0 and S1 answered.
 

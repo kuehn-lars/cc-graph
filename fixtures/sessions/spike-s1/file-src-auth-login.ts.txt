@@ -1,0 +1,52 @@
+Called the Read tool with the following input: {"file_path":"/private/var/folders/0y/7y886dnx4fbgfsh126btr1qr0000gn/T/tmp.ni1zKBXngJ/sample-app/src/auth/login.ts"}
+Result of calling the Read tool:
+1	// Login and logout: checks a password, then opens or closes a session.
+2	import { hashPassword, verifyPassword } from './password'
+3	import { createSession, endSession, userForSession } from './sessions'
+4	import { rateLimit } from '../middleware/rateLimit'
+5	
+6	export type User = { id: string; email: string; passwordHash: string }
+7	
+8	export type LoginResult =
+9	  | { ok: true; token: string; user: User }
+10	  | { ok: false; reason: 'unknown-user' | 'wrong-password' }
+11	
+12	const users = new Map<string, User>()
+13	
+14	export async function registerUser(email: string, password: string): Promise<User> {
+15	  const id = `u${users.size + 1}`
+16	  const user = { id, email: email.toLowerCase(), passwordHash: await hashPassword(password) }
+17	  users.set(user.email, user)
+18	  return user
+19	}
+20	
+21	export async function login(email: string, password: string): Promise<LoginResult> {
+22	  const user = users.get(email.toLowerCase())
+23	  if (!user) return { ok: false, reason: 'unknown-user' }
+24	  if (!(await verifyPassword(password, user.passwordHash))) {
+25	    return { ok: false, reason: 'wrong-password' }
+26	  }
+27	  const token = await createSession(user.id)
+28	  return { ok: true, token, user }
+29	}
+30	
+31	export async function logout(token: string): Promise<void> {
+32	  await endSession(token)
+33	}
+34	
+35	export async function currentUser(token: string): Promise<User | null> {
+36	  const id = await userForSession(token)
+37	  if (id === null) return null
+38	  for (const user of users.values()) {
+39	    if (user.id === id) return user
+40	  }
+41	  return null
+42	}
+43	
+44	export function bearerToken(header: string | undefined): string {
+45	  if (!header) return ''
+46	  const [scheme, token] = header.split(' ')
+47	  return scheme === 'Bearer' && token ? token : ''
+48	}
+49	export const userCount = () => users.size
+50	

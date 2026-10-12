@@ -52,7 +52,7 @@ Settings: defaults, except `decisions: true` for the steps marked F12. Window: 2
 
 ### Between turns: `/compact`
 
-`session.compact` with `trigger: 'manual'`; result `tokensBefore: 48210`, `tokensAfter: 9870`, kept messages hold no `Read`. Claude Code then re-attaches `src/auth/login.ts` and `src/middleware/rateLimit.ts` (`prompt.attachment`, `type: 'file'`). The attachment text in the fixture is captured from a real session during spike S1 (F03-Q1).
+`session.compact` with `trigger: 'manual'`; result `tokensBefore: 33942`, `tokensAfter: 5616`, kept messages hold no `Read`. Claude Code then re-attaches the five files Claude read whole or wrote: `src/auth/login.ts`, `src/middleware/rateLimit.ts`, `src/config.ts`, `src/db/redis.ts` and `src/auth/sessions.ts` (`prompt.attachment`, `type: 'file'`). The compaction result and the attachment texts in the fixture are captured from a real session during spike S1 (F03-Q1), in `fixtures/sessions/spike-s1/`.
 
 ### Turn 2: "Add a test for the limit."
 
@@ -70,7 +70,7 @@ The scenario test asserts each checkpoint at the step named, in one test per che
 - **RS-1** After step 3: `routes/index.ts` is `partial` with `seen` "lines 1 to 40 of 120"; `login.ts` is `read` with 2 hits; `password.ts` is `search` with `seen` "2 search hits, never opened".
 - **RS-2** After step 8 and its queued work: `api/users.ts` is a `ghost` with a `blind` edge to `login.ts`, and the footer names it; `routes/index.ts` has no blind mark because Claude opened it.
 - **RS-3** After step 9: `package.json` and `package-lock.json` are `unread` with `change: blind` and a reason naming the command; `login.ts` and `rateLimit.ts` carry no blind mark.
-- **RS-4** After the compaction and the two re-attachments: `routes/index.ts`, `password.ts`, `sessions.ts`, `redis.ts` and `config.ts` are `compacted`, every change mark is kept, `login.ts` and `rateLimit.ts` are `read` again, and one `CompactMark` records 48,210 and 9,870 with `kept: 0` (no read survived in the kept messages; the two came back as attachments).
+- **RS-4** After the compaction and the five re-attachments: `routes/index.ts` and `password.ts` are `compacted`, every change mark is kept, `login.ts`, `rateLimit.ts`, `config.ts`, `redis.ts` and `sessions.ts` are `read` again, and one `CompactMark` records 33,942 and 5,616 with `kept: 0` (no read survived in the kept messages; the five came back as attachments).
 - **RS-5** After step 13: the graph equals the golden graph below, the timeline holds two snapshots, and replaying them from its base gives the live graph.
 
 ## The golden graph
@@ -80,9 +80,9 @@ The scenario test asserts each checkpoint at the step named, in one test per che
 | `src/routes/index.ts` | `compacted` | | Partial before the compaction |
 | `src/auth/login.ts` | `read` | `edited +2 −0` | Re-attached after the compaction |
 | `src/auth/password.ts` | `compacted` | | Search hits before the compaction |
-| `src/auth/sessions.ts` | `compacted` | | |
-| `src/db/redis.ts` | `compacted` | | |
-| `src/config.ts` | `compacted` | | |
+| `src/auth/sessions.ts` | `read` | | Re-attached after the compaction |
+| `src/db/redis.ts` | `read` | | Re-attached after the compaction |
+| `src/config.ts` | `read` | | Re-attached after the compaction |
 | `src/middleware/rateLimit.ts` | `read` | `created +12` | Re-attached after the compaction |
 | `src/api/users.ts` | `ghost` | | Blind spot: imports `login.ts` |
 | `package.json` | `unread` | `blind` | Changed by `npm install rate-limiter-flexible` |
@@ -110,3 +110,4 @@ Footer, newest first: `package-lock.json`, `package.json`, `src/api/users.ts`.
 
 - 2026-10-11 Review. First version: a self-contained project, story, checkpoints and golden graph for every scenario test and manual check.
 - 2026-10-11 Approved by the owner.
+- 2026-10-12 Back to Review: spike S1 showed the engine re-attaches five files after the compaction, not two. The compaction, RS-4 and the golden graph follow the captured session. Approved by the owner.

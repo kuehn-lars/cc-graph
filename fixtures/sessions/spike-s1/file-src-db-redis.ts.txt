@@ -1,0 +1,25 @@
+Called the Read tool with the following input: {"file_path":"/private/var/folders/0y/7y886dnx4fbgfsh126btr1qr0000gn/T/tmp.ni1zKBXngJ/sample-app/src/db/redis.ts"}
+Result of calling the Read tool:
+1	// An in-memory stand-in for Redis: enough for sessions in development.
+2	import { config } from '../config'
+3	
+4	type Entry = { value: string; expiresAt: number }
+5	
+6	const entries = new Map<string, Entry>()
+7	
+8	export const url = config.redisUrl
+9	
+10	export async function get(key: string): Promise<string | null> {
+11	  const entry = entries.get(key)
+12	  if (!entry || entry.expiresAt <= Date.now()) return null
+13	  return entry.value
+14	}
+15	
+16	export async function set(key: string, value: string, ttlSeconds: number): Promise<void> {
+17	  entries.set(key, { value, expiresAt: Date.now() + ttlSeconds * 1000 })
+18	}
+19	
+20	export async function del(key: string): Promise<void> {
+21	  entries.delete(key)
+22	}
+23	

@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
+| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
 
 ## Problem
 
@@ -26,7 +26,7 @@ The pane always describes the conversation on screen. A compaction hollows every
 
 - **F03-R1** When `session.compact` resolves a compaction that stands (a result with `messages` and no `skip`) for the main loop (no `e.agentId`) with a `trigger` other than `precompute`, the mod moves every `read`, `partial` and `search` node the main loop touched (`mainLoop`, F15) to `compacted`, except nodes whose `readId` is the `tool_use_id` of a tool use in the result's `messages`. It keeps every node's `change` and stores a `CompactMark` with the turn, trigger, `tokensBefore`, `tokensAfter` (each `null` when absent) and the number of nodes kept.
 - **F03-R2** When a `compacted` file is read again, F01 restores it to `read` or `partial`.
-- **F03-R3** When a main-loop `prompt.attachment` of `type: 'file'` names a `compacted` node, the mod sets that node to `read` with `seen` "re-attached after compaction" and `tokens` from the attachment text. How the path is read from the text is F03-Q1.
+- **F03-R3** When a main-loop `prompt.attachment` of `type: 'file'` names a `compacted` node, the mod sets that node to `read` with `seen` "re-attached after compaction" and `tokens` from the attachment text. The path is the `file_path` of the JSON object on the text's first line, normalized by I4 (F03-Q1). A re-attached memory file, such as a nested `CLAUDE.md`, also arrives as a `file` attachment; it is not a `compacted` file node, so this requirement leaves it alone.
 - **F03-R4** When `session.measure` reports `context` among `changed`, the mod stores `fill` as `{ tokens, window, percent }` from `e.context`, with `null` for a figure that is absent.
 - **F03-R5** The meter shows the estimated tokens of the files in context (I1), marked "≈", the count of files with unknown size, and the window's real fill, for example "≈12.4k in 7 files (+2 unknown) · window 41% of 200k".
 - **F03-R6** While no measurement has reported a fill, the meter shows the window part as "window –".
@@ -89,9 +89,10 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 
 ## Open questions
 
-- [ ] **F03-Q1** What text does a `file` attachment carry after a compaction, and does it name the path in a stable form? Are some files re-attached only as a reference (`compact_file_reference` in session transcripts), which would mean Claude has the path but not the content? Spike S1: compact a session in `fixtures/sample-app` after five reads and edits, log every `prompt.attachment` that follows (type, origin, first 200 characters), and record the result next to this spec. Blocks approval (F03-R3 depends on it).
+- [x] **F03-Q1** What text does a `file` attachment carry after a compaction, and does it name the path in a stable form? Are some files re-attached only as a reference (`compact_file_reference` in session transcripts), which would mean Claude has the path but not the content? Spike S1: compact a session in `fixtures/sample-app` after five reads and edits, log every `prompt.attachment` that follows (type, origin, first 200 characters), and record the result next to this spec. Blocks approval (F03-R3 depends on it). Answered by spike S1 ([spike-s1.md](spike-s1.md)): the first line is `Called the Read tool with the following input: {"file_path":…}` with an absolute path, followed by the `Read` tool's numbered output. Every re-attached file carried its content; no reference-only form was raised. The engine re-attached the files Claude had read whole or written, five in the reference session.
 
 ## Changelog
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Reads kept in the compaction's messages now survive (F03-AC9); the fill comes from `session.measure`; `source: 'compact'` must not reset (F03-AC10); re-attachment limited to compacted nodes; meter wording fixed.
+- 2026-10-12 F03-Q1 answered by spike S1; F03-R3 names where the path is read from and that a re-attached memory file is left alone. Approved by the owner.

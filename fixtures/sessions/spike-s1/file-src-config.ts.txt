@@ -1,0 +1,44 @@
+Called the Read tool with the following input: {"file_path":"/private/var/folders/0y/7y886dnx4fbgfsh126btr1qr0000gn/T/tmp.ni1zKBXngJ/sample-app/src/config.ts"}
+Result of calling the Read tool:
+1	// Application settings, read once from the environment.
+2	
+3	export type Config = {
+4	  port: number
+5	  host: string
+6	  redisUrl: string
+7	  passwordIterations: number
+8	  logLevel: 'debug' | 'info' | 'warn' | 'error'
+9	}
+10	
+11	function number(name: string, fallback: number): number {
+12	  const raw = process.env[name]
+13	  if (raw === undefined || raw === '') return fallback
+14	  const value = Number(raw)
+15	  if (!Number.isFinite(value)) {
+16	    throw new Error(`${name} must be a number, got "${raw}"`)
+17	  }
+18	  return value
+19	}
+20	
+21	function text(name: string, fallback: string): string {
+22	  const raw = process.env[name]
+23	  return raw === undefined || raw === '' ? fallback : raw
+24	}
+25	
+26	function level(raw: string): Config['logLevel'] {
+27	  if (raw === 'debug' || raw === 'info' || raw === 'warn' || raw === 'error') {
+28	    return raw
+29	  }
+30	  return 'info'
+31	}
+32	
+33	// Read at import time: restart the server after changing the environment.
+34	export const config: Config = {
+35	  port: number('PORT', 3000),
+36	  host: text('HOST', '127.0.0.1'),
+37	  redisUrl: text('REDIS_URL', 'redis://127.0.0.1:6379'),
+38	  passwordIterations: number('PASSWORD_ITERATIONS', 100_000),
+39	  logLevel: level(text('LOG_LEVEL', 'info')),
+40	}
+41	// changed outside Claude
+42	

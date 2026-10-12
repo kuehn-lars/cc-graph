@@ -1,0 +1,93 @@
+{
+  "rg-n-verify-src-auth": {
+    "command": "rg -n \"verify\" src/auth",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-verify-src": {
+    "command": "rg verify src",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-l-verify": {
+    "command": "rg -l verify",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-c-verify-src": {
+    "command": "rg -c verify src",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-verify-login": {
+    "command": "rg verify src/auth/login.ts",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-n-A1-verify-src-auth": {
+    "command": "rg -n -A1 verify src/auth",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-n-verify-src-head": {
+    "command": "rg -n verify src | head -20",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "rg-n-verify-auth-in-src": {
+    "command": "rg -n verify auth",
+    "cwd": "src",
+    "exitCode": 0
+  },
+  "rg-files": {
+    "command": "rg --files",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "grep-rn-verify-src": {
+    "command": "grep -rn verify src",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "grep-rl-verify-src": {
+    "command": "grep -rl verify src",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-grep-n-verify": {
+    "command": "git grep -n verify",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-rev-parse-toplevel": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
+    "cwd": "src",
+    "exitCode": 0
+  },
+  "git-status-clean": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-grep-importers-login": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git grep -n -I --untracked -E -e \"(import|export|require|from)[^'\\\"]*['\\\"][^'\\\"]*/login['\\\"]\" -- '*.ts' '*.tsx' '*.mts' '*.cts' '*.js' '*.jsx' '*.mjs' '*.cjs' '*.py'",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-status-after-npm-install": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-status-variety": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-rev-parse-outside": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
+    "cwd": "(not a repository)",
+    "exitCode": 128,
+    "stderr": true
+  }
+}

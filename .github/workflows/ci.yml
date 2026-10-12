@@ -1,0 +1,19 @@
+name: CI
+on: [push, pull_request]
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        claude: ['2.1.296', 'latest']
+    continue-on-error: ${{ matrix.claude == 'latest' }}
+    steps:
+      - uses: actions/checkout@v4
+      - run: curl -fsSL https://claude.ai/install.sh | bash -s ${{ matrix.claude }}
+      - run: echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+      - run: npx -y -p typescript@5 tsc -p .
+      - run: claude plugin test
+      - run: node scripts/check-calls.mjs
+      - run: node scripts/trace.mjs --check
