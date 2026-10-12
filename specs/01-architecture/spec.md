@@ -2,7 +2,7 @@
 
 | Status | Owner | Checked against |
 | --- | --- | --- |
-| Review | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
+| Approved | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 |
 
 One module talks to Claude Code. Everything else is a pure function. The wiring module turns events into actions, pure reducers turn actions into new state, `$.state` holds it, and pure renderers turn state into an element tree for the surface that asked. Work that costs time (layout, `git`) is queued by the hooks and run off their return path.
 
@@ -242,9 +242,10 @@ Before the first public tag: the README carries a screenshot per surface, the in
 
 ## Open questions
 
-- [ ] **ARCH-Q1** May a `$.clock.after` callback scheduled by a hook call `$.process.run` and `$.state` (through `update`) after that hook returned, and do those writes redraw the pane? Spike S0 in M0 with a two-hook probe mod. Blocks approval (D5 depends on it). If not, `git` work moves to a `turn.complete` hook that schedules nothing and awaits within its budget, and layout runs inside the writing hook under NFR-P1's limit.
+- [x] **ARCH-Q1** May a `$.clock.after` callback scheduled by a hook call `$.process.run` and `$.state` (through `update`) after that hook returned, and do those writes redraw the pane? Spike S0 in M0 with a two-hook probe mod. Blocks approval (D5 depends on it). If not, `git` work moves to a `turn.complete` hook that schedules nothing and awaits within its budget, and layout runs inside the writing hook under NFR-P1's limit. Answered by spike S0 ([spike-s0.md](spike-s0.md)): yes. The callback runs `git` and writes through `update` with the scheduling hook's `$`, from `session.start`, `command.run` and `tool.call`, also under `claude -p`, and the write redraws the pane without `$.ui.invalidate`. D5 stands.
 
 ## Changelog
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added context diagram, decisions D1 to D9, the off-path work queue, the two test seams, strict validation through `check-calls.mjs` with the root `CLAUDE.md` warning as the one accepted exception, and the corrected API surface (`session.measure`, `classic.InstructionsLoaded`, `Read` result kinds, no `Grep` tool, `command.run` answering its own command).
+- 2026-10-12 CI step 2 runs `tsc` through `npx -p typescript@5`. ARCH-Q1 answered by spike S0. Approved by the owner.
