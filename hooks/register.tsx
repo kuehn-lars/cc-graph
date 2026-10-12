@@ -1,5 +1,6 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
@@ -66,7 +67,7 @@ async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: F
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
 async function apply($: StateDollar, action: Action) {
   const turn = (await read($, TURN)) ?? 0
-  await update($, GRAPH, g => reduce(g, action, turn))
+  await update($, GRAPH, g => evict(reduce(g, action, turn), maxNodes)) // I5: the cap is held in the same write
 }
 
 // F15-R9: a change made in a worktree carries its name.

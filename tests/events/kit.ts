@@ -16,7 +16,7 @@ export function engine(on: On, fixture: Fixture) {
 }
 
 /** Records every `state.set` (see `written`, `writes`) and forgets what an earlier test recorded. */
-function observe(on: On) {
+export function observe(on: On) {
   for (const k of Object.keys(written)) delete written[k]
   writes.length = toolIds.length = 0
   on('state.set', (_$, e, next) => ((written[e.key] = e.value), writes.push(e.key), next(e)))
