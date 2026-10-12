@@ -8,9 +8,9 @@ Requirements: F08-R5 (Files), NFR-A1.
 
 **Blocked by:** 01 `/graph` opens the pane
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC2 after steps 1 to 6 the Files section lists, top down, `● src/middleware/rateLimit.ts`, `● src/config.ts`, `● src/db/redis.ts`, `● src/auth/sessions.ts`, `◌ src/auth/password.ts`, `● src/auth/login.ts`, `◐ src/routes/index.ts` (seeded graph, marked derived)
-- [ ] NFR-A1 each of the six states shows its glyph and each of the four changes its badge word
-- [ ] A row reads "≈tokens · seen", and "≈?" when `tokens` is `null` (no AC of its own; one test)
-- [ ] The check command passes
+- [x] F08-AC2 after steps 1 to 6 the Files section lists, top down, `● src/middleware/rateLimit.ts`, `● src/config.ts`, `● src/db/redis.ts`, `● src/auth/sessions.ts`, `◌ src/auth/password.ts`, `● src/auth/login.ts`, `◐ src/routes/index.ts` (seeded graph, marked derived)
+- [x] NFR-A1 each of the six states shows its glyph and each of the four changes its badge word
+- [x] A row reads "≈tokens · seen", and "≈?" when `tokens` is `null` (no AC of its own; one test)
+- [x] The check command passes
