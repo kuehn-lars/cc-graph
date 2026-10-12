@@ -8,9 +8,9 @@ F01-AC12 needs a `compacted` node, and only F03 produces that state. The test se
 
 **Blocked by:** 02 Text Read becomes a node
 
-**Status:** ready-for-agent
+**Status:** partly done (F01-R2 / AC11 only; F01-R3 / AC12 wait for a recorded `file_unchanged`)
 
-- [ ] F01-AC11 image read is `read`, `tokens: null`, "image"
-- [ ] F01-AC12 a `compacted` node answered `file_unchanged` stays `compacted`
-- [ ] `pdf`, `parts` and `notebook` results give the `seen` wording of F01-R2 (no AC of their own; one test each is enough)
-- [ ] The check command passes
+- [x] F01-AC11 image read is `read`, `tokens: null`, "image"
+- [ ] F01-AC12 a `compacted` node answered `file_unchanged` stays `compacted` (deferred: no real `file_unchanged` result could be recorded in Claude Code 2.1.296, see `fixtures/tool-results/README.md`, and fixtures are never hand-typed; F01-R3 is deferred with it)
+- [x] `pdf`, `parts` and `notebook` results give the `seen` wording of F01-R2 (no AC of their own; one test each is enough)
+- [x] The check command passes
