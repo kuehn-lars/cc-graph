@@ -1,10 +1,12 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import { loaded } from './model/memory'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
+import { memoryNote } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { renderList } from './render/list'
@@ -17,6 +19,7 @@ const VIEW = { plugin: 'cc-graph', key: 'view' } as const
 const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
+const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -25,12 +28,14 @@ const resetState = async ($: StateDollar) => {
   await update($, SELECTED, () => null)
   await update($, FILL, () => null)
   await update($, AGENTS, () => ({}))
+  await update($, MEMORY, () => [])
   named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
+const readMemory = async ($: StateDollar) => (await read($, MEMORY)) ?? []
 const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
@@ -138,6 +143,13 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
+  // F04-R3: a memory file Claude Code loads, noted at once. Its size waits for the usage breakdown (ticket 03).
+  on('classic.InstructionsLoaded', async ($, e, next) => {
+    const out = await next(e)
+    await update($, MEMORY, notes => loaded(notes ?? [], memoryNote(e, cwd)))
+    return out
+  }).catch(($, e, next) => next(e))
+
   on('command.run', { command: 'graph' }, async ($, e) => {
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
@@ -159,7 +171,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), await readFill($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), await readFill($), await readMemory($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

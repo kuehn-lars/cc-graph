@@ -4,7 +4,7 @@ import { inContext } from '../model/compacted'
 import { plural } from '../parse/measure'
 
 /** F03-R5a: "850", "12.4k", "200k". */
-const count = (n: number) => (n < 1000 ? String(n) : `${Math.round(n / 100) / 10}k`)
+export const count = (n: number) => (n < 1000 ? String(n) : `${Math.round(n / 100) / 10}k`)
 
 /** `≈12.4k in 7 files (+2 unknown) · window 41% of 200k`; "window –" until the fill carries a percent (F03-R6). */
 export function meterLine(graph: Graph, fill: Fill | null): string {
