@@ -64,6 +64,32 @@ F15-R4 and F15-R9 hold: the id is in the list at first sight, and the worktree p
 3. `node scripts/record-subagents-session.mjs fixtures/sessions/subagents.ts /tmp/cc-graph-subagents/log-*.json`
 4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars" fixtures/sessions/subagents.ts` is 0).
 
+## `memory.ts`: a nested CLAUDE.md loads mid-turn (F04)
+
+One `claude -p` run (Haiku, Claude Code 2.1.296, 2026-10-12) in a copy of `fixtures/sample-app` (`/private/tmp/claude-501/rec-mem/sample-app/`), with the throwaway probe `memory-probe/`. `export default { claudeCode, events }`; each event is `{ event, input, result, usage? }` in the order the hooks ran: `session.start`, `session.measure`, `classic.InstructionsLoaded`, `session.measure`. `usage` is what `$.session.usage({ breakdown: 'summary' })` answered inside the hook, taken at `session.start` and at each `session.measure` whose `changed` holds `context`. The prompt is `memory-turn1.txt` (one `Read` of `src/auth/login.ts`, which loads `src/auth/CLAUDE.md`). `scripts/record-memory-session.mjs` changes one thing: the home folder in `transcript_path` becomes `/home/user`.
+
+### What the recording answers
+
+| Question | Answer |
+| --- | --- |
+| Before the nested load, does `memoryFiles` hold only the project `CLAUDE.md`? | Yes: one entry, `{ path, type: 'Project', tokens: 60 }`, at `session.start` and at the first `session.measure`. |
+| After the nested load, does it hold both files? | **No.** The second `session.measure` (after `classic.InstructionsLoaded`) still lists only the project `CLAUDE.md`; its `Memory files` category is still 60 tokens. The nested file's text is counted under `Messages` (1926 then 2754 tokens). So a refresh of `memory` from the breakdown drops the note `classic.InstructionsLoaded` added (F04-R1 vs F04-R3). |
+| Is `path` absolute, and is `type` the label `memory_type` gives? | Absolute. `type` is `Project`, the same word `memory_type` carries for both files. |
+| Does `session.measure` report `context` in `changed` after the turn? | Yes, both times (`context,rateLimits,cost`, then `context,cost`). |
+| Order | `classic.InstructionsLoaded` fired between the two measures, before the turn's second API response. `session.start` carries no `usage.context.tokens`, only `window`. |
+
+### How the run differed from the ticket
+
+- A throwaway `CLAUDE_CONFIG_DIR` is not logged in (`Not logged in`), so the run used the real config. It has no user `CLAUDE.md` and no rules folder, and the copy's path has no auto-memory, so no personal file was in context; `--setting-sources project` kept the settings out. The only personal text in the log was `transcript_path`, rewritten as above.
+- Two `session.measure` rows, not one per API response: the first fired before the nested load, the second after the turn's last response.
+
+### Record again
+
+1. Copy `fixtures/sample-app` to `/private/tmp/claude-501/rec-mem/sample-app`, `git init`, commit. Empty `/tmp/cc-graph-memory/`.
+2. From inside the copy: `claude -p --model haiku --setting-sources project --plugin-dir <repo>/fixtures/sessions/memory-probe --permission-mode acceptEdits --session-id <new uuid> < /dev/null -- "$(cat <repo>/fixtures/sessions/memory-turn1.txt)"`
+3. `node scripts/record-memory-session.mjs fixtures/sessions/memory.ts /tmp/cc-graph-memory/log-*.json`
+4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars" fixtures/sessions/memory.ts` is 0).
+
 ## `spike-s1/`
 
 The five `file` attachment texts and the compaction result captured in spike S1 (F03-Q1); see `specs/features/F03-context-layer/spike-s1.md`.
