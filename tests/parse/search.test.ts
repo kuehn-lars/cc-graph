@@ -84,8 +84,8 @@ const pipeline: [name: string, command: string, expected: ReturnType<typeof sear
   ['a pipe: the search is the first segment', out['rg-n-verify-src-head'].command, rg(['-n'], ['verify', 'src'])],
   ['&&: the search is after a chain', 'npm run lint && rg -n verify src | head -20', rg(['-n'], ['verify', 'src'])],
   ['||', 'false || rg -n verify src', rg(['-n'], ['verify', 'src'])],
-  [';', 'cd src; rg -n verify .', rg(['-n'], ['verify', '.'])],
-  ['a newline', 'cd src\nrg -n verify .', rg(['-n'], ['verify', '.'])],
+  [';', 'cd src; rg -n verify .', [{ ...rg(['-n'], ['verify', '.'])[0]!, dir: null }]], // only `cd … &&` is known (F02-R8)
+  ['a newline', 'cd src\nrg -n verify .', [{ ...rg(['-n'], ['verify', '.'])[0]!, dir: null }]],
   ['separators without spaces', 'ls&&rg -n a src||echo;rg -n b src', [...rg(['-n'], ['a', 'src']), ...rg(['-n'], ['b', 'src'])]],
   ['two searches in two segments', 'rg -n a src && grep -rn b lib', [...rg(['-n'], ['a', 'src']), { tool: 'grep', flags: ['-rn'], operands: ['b', 'lib'] }]],
   ['a separator in double quotes', 'rg -n "a|b" src', rg(['-n'], ['a|b', 'src'])],
@@ -100,11 +100,45 @@ const pipeline: [name: string, command: string, expected: ReturnType<typeof sear
   ['a pipe with -e and a path operand', 'echo x | rg -n -e error src', rg(['-n', '-e'], ['error', 'src'])],
   ['a pipe with -e and no path operand', 'echo x | grep -n -e error', []],
   ['not piped into: the first of a pipeline reads its own paths', 'rg -n error | sort', rg(['-n'], ['error'])],
-  ['not piped into: after && it reads no pipe', 'cd src && rg -n error', rg(['-n'], ['error'])],
+  ['not piped into: after && it reads no pipe', 'cd src && rg -n error', [{ ...rg(['-n'], ['error'])[0]!, dir: 'src' }]],
   ['a search in the middle of a pipeline, with a path', 'cat a | rg -n error src | head', rg(['-n'], ['error', 'src'])],
 ]
 
 for (const [name, command, expected] of pipeline)
   test(`F02-R1 searchesIn: ${name}`, () => {
     expect(searchesIn(command)).toEqual(expected)
+  })
+
+// F02-R8 (ticket 04): the working directory of each search. `undefined`: the session's; a string: the literal path of
+// the `cd … &&` before it (relative to the session's, or absolute); `null`: unknown, the search's hits are dropped.
+const dirs: [name: string, command: string, expected: (string | null | undefined)[]][] = [
+  ['no cd: the session\'s directory', 'rg -n verify auth', [undefined]],
+  ['a relative cd', 'cd src && rg -n verify auth', ['src']],
+  ['an absolute cd', 'cd /abs/src && rg -n verify auth', ['/abs/src']],
+  ['a Windows drive cd', 'cd C:/w/src && rg -n verify auth', ['C:/w/src']],
+  ['a quoted path with a space', 'cd "my dir" && rg -n verify auth', ['my dir']],
+  ['two cds in a row', 'cd src && cd auth && rg -n verify .', ['src/auth']],
+  ['a relative cd after an absolute one', 'cd /abs && cd src && rg -n verify .', ['/abs/src']],
+  ['an absolute cd replaces the directory', 'cd src && cd /abs && rg -n verify .', ['/abs']],
+  ['an absolute cd after an unknown one is known again', 'cd $DIR && cd /abs && rg -n verify .', ['/abs']],
+  ['a relative cd after an unknown one stays unknown', 'cd $DIR && cd src && rg -n verify .', [null]],
+  ['a search before the cd is in the session\'s directory', 'rg -n a . && cd src && rg -n b .', [undefined, 'src']],
+  ['a variable', 'cd $DIR && rg -n verify auth', [null]],
+  ['a variable in double quotes', 'cd "$DIR" && rg -n verify auth', [null]],
+  ['a command substitution', 'cd `pwd` && rg -n verify auth', [null]],
+  ['~', 'cd ~ && rg -n verify auth', [null]],
+  ['a glob', 'cd s* && rg -n verify auth', [null]],
+  ['cd -', 'cd - && rg -n verify auth', [null]],
+  ['cd with no path', 'cd && rg -n verify auth', [null]],
+  ['cd with a flag', 'cd -P src && rg -n verify auth', [null]],
+  ['a subshell', '(cd src && rg -n verify auth)', [null]],
+  ['a subshell before the search', '(cd src && make) && rg -n verify auth', [null]],
+  ['cd joined by ;', 'cd src; rg -n verify auth', [null]],
+  ['cd joined by ||', 'cd src || rg -n verify auth', [null]],
+  ['cd piped', 'cd src | rg -n verify auth', [null]],
+]
+
+for (const [name, command, expected] of dirs)
+  test(`F02-R8 searchesIn: dir of ${name}`, () => {
+    expect(searchesIn(command).map(s => s.dir)).toEqual(expected)
   })
