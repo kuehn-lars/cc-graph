@@ -22,7 +22,7 @@ Each spec lives in its own folder as `spec.md`, so the evidence it gathers (spik
 | --- | --- | --- | --- |
 | [F01](features/F01-file-tracking/spec.md) | File tracking: reads, edits, writes, mentions | v0.1 | Approved |
 | [F02](features/F02-search-tracking/spec.md) | Search-only tracking | v0.1 | Approved |
-| [F03](features/F03-context-layer/spec.md) | Context layer: compaction, fill, reset | v0.1 | Review |
+| [F03](features/F03-context-layer/spec.md) | Context layer: compaction, fill, reset | v0.1 | Approved |
 | [F04](features/F04-memory-layer/spec.md) | Memory layer | v0.1 | Approved |
 | [F05](features/F05-thinking-layer/spec.md) | Thinking layer | v0.4 | Review |
 | [F06](features/F06-import-edges/spec.md) | Import edges | v0.2 | Review |
