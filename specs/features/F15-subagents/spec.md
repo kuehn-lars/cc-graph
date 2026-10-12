@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
+| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
 
 ## Problem
 
@@ -95,3 +95,4 @@ None.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Ticketing: the main loop owns a node's state once it touched it (R8, AC7, AC8); worktree paths name the repository's file (R9, AC9, AC10); outline and names drawn when F09, F10 and F11 ship (R2, R7); manual check follows; recorded fixtures.
 - 2026-10-12 Gaps from implementation settled: `file_unchanged` and `prompt.mention` follow R1 (AC12, AC13); a worktree change never overwrites a change made in this tree (R9, AC11).
+- 2026-10-12 Manual check walked with the owner in a terminal and in the desktop app; step 3 follows R2. Implemented.

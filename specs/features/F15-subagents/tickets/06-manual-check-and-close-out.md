@@ -11,11 +11,11 @@ The dotted outline (R2) and the names on the card and legend (R7) are checked wi
 
 **Blocked by:** 01, 02, 03, 04, 05
 
-**Status:** blocked
+**Status:** manual check done; Verified and deleting `tickets/` wait for CI
 
-- [ ] Manual check walked with the owner, in a terminal and in the desktop app
-- [ ] Spec status set to Implemented
-- [ ] `node scripts/trace.mjs --check` passes
-- [ ] CHANGELOG has an F15 entry
+- [x] Manual check walked with the owner, in a terminal and in the desktop app
+- [x] Spec status set to Implemented
+- [x] `node scripts/trace.mjs --check` passes
+- [x] CHANGELOG has an F15 entry
 - [ ] Spec status set to Verified once CI is green
 - [ ] This `tickets/` folder is deleted
