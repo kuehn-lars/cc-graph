@@ -68,10 +68,10 @@ export const register: Register = on => {
   }).catch(($, e, next) => next(e))
 
   on('command.run', { command: 'graph' }, async ($, e) => {
+    const arg = e.args.trim()
+    if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
     // F08-R4 / NFR-C3: where nothing draws, answer in text and open nothing.
     if ((await $.session.surfaces()).length === 0) return { text: summarize((await read($, GRAPH)) ?? emptyGraph) }
-    const arg = e.args.trim()
-    if (arg === 'list' || arg === 'graph') await setView($, arg)
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
     if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
     return { text: 'CC Graph opened.' }
