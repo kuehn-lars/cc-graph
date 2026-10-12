@@ -11,9 +11,9 @@ If a recording shows something F14 or I5 did not expect, stop and propose the sp
 
 **Blocked by:** None (can start immediately; no hook code, runs in parallel with 01)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Both sessions recorded from real runs, nothing edited by hand
-- [ ] README section: how to record again, how each run differed
-- [ ] No personal text or path in the fixtures
-- [ ] The check command passes
+- [x] Both sessions recorded from real runs, nothing edited by hand
+- [x] README section: how to record again, how each run differed
+- [x] No personal text or path in the fixtures
+- [x] The check command passes

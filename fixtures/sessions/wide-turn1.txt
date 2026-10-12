@@ -1,0 +1,17 @@
+Work through these exact steps, in order, one tool call each. Do not open or search any other files and do not do anything extra.
+
+1. Read src/m01.ts (whole file).
+2. Read src/m02.ts (whole file).
+3. Read src/m03.ts (whole file).
+4. Read src/m04.ts (whole file).
+5. Read src/m05.ts (whole file).
+6. Read src/m06.ts (whole file).
+7. Read src/m07.ts (whole file).
+8. Read src/m08.ts (whole file).
+9. Read src/m09.ts (whole file).
+10. Read src/m10.ts (whole file).
+11. Read src/m11.ts (whole file).
+12. Read src/m12.ts (whole file).
+13. Read src/m13.ts (whole file).
+14. Run the Bash command: rg -n "TODO" src
+Then stop and say "done".
