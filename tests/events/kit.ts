@@ -1,5 +1,6 @@
 // Shared setup for event tests: the session runs in /w, tool calls answer with a recorded fixture.
 import type { On } from 'claude-code'
+import reference from '../../fixtures/sessions/reference'
 import type { FileNode, Graph } from '../../types'
 
 export type Fixture = { tool: string; tool_use_id: string; input: any; result: any }
@@ -10,10 +11,15 @@ export function engine(on: On, fixture: Fixture) {
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
   on('tool.call', (_$, e) => (toolIds.push(e.tool_use_id), answer))
+  observe(on)
+  return answer
+}
+
+/** Records every `state.set` (see `written`, `writes`) and forgets what an earlier test recorded. */
+function observe(on: On) {
   for (const k of Object.keys(written)) delete written[k]
   writes.length = toolIds.length = 0
   on('state.set', (_$, e, next) => ((written[e.key] = e.value), writes.push(e.key), next(e)))
-  return answer
 }
 
 // The test `$` has no `state` noun: what the plugin wrote is read through a hook on `state.set`.
@@ -34,4 +40,23 @@ export function seedGraph(on: On, graph: Graph) {
     seeded = true
     return { value: { value: graph, version: 0 } } as any
   })
+}
+
+/**
+ * Replays steps 1 to `upToStep` of the reference session (first process): the session starts in the recorded cwd, the
+ * turn starts, and each recorded `tool.call` is sent with its recorded input and answered, beneath the mod, with its
+ * recorded result. The test registers its own `session.start` bottom hook (the engine's, or `ui(on)`).
+ */
+export async function replay($: any, on: On, upToStep: number) {
+  const answer = { ref: 0, result: null as any, text: '' }
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  on('tool.call', () => answer)
+  observe(on)
+  await $.session.start({ ...(reference.events[0]!.input as any) })
+  await turn($)
+  for (const c of reference.events)
+    if (c.event === 'tool.call' && c.process === 1 && c.step! <= upToStep) {
+      Object.assign(answer, c.result)
+      await $.tool.call(c.input)
+    }
 }

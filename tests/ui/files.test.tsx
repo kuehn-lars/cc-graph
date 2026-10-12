@@ -1,26 +1,18 @@
 import { expect, test } from 'claude-code/testing'
+import { replay } from '../events/kit'
 import { SURFACES, mount, node, rowButtons, seed, start, ui, writes } from './kit'
 
 /** The file rows: Text elements that begin with a state glyph. */
 const rows = async (pane: any): Promise<string[]> =>
   (await pane.findAll({ type: 'Text', text: /^[●◐◌○!⋯] / })).map((r: any) => r.text)
 
-// DERIVED: only F02 produces `search`, so the graph is seeded as it stands after step 6 of the reference session
-// (touched order: routes, login, password, sessions, redis, config, rateLimit). F02's tickets switch this to a replay.
 for (const surface of SURFACES) {
   test(`F08-AC2 after steps 1 to 6 the Files section lists the rows newest first on ${surface}`, async ($, on) => {
     ui(on)
-    seed(on,
-      node('src/routes/index.ts', 1, { state: 'partial' }),
-      node('src/auth/login.ts', 3),
-      node('src/auth/password.ts', 4, { state: 'search' }),
-      node('src/auth/sessions.ts', 5),
-      node('src/db/redis.ts', 6),
-      node('src/config.ts', 7),
-      node('src/middleware/rateLimit.ts', 8, { change: 'created', added: 12 }),
-    )
-    await start($)
-    const got = (await rows(await mount($, surface))).map(r => r.split('  ')[0])
+    await replay($, on, 6)
+    // 80 columns: the recorded rateLimit.ts row ("created +12  ≈85 · written by Claude") does not fit the 64 that
+    // F08-R2 asks for, and F08-R6 would cut its path; this test is about the order, so it is drawn wide enough.
+    const got = (await rows(await mount($, surface, 80))).map(r => r.split('  ')[0])
     expect(got).toEqual([
       '● src/middleware/rateLimit.ts', '● src/config.ts', '● src/db/redis.ts', '● src/auth/sessions.ts',
       '◌ src/auth/password.ts', '● src/auth/login.ts', '◐ src/routes/index.ts',
