@@ -14,11 +14,11 @@ Requirements: F15-R4.
 
 **Touches:** the wiring only (the `tool.call` hook, the reset). No model files, so it runs in parallel with 03.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F15-AC4 two reads by `ag1`: `agent.list` called once, `agents.ag1` = `{ id: 'ag1', type: 'Explore', description: 'Find uses of verify' }`
-- [ ] F15-AC6 `7f3a9c21e0`, not in the list: type "agent", description `7f3a9c21` (DERIVED)
-- [ ] Two calls by a new agent raised together still call `agent.list` once
-- [ ] A main-loop call never calls `agent.list`
-- [ ] `source: 'clear'` empties `agents`
-- [ ] The check command passes, including `check-calls.mjs` (`$.agent.list` is on the NFR-S1 allowlist)
+- [x] F15-AC4 two reads by `ag1`: `agent.list` called once, `agents.ag1` = `{ id: 'ag1', type: 'Explore', description: 'Find uses of verify' }`
+- [x] F15-AC6 `7f3a9c21e0`, not in the list: type "agent", description `7f3a9c21` (DERIVED)
+- [x] Two calls by a new agent raised together still call `agent.list` once
+- [x] A main-loop call never calls `agent.list`
+- [x] `source: 'clear'` empties `agents`
+- [x] The check command passes, including `check-calls.mjs` (`$.agent.list` is on the NFR-S1 allowlist)
