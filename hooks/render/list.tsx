@@ -3,7 +3,7 @@ import type { Elements } from 'claude-code'
 import type { FileNode, Graph, NodeState } from '../../types'
 import { cols, tail } from './width'
 
-type Table = Pick<Elements['terminal'], 'Box' | 'Text'>
+type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
 
 // 02 Data model: the glyph of each state. No state is told by color alone (NFR-A1).
 const GLYPH: Record<NodeState, string> = { read: '●', partial: '◐', search: '◌', compacted: '○', unread: '!', ghost: '⋯' }
@@ -30,13 +30,18 @@ function row(n: FileNode, columns: number) {
   return `${head}…${tail(n.path, columns - cols(head) - 1)}` // ponytail: a file name wider than the pane loses its start too
 }
 
-export function renderList({ Box, Text }: Table, graph: Graph, columns: number) {
+export function renderList({ Box, Text, Button }: Table, graph: Graph, columns: number, select: (path: string) => void) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   return (
     <Box flexDirection="column">
       <Text bold>Files</Text>
       {files.length === 0 && <Text dimColor>Nothing read yet.</Text>}
-      {files.map(n => <Text key={n.path}>{row(n, columns)}</Text>)}
+      {files.map((n, i) => (
+        // F08-R8: a plain Button draws "1: " before its text (3 columns), so the first nine rows give that up.
+        <Button plain key={n.path} hotkey={i < 9 ? String(i + 1) : undefined} onPress={() => select(n.path)}>
+          <Text>{row(n, columns - (i < 9 ? 3 : 0))}</Text>
+        </Button>
+      ))}
     </Box>
   )
 }

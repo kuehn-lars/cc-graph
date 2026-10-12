@@ -12,6 +12,7 @@ const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
 const PANE = 'cc-graph'
 const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
+const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
@@ -87,7 +88,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, (await read($, GRAPH)) ?? emptyGraph, e.props.bodyColumns)}
+        {renderList(table, (await read($, GRAPH)) ?? emptyGraph, e.props.bodyColumns, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

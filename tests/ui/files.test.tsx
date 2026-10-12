@@ -95,3 +95,58 @@ test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "â€
   expect(r.slice(2).split('  ')[0]).toMatch(/^â€¦.*rateLimit\.ts$/)
   expect(cols(r)).toBeLessThanOrEqual(30)
 })
+
+/** What the mod wrote to state: every `state.set`, by key. */
+function writes(on: any) {
+  const seen: { key: string; value: any }[] = []
+  on('state.set', (_$: any, e: any, next: any) => (seen.push({ key: e.key, value: e.value }), next(e)))
+  return seen
+}
+/** The row Buttons, in drawn order: the ones not keyed `view-*`. */
+const rowButtons = async (pane: any) => (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))
+
+test('F08-AC6 pressing 3 sets selected to the third file row path', async ($, on) => {
+  ui(on)
+  seed(on, node('a.ts', 1), node('b.ts', 2), node('c.ts', 3), node('d.ts', 4))
+  const seen = writes(on)
+  await start($)
+  const pane = await mount($, 'terminal')
+  const third = (await rowButtons(pane)).find((b: any) => b.props.hotkey === '3')
+  expect(third?.key).toBe('b.ts')
+  await pane.press({ key: third.key })
+  expect(seen).toEqual([{ key: 'selected', value: 'b.ts' }])
+})
+
+test('F08-AC9 pressing the row Button keyed src/auth/login.ts sets selected to src/auth/login.ts', async ($, on) => {
+  ui(on)
+  seed(on, node('src/auth/login.ts', 1), node('src/config.ts', 2))
+  const seen = writes(on)
+  await start($)
+  const pane = await mount($, 'terminal')
+  await pane.press({ key: 'src/auth/login.ts' })
+  // D3: the press writes `selected` and nothing else, `graph` least of all.
+  expect(seen).toEqual([{ key: 'selected', value: 'src/auth/login.ts' }])
+})
+
+test('NFR-A2 each of 1 to 9 is pressed by a UI test; only the first nine rows carry a hotkey', async ($, on) => {
+  ui(on)
+  seed(on, ...Array.from({ length: 11 }, (_, i) => node(`f${i + 1}.ts`, i + 1)))
+  const seen = writes(on)
+  await start($)
+  const pane = await mount($, 'terminal')
+  const buttons = await rowButtons(pane)
+  expect(buttons.map((b: any) => b.props.hotkey)).toEqual(['1', '2', '3', '4', '5', '6', '7', '8', '9', undefined, undefined])
+  for (const k of '123456789') await pane.press({ key: buttons.find((b: any) => b.props.hotkey === k).key })
+  expect(seen.map(w => w.value)).toEqual(['f11.ts', 'f10.ts', 'f9.ts', 'f8.ts', 'f7.ts', 'f6.ts', 'f5.ts', 'f4.ts', 'f3.ts'])
+})
+
+test('F08-R8 each row is a plain Button, and a hotkey row still fits bodyColumns with its "1: " label', async ($, on) => {
+  ui(on)
+  seed(on, node('src/auth/a-very-long-directory-name/sessions.ts', 1, { change: 'edited', added: 3, removed: 1 }))
+  await start($)
+  const pane = await mountAt($, 30)
+  const [b] = await rowButtons(pane)
+  expect(b?.props.plain).toBe(true)
+  // A plain Button draws "1: " before its text, so the text gets 3 columns less.
+  for (const r of await rows(pane)) expect(cols(r) + 3).toBeLessThanOrEqual(30)
+})

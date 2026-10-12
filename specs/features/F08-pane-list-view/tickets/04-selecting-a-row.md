@@ -6,9 +6,9 @@ Requirements: F08-R8, F08-R9 (`1` to `9`).
 
 **Blocked by:** 02 File rows, newest first
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC6 pressing `3` sets `selected` to the third file row's path
-- [ ] F08-AC9 pressing the row `Button` keyed `src/auth/login.ts` sets `selected` to `src/auth/login.ts`
-- [ ] NFR-A2 each of `1` to `9` is pressed by a UI test
-- [ ] The check command passes
+- [x] F08-AC6 pressing `3` sets `selected` to the third file row's path
+- [x] F08-AC9 pressing the row `Button` keyed `src/auth/login.ts` sets `selected` to `src/auth/login.ts`
+- [x] NFR-A2 each of `1` to `9` is pressed by a UI test
+- [x] The check command passes
