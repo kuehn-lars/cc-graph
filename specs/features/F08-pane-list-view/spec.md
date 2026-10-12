@@ -28,7 +28,7 @@ The facts the other features gather need one place to live that works on every s
 - **F08-R1** When `session.start` fires, the mod registers `/graph` with `immediate: true`, the description "Show what Claude read, searched and changed", and the argument hint `[list|graph]`.
 - **F08-R2** When `/graph` runs, the mod sets `view` to `list` or `graph` when that is the argument, opens pane `cc-graph` with title "CC Graph", `focus: true`, `closeOnEscape: true` and `columns: 64`, and answers its own command with `{ text: 'CC Graph opened.' }`.
 - **F08-R3** If `$.ui.open` resolves `isPlaced: false`, then the mod shows a toast "CC Graph is waiting for room: ‹reason›".
-- **F08-R4** If `$.session.surfaces()` is empty when `/graph` runs, then the mod opens no pane and answers with a text summary: the meter line, the count of files per state (in the order `read`, `partial`, `search`, `compacted`, `unread`, `ghost`) and per change (`edited`, `created`, `external`, `blind`), zero counts left out, and, once F07 ships, up to 5 blind spots (NFR-C3).
+- **F08-R4** If `$.session.surfaces()` is empty when `/graph` runs, then the mod opens no pane and answers with a text summary: the meter line once F03 ships, the count of files per state (in the order `read`, `partial`, `search`, `compacted`, `unread`, `ghost`) and per change (`edited`, `created`, `external`, `blind`), zero counts left out, and, once F07 ships, up to 5 blind spots (NFR-C3).
 - **F08-R5** The list view shows, top down: a header with the meter (F03) and, while scrubbing, the turn (F13); Memory (F04); Files, most recently touched first (`touched`), each row the state glyph, the path, the change badge and "≈tokens · seen"; Thinking (F05); Blind spots (F07); Decisions (F12); the footer notes. A section of a feature not yet shipped is not drawn.
 - **F08-R6** The mod draws no row wider than `e.props.bodyColumns`. A path that does not fit is cut from the start and led by "…", so its file name stays; rows never wrap.
 - **F08-R7** Each section has an empty-state line: "Nothing read yet.", "No memory files in context.", "No thinking captured yet.", "No blind spots."
@@ -45,7 +45,7 @@ Every key is one digit or one lowercase letter, the only hotkeys a `Button` acce
 | Key | Action | Spec | From |
 | --- | --- | --- | --- |
 | `l` | List view | F08 | v0.1 |
-| `g` | Graph view | F09, F10 | v0.2 |
+| `g` | Graph view (the list until F09 or F10 draws a graph) | F08, F09, F10 | v0.1 |
 | `1` to `9` | Select the file in that row | F08 | v0.1 |
 | `x` | Clear the selection, closing the card | F11 | v0.4 |
 | `m` | `@`-mention the selected file in the prompt | F11 | v0.4 |
@@ -66,7 +66,7 @@ Every key is one digit or one lowercase letter, the only hotkeys a `Button` acce
 - **F08-AC5** On `vscode` and on `mobile`, with `view: 'graph'`, the list is drawn.
 - **F08-AC6** Pressing `3` sets `selected` to the third file row's path.
 - **F08-AC7** Given `$.ui.open` resolves `{ isPlaced: false, reason: 'needs 144 columns, has 100' }`, then a toast shows that reason.
-- **F08-AC8** Given no surface is attached and the graph at RS-1, then `/graph` opens no pane and answers a text holding the meter line and "1 read, 1 partial, 1 search".
+- **F08-AC8** Given no surface is attached and the graph at RS-1, then `/graph` opens no pane and answers a text holding "1 read, 1 partial, 1 search". The meter line in it is F03-AC13.
 - **F08-AC9** Pressing the row `Button` keyed `src/auth/login.ts` sets `selected` to `src/auth/login.ts`.
 - **F08-AC10** At `bodyColumns` 30, the row for `src/middleware/rateLimit.ts` shows a path that starts with "…" and ends with `rateLimit.ts`.
 
@@ -84,6 +84,7 @@ Every key is one digit or one lowercase letter, the only hotkeys a `Button` acce
 - **Seam:** the engine test kit's UI noun. `$.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: 'cc-graph', props })` with `bodyColumns`, `scroll` and `placement`, in a loop over `['terminal', 'desktop'] as const` and, for F08-AC5, `vscode` and `mobile`. Rows are found by key and text with `find`; keys are pressed with `press`.
 - `/graph` is run with `$.command.run({ command: 'graph', args })`; the test's own hooks beneath answer `ui.open`, `ui.toast` and `session.surfaces`.
 - Width is measured in terminal columns over every drawn text (F08-AC3, AC10).
+- **A search node is seeded.** Only F02 produces `search`, so until it ships F08-AC2 seeds the graph as it stands after step 6 (the test's own `state.get` hook beneath the mod, as F01-AC12 does), marked derived. Once F02 ships, the test replays steps 1 to 6 instead.
 
 ## Mods API used
 
@@ -123,3 +124,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added the key map (every key a digit or lowercase letter, the only hotkeys a `Button` takes), rows as plain buttons, renderer choice by element table, the text summary where nothing draws, the `isPlaced: false` reason, and path cutting.
 - 2026-10-11 Approved by the owner.
+- 2026-10-12 Ticketing. `g` ships in v0.1 and sets `view`, drawn as the list until F09 or F10 ships (F08-AC4 presses it). The meter line of the text summary moves to F03 (F03-AC13), which ships after F08; F08-AC8 checks the counts. F08-AC2 seeds its `search` node until F02 ships. Approved by the owner.
