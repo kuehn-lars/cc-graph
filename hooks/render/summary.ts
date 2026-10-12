@@ -1,7 +1,8 @@
 // Pure: the text `/graph` answers where nothing draws (F08-R4). The meter line (F03) and blind spots (F07) join it when they ship.
-import type { Graph } from '../../types'
+import type { Graph, NodeState } from '../../types'
+import { GLYPH } from './list'
 
-const STATES = ['read', 'partial', 'search', 'compacted', 'unread', 'ghost'] as const
+const STATES = Object.keys(GLYPH) as NodeState[] // GLYPH's key order is the state order of the summary
 const CHANGES = ['edited', 'created', 'external', 'blind'] as const
 
 /** `1 read, 1 partial`, then `2 edited` on a line of its own; zero counts are left out. */

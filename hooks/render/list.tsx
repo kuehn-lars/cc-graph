@@ -6,7 +6,11 @@ import { cols, tail } from './width'
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
 
 // 02 Data model: the glyph of each state. No state is told by color alone (NFR-A1).
-const GLYPH: Record<NodeState, string> = { read: '●', partial: '◐', search: '◌', compacted: '○', unread: '!', ghost: '⋯' }
+export const GLYPH: Record<NodeState, string> = { read: '●', partial: '◐', search: '◌', compacted: '○', unread: '!', ghost: '⋯' }
+
+// F08-R8: the first nine rows carry a hotkey 1 to 9, and a plain Button draws "N: " (3 columns) before its text.
+const HOTKEY_ROWS = 9
+const LABEL_COLUMNS = 3
 
 const badge = (n: FileNode) =>
   n.change === 'edited' ? `edited +${n.added} −${n.removed}` : n.change === 'created' ? `created +${n.added}` : n.change
@@ -37,9 +41,9 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, columns: 
       <Text bold>Files</Text>
       {files.length === 0 && <Text dimColor>Nothing read yet.</Text>}
       {files.map((n, i) => (
-        // F08-R8: a plain Button draws "1: " before its text (3 columns), so the first nine rows give that up.
-        <Button plain key={n.path} hotkey={i < 9 ? String(i + 1) : undefined} onPress={() => select(n.path)}>
-          <Text>{row(n, columns - (i < 9 ? 3 : 0))}</Text>
+        // F08-R8: the first nine rows give up the label's columns.
+        <Button plain key={n.path} hotkey={i < HOTKEY_ROWS ? String(i + 1) : undefined} onPress={() => select(n.path)}>
+          <Text>{row(n, columns - (i < HOTKEY_ROWS ? LABEL_COLUMNS : 0))}</Text>
         </Button>
       ))}
     </Box>
