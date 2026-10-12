@@ -184,3 +184,40 @@ test('F15-R4 after a reload the list no longer names the agent: the stored name 
   await call(agentReadPassword)
   expect(written.agents[AGENT]).toEqual(stored)
 })
+
+// F15-R9: the recorded worktree agent (step 3). Its Read and Edit paths are under <cwd>/.claude/worktrees/agent-<id>/.
+const wtAgent = agentEdit.input.agentId as string
+const wtName = `agent-${wtAgent}`
+const wtRows = calls.filter(r => r.input.agentId === wtAgent)
+const wtRead = wtRows.find(r => r.input.tool === 'Read')
+const wtRg = wtRows.find(r => r.input.tool === 'Bash')
+
+test('F15-AC9 a subagent reads a file in its worktree: the node is the repository\'s path (DERIVED: /w/.claude/worktrees/agent-a1/src/a.ts)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadPassword, { file_path: `${cwd}/.claude/worktrees/agent-a1/src/auth/password.ts` })
+  expect(Object.keys((await graphOf())!.files)).toEqual(['src/auth/password.ts'])
+})
+
+test('F15-AC10 a subagent edits in its worktree: edited, reason says the worktree (the recorded Edit)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentEdit)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', reason: `in worktree ${wtName}`, mainLoop: false })
+})
+
+test('F15-R9 the recorded worktree agent\'s Read, rg and Edit of login.ts make one node and no .claude/worktrees node', async ($, on) => {
+  const { call } = await session($, on)
+  await call(wtRg)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'search' }) // the rg hit lands on the repository's row
+  for (const row of [wtRead, agentEdit]) await call(row)
+  const files = Object.keys((await graphOf())!.files)
+  expect(files).toContain('src/auth/login.ts')
+  expect(files.filter(p => p.includes('.claude'))).toEqual([])
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', agents: [wtAgent] })
+})
+
+test('F15-R9 a later main-loop edit sets reason back to null (DERIVED: the recorded Edit as a main-loop row)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentEdit)
+  await call(agentEdit, { agentId: undefined, file_path: `${cwd}/src/auth/login.ts` })
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', reason: null })
+})

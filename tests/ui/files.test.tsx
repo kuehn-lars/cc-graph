@@ -176,3 +176,12 @@ test('F15-R2 a subagent only row says "agent"; a main loop row does not', async 
   expect(got.find(r => r.includes(' a/sub'))).toMatch(/\bagent\b/)
   expect(got.find(r => r.includes(' a/main'))).not.toMatch(/\bagent\b/)
 })
+
+test('F15-AC10 a row whose reason names a worktree says "worktree"; one without does not', async ($, on) => {
+  ui(on)
+  seed(on, node('a/plain', 1, { change: 'edited' }), node('a/wt', 2, { change: 'edited', reason: 'in worktree agent-a1', mainLoop: false, agents: ['ag1'] }))
+  await start($)
+  const got = await rows(await mount($, 'terminal'))
+  expect(got.find(r => r.includes(' a/wt'))).toMatch(/\bworktree\b/)
+  expect(got.find(r => r.includes(' a/plain'))).not.toMatch(/\bworktree\b/)
+})
