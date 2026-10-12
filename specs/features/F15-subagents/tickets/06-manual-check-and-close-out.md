@@ -4,7 +4,7 @@
 
 1. Claude has an Explore agent find every use of `verify`.
 2. The files the agent read say "agent" in the list, and the meter does not grow.
-3. Claude reads one of them itself. It joins the meter and keeps the agent tag.
+3. Claude reads one of them itself. It joins the meter and the word "agent" leaves its row (F15-R2). The agent stays in `agents`, which the card (F11) shows when it ships.
 4. Claude has an agent in a worktree add a comment to `src/auth/login.ts`. The row is `src/auth/login.ts`, edited, saying "worktree", and no `.claude/worktrees/…` row appears.
 
 The dotted outline (R2) and the names on the card and legend (R7) are checked with F09, F10 and F11.

@@ -76,7 +76,7 @@ Adds `FileNode.agents`, `FileNode.mainLoop`, `Agent`, and the `agents` key.
 
 1. In a copy of `fixtures/sample-app`, ask Claude to have an Explore agent find every use of `verify`.
 2. The files the agent read say "agent" in the list, and the meter does not grow.
-3. Ask Claude to read one of them itself. It joins the meter and keeps the agent tag.
+3. Ask Claude to read one of them itself. It joins the meter and the word "agent" leaves its row (R2). The agent stays in `agents`, which the card (F11) shows when it ships.
 4. Ask Claude to have an agent in a worktree add a comment to `src/auth/login.ts`. The row is `src/auth/login.ts`, edited, saying "worktree", and no `.claude/worktrees/…` row appears.
 
 ## Out of scope
