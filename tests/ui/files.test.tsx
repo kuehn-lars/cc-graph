@@ -95,6 +95,19 @@ test('F08-AC3 at bodyColumns 40, no drawn row is wider than 40 columns, its "N: 
   for (const w of widths) expect(w).toBeLessThanOrEqual(40)
 })
 
+for (const bodyColumns of [20, 30, 40]) {
+  test(`F08-R6 at bodyColumns ${bodyColumns} the header (view buttons, "Files", "Nothing read yet.") is not wider than the pane`, async ($, on) => {
+    ui(on)
+    await start($)
+    const pane = await mountAt($, bodyColumns)
+    // The two view Buttons share one row, each drawing "l: " / "g: " (3 columns) before its label.
+    const buttons = (await pane.findAll({ type: 'Button' })).filter((b: any) => b.key.startsWith('view-'))
+    expect(buttons).toHaveLength(2)
+    expect(buttons.reduce((w: number, b: any) => w + cols(b.text) + 3, 0)).toBeLessThanOrEqual(bodyColumns)
+    for (const t of await drawn(pane)) expect(cols(t)).toBeLessThanOrEqual(bodyColumns)
+  })
+}
+
 test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "…" and ends with rateLimit.ts', async ($, on) => {
   ui(on)
   seed(on, node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 }))
