@@ -66,6 +66,11 @@ test('F02-R2 hitsIn: -l as --files-with-matches, and in a cluster', () => {
     expect(keys(hitsIn(out['rg-l-verify'].stdout, searchesIn(cmd)[0]!))).toEqual(lines('rg-l-verify'))
 })
 
+// DERIVED: rg --count-matches prints path:N like -c; no capture holds it.
+test('F02-R3 hitsIn: --count-matches (path:N lines) adds nothing', () => {
+  expect(hitsIn('src/a.ts:3\n', searchesIn('rg --count-matches verify src')[0]!)).toEqual({})
+})
+
 // DERIVED: with -t, the single path operand is still the second operand; stdout has no path.
 test('F02-R2 hitsIn: rg -t ts verify src/a.ts 2>&1 gives the lines to src/a.ts', () => {
   expect(hitsIn('const x = verify(a)\n', searchesIn('rg -t ts verify src/a.ts 2>&1')[0]!)).toEqual({ 'src/a.ts': { hits: 1, chars: 'const x = verify(a)'.length } })

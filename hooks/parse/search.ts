@@ -138,7 +138,8 @@ const has = (search: Search, short: string, ...long: string[]) =>
 /** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, is no hit. F02-R3: modes that print no hits give none. */
 export function hitsIn(stdout: string, search: Search): Hits {
   // ponytail: F02-R3 says -L; for rg that is --follow (hits as usual). Spec proposal pending with the owner.
-  if (has(search, 'c', '--count') || has(search, 'q', '--quiet') || has(search, 'L', '--files-without-match') || search.flags.some(f => f === '--files' || f === '--json')) return {}
+  // ponytail: --count-matches prints path:N like -c, so it adds nothing; F02-R3 should list it (spec proposal pending with the owner).
+  if (has(search, 'c', '--count', '--count-matches') || has(search, 'q', '--quiet') || has(search, 'L', '--files-without-match') || search.flags.some(f => f === '--files' || f === '--json')) return {}
   const listing = has(search, 'l', '--files-with-matches')
   const hits: Hits = {}
   const add = (path: string, line: string) => {
