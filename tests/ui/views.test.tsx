@@ -69,3 +69,11 @@ test('F08-R2 /graph list sets view even when no surface is attached, and still a
   expect(opened).toEqual([])
   expect(out.text).toBe('Nothing read yet.')
 })
+
+test('F08-R9 the l and g buttons are drawn apart, not run together', async ($, on) => {
+  ui(on)
+  await start($)
+  const pane = await mount($, 'terminal')
+  const row = (await pane.findAll({ type: 'Box' })).find((b: any) => b.props.gap >= 1)
+  expect(row).toBeDefined()
+})

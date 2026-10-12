@@ -86,7 +86,7 @@ export const register: Register = on => {
     // F08-R10: the renderer follows the table (Raster: F09, Svg: F10, else the list). Neither graph has shipped, so `view` changes nothing drawn yet.
     return (
       <Box flexDirection="column">
-        <Box>
+        <Box gap={2}>
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
