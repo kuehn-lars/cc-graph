@@ -1,17 +1,15 @@
-// Pure: a Read's result becomes a `fileRead` action, or null when this ticket does not track its kind.
-// A later ticket adds a `case` per kind (image, pdf, parts, notebook, file_unchanged).
+// Pure: a Read's result becomes a `fileRead` action, or null for a kind not tracked yet (file_unchanged).
 import type { FileRead } from '../model/fileRead'
+import { estimateTokens, plural } from './measure'
 
 type TextFile = { content: string; numLines: number; startLine: number; totalLines: number; truncatedByTokenCap?: boolean }
 type ReadResult = { type: 'text'; file: TextFile } | { type: string }
 
-const lines = (n: number) => `${n} line${n === 1 ? '' : 's'}`
-
 function text(path: string, readId: string, f: TextFile): FileRead {
   const isWhole = f.startLine === 1 && f.numLines >= f.totalLines && !f.truncatedByTokenCap
   return {
-    type: 'fileRead', path, readId, state: isWhole ? 'read' : 'partial', tokens: Math.ceil(f.content.length / 4),
-    seen: isWhole ? lines(f.numLines) : `lines ${f.startLine} to ${f.startLine + f.numLines - 1} of ${f.totalLines}`,
+    type: 'fileRead', path, readId, state: isWhole ? 'read' : 'partial', tokens: estimateTokens(f.content),
+    seen: isWhole ? plural(f.numLines, 'line') : `lines ${f.startLine} to ${f.startLine + f.numLines - 1} of ${f.totalLines}`,
   }
 }
 
@@ -30,7 +28,7 @@ export function readAction(path: string, readId: string, result: ReadResult): Fi
     }
     case 'notebook': {
       const n = (result as { file?: { cells?: unknown[] } }).file?.cells?.length ?? 0
-      return opaque(path, readId, `notebook, ${n} cell${n === 1 ? '' : 's'}`)
+      return opaque(path, readId, `notebook, ${plural(n, 'cell')}`)
     }
     default: return null
   }

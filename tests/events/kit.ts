@@ -17,7 +17,7 @@ export function engine(on: On, fixture: Fixture) {
 
 // The test `$` has no `state` noun: what the plugin wrote is read through a hook on `state.set`.
 export const written: Record<string, any> = {}
-export const graphOf = async (_$?: unknown): Promise<Graph | undefined> => written.graph
-export const nodeOf = async ($: unknown, path: string): Promise<FileNode | undefined> => (await graphOf($))?.files[path]
+export const graphOf = async (): Promise<Graph | undefined> => written.graph
+export const nodeOf = async (path: string): Promise<FileNode | undefined> => (await graphOf())?.files[path]
 export const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
 export const turn = ($: any, id = 't1') => $.turn.start({ text: '', turnId: id })
