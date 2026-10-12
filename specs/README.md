@@ -36,7 +36,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 | [F12](features/F12-decisions/spec.md) | Decisions (opt-in) | v0.6 | Review |
 | [F13](features/F13-timeline/spec.md) | Timeline | v0.6 | Review |
 | [F14](features/F14-settings/spec.md) | Settings | v0.1 | Approved |
-| [F15](features/F15-subagents/spec.md) | Subagent attribution | v0.1 | Implemented |
+| [F15](features/F15-subagents/spec.md) | Subagent attribution | v0.1 | Verified |
 
 When and in which order they ship: [ROADMAP.md](../ROADMAP.md).
 
