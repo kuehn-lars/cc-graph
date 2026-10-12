@@ -26,7 +26,7 @@ The memory files in Claude's context appear in their own section and cluster, ea
 - **F04-R2** The mod never calls `$.session.usage` with `breakdown: 'full'`, which sends one token-count request per tool and memory file (P2, NFR-S6).
 - **F04-R3** When `classic.InstructionsLoaded` fires, the mod adds or updates the note for `file_path` with `type` from `memory_type`, `tokens: null` until the next refresh, and `reason` from `load_reason`: "at start", "nested", "path rule", "import" or "after compaction".
 - **F04-R6** When `prompt.attachment` of type `nested_memory` fires for the main loop (no `agentId`), the mod sets `tokens` of the note for the path in the first line of its `text` ("Contents of <path>:") to the local estimate of that text, `ceil(characters / 4)` (02 Data model), and does nothing when there is no such note. No request is made (NFR-S6).
-- **F04-R4** The list view's Memory section shows each note's type, path and "≈tokens" (or "≈?"), and the section's total.
+- **F04-R4** The list view's Memory section shows each note's type, path, reason (when known) and "≈tokens" (or "≈?"), and the section's total, a note of unknown size counted apart ("(+1 unknown)").
 - **F04-R5** The graph draws memory notes as squares `■` in their own cluster, labelled with their type, outside the file meter (I1).
 
 ## Acceptance criteria
