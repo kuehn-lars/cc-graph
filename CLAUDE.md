@@ -21,7 +21,7 @@ When the code shows the spec is wrong, stop and propose the spec change. Then up
 - State writes go through `update` (never `get` then `set`), one event to one write of `graph`. `ui.render` only reads.
 - Hooks do constant work. Layout and `git` are enqueued and run off the hook's return path (architecture D5).
 - Only the `$` methods allowed by NFR-S1 (`specs/03-nfr/spec.md`). No `$.http`, `$.store`, `$.fs`; `$.model.fork` only on an "Ask why" press; `$.process.run` only read-only `git` and the editor command, by argument list.
-- Tests go through the `claude-code/testing` kit; only `parse` and `layout` are imported directly. Tool output in fixtures is captured from real runs, never typed by hand.
+- Tests go through the `claude-code/testing` kit; only `parse` and `layout` are imported directly. Tool output in fixtures is captured from real runs, never typed by hand. A result no session returns by itself (a `staged` flag, an error, a kind this build never produces, a mention result) may be derived from a recording or the type; the test marks it derived.
 - The API reference is `.claude-plugin/types/claude-code/index.d.ts`. Grep it for the event or method at hand and trust it over memory. When it disagrees with a spec, the spec gets an open question.
 - IDs: requirement `F03-R2`, criterion `F03-AC4`, question `F03-Q1`, non-functional `NFR-P1`, checkpoint `RS-3`. Commits name them: `feat(F03): compaction state (F03-AC1..AC4)`; spec-only changes use `spec(F03): …`.
 
