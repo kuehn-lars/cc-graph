@@ -18,23 +18,19 @@ const MARK_COLUMNS = 2
 const badge = (n: FileNode) =>
   n.change === 'edited' ? `edited +${n.added} −${n.removed}` : n.change === 'created' ? `created +${n.added}` : n.change
 
-/** The path cut from its start and led by "…" so it takes at most `room` columns; null when not even "…" and the file name fit. */
-const fitPath = (path: string, room: number) =>
-  cols(path) <= room ? path : cols(path.slice(path.lastIndexOf('/') + 1)) + 1 > room ? null : `…${tail(path, room - 1)}`
-
 /**
  * `● path  edited +3 −1  ≈414 · 49 lines` in at most `columns` columns: the badge is left out when the file has no change.
- * The path gives way first (F08-R6, its file name stays); when even that does not fit, the size and then the badge are dropped.
+ * The path gives way first, cut from its start and led by "…" (F08-R6); while not even "…" and the file name fit, the size and then the badge are dropped.
  */
 function row(n: FileNode, columns: number) {
   const head = `${GLYPH[n.state]} `
+  const name = n.path.slice(n.path.lastIndexOf('/') + 1)
   const parts = [badge(n), `≈${n.tokens ?? '?'} · ${n.seen}`].filter(Boolean)
-  for (let k = parts.length; k >= 0; k--) {
-    const suffix = parts.slice(0, k).map(p => `  ${p}`).join('')
-    const path = fitPath(n.path, columns - cols(head + suffix))
-    if (path !== null) return head + path + suffix
-  }
-  return `${head}…${tail(n.path, columns - cols(head) - 1)}` // ponytail: a file name wider than the pane loses its start too
+  const suffix = () => parts.map(p => `  ${p}`).join('')
+  const room = () => columns - cols(head + suffix())
+  while (parts.length && cols(n.path) > room() && cols(name) + 1 > room()) parts.pop()
+  const path = cols(n.path) <= room() ? n.path : `…${tail(n.path, room() - 1)}` // ponytail: a file name wider than the pane loses its start too
+  return head + path + suffix()
 }
 
 export function renderList({ Box, Text, Button }: Table, graph: Graph, columns: number, selected: string | null, select: (path: string) => void) {
