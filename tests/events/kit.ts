@@ -9,14 +9,18 @@ export function engine(on: On, fixture: Fixture) {
   const answer = { ref: 0, result: fixture.result, text: '' }
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
-  on('tool.call', () => answer)
+  on('tool.call', (_$, e) => (toolIds.push(e.tool_use_id), answer))
   for (const k of Object.keys(written)) delete written[k]
-  on('state.set', (_$, e, next) => ((written[e.key] = e.value), next(e)))
+  writes.length = toolIds.length = 0
+  on('state.set', (_$, e, next) => ((written[e.key] = e.value), writes.push(e.key), next(e)))
   return answer
 }
 
 // The test `$` has no `state` noun: what the plugin wrote is read through a hook on `state.set`.
 export const written: Record<string, any> = {}
+/** The key of every `state.set`, in order, and the `tool_use_id` of every `tool.call` that reached the bottom. */
+export const writes: string[] = []
+export const toolIds: string[] = []
 export const graphOf = async (): Promise<Graph | undefined> => written.graph
 export const nodeOf = async (path: string): Promise<FileNode | undefined> => (await graphOf())?.files[path]
 export const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
