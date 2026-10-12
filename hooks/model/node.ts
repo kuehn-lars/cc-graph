@@ -28,3 +28,7 @@ export function touch(g: Graph, path: string, turn: number, patch: (old: FileNod
     : change
   return { ...g, seq, files: { ...g.files, [path]: { ...(old ?? fresh(path, turn)), ...merged, ...who, path, lastTurn: turn, touched: seq } } }
 }
+
+/** F15-R9: a change in a worktree says so, unless this tree already has a change of its own (`change` set, `reason` null). */
+export const worktreeReason = (old: FileNode | undefined, worktree?: string): string | null =>
+  worktree && !(old?.change && old.reason === null) ? `in worktree ${worktree}` : null

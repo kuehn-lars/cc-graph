@@ -221,3 +221,34 @@ test('F15-R9 a later main-loop edit sets reason back to null (DERIVED: the recor
   await call(agentEdit, { agentId: undefined, file_path: `${cwd}/src/auth/login.ts` })
   expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', reason: null })
 })
+
+test('F15-AC11 a worktree edit after a main-loop edit of the same file leaves reason null (DERIVED: the recorded Edit as a main-loop row)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentEdit, { agentId: undefined, file_path: `${cwd}/src/auth/login.ts` })
+  await call(agentEdit)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', reason: null })
+})
+
+// DERIVED: `file_unchanged` is not recorded (fixtures/tool-results/README.md); the result comes from the type.
+const unchanged = (row: any) => ({ ...row, result: { ...row.result, result: { type: 'file_unchanged', file: { filePath: row.input.file_path } } } })
+
+test('F15-AC12 a subagent\'s file_unchanged keeps the main loop\'s state and adds the agent id', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadPassword, asMain)
+  const before = (await nodeOf('src/auth/password.ts'))!
+  await call(unchanged(agentReadPassword))
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: before.state, tokens: before.tokens, seen: before.seen, readId: before.readId, mainLoop: true, agents: [AGENT] })
+})
+
+test('F15-AC12 a main-loop file_unchanged on a subagent-only node makes it main loop, read, unchanged since an earlier read', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadPassword)
+  await call(unchanged(agentReadPassword), asMain)
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'read', tokens: null, seen: 'unchanged since an earlier read', mainLoop: true, agents: [AGENT] })
+})
+
+test('F15-AC13 a mention with agentId and no node is subagent only (DERIVED: the mention result)', async ($, on) => {
+  await session($, on)
+  await $.prompt.mention({ mention: 'src/auth/password.ts', path: `${cwd}/src/auth/password.ts`, agentId: AGENT })
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ mainLoop: false, agents: [AGENT] })
+})

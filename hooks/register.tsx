@@ -46,6 +46,12 @@ async function nameAgent($: any, id: string) {
   await update($, AGENTS, as => ({ ...as, [id]: as?.[id] ?? { id, type: row?.type ?? 'agent', description: row?.description ?? id.slice(0, 8) } }))
 }
 
+// F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
+async function record($: StateDollar, action: Action, agentId?: string) {
+  await apply($, agentId ? { ...action, agentId } as Action : action)
+  if (agentId) await nameAgent($, agentId)
+}
+
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
 async function apply($: StateDollar, action: Action) {
   const turn = (await read($, TURN)) ?? 0
@@ -93,10 +99,7 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
-      if (action) {
-        await apply($, e.agentId ? { ...action, agentId: e.agentId } as Action : action)
-        if (e.agentId) await nameAgent($, e.agentId) // F15-R4: a node was touched
-      }
+      if (action) await record($, action, e.agentId)
     }
     return out
   }).catch(($, e, next) => next(e))
@@ -105,7 +108,7 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny) {
       const action = mentionAction(normalize(e.path, cwd), e, out.type ?? null)
-      if (action) await apply($, action)
+      if (action) await record($, action, e.agentId)
     }
     return out
   }).catch(($, e, next) => next(e))

@@ -6,9 +6,14 @@ export type FileRead = { type: 'fileRead'; path: string; state: Extract<NodeStat
 
 export type FileUnchanged = { type: 'fileUnchanged'; path: string; agentId?: string }
 
-// F01-R3: Claude Code says the content is already there, so an existing node stays as it is (a compacted one stays compacted).
-export const fileUnchanged = (g: Graph, a: FileUnchanged, turn: number): Graph =>
-  g.files[a.path] ? g : touch(g, a.path, turn, () => ({ state: 'read', tokens: null, seen: 'unchanged since an earlier read' }), a.agentId)
+// F01-R3: Claude Code says the content is already there, so an existing node keeps its state (a compacted one stays compacted).
+// F15-R1: it is touched only when that changes who holds it: a new agent id, or the main loop on a subagent-only node.
+export const fileUnchanged = (g: Graph, a: FileUnchanged, turn: number): Graph => {
+  const old = g.files[a.path]
+  return old && (a.agentId ? old.agents.includes(a.agentId) : old.mainLoop)
+    ? g
+    : touch(g, a.path, turn, o => (o ? {} : { state: 'read', tokens: null, seen: 'unchanged since an earlier read' }), a.agentId)
+}
 
 export const fileRead = (g: Graph, a: FileRead, turn: number): Graph =>
   touch(g, a.path, turn, old =>
