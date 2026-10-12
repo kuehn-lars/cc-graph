@@ -1,12 +1,14 @@
 import { read, update, type Register, type StateDollar } from 'claude-code'
-import { reduce, type Action } from './model'
+import { emptyGraph, reduce, type Action } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
 import { normalize } from './parse/path'
+import { renderList } from './render/list'
 
 const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
+const PANE = 'cc-graph'
 const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
@@ -30,6 +32,9 @@ export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
+    await $.command.register({
+      name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
+    })
     return out
   }).catch(($, e, next) => next(e))
 
@@ -56,4 +61,15 @@ export const register: Register = on => {
     }
     return out
   }).catch(($, e, next) => next(e))
+
+  on('command.run', { command: 'graph' }, async $ => {
+    const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
+    if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
+    return { text: 'CC Graph opened.' }
+  }).catch(($, e, next) => next(e))
+
+  // NFR-R4: only this plugin's pane. Reads state, never writes.
+  on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    return renderList($.ui.resolve(e), (await read($, GRAPH)) ?? emptyGraph)
+  })
 }
