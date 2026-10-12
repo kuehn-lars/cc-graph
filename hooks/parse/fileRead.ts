@@ -15,9 +15,23 @@ function text(path: string, readId: string, f: TextFile): FileRead {
   }
 }
 
+// F01-R2: what the pane cannot estimate shows as `read` with no tokens and a `seen` that names the kind.
+const opaque = (path: string, readId: string, seen: string): FileRead =>
+  ({ type: 'fileRead', path, readId, state: 'read', tokens: null, seen })
+
 export function readAction(path: string, readId: string, result: ReadResult): FileRead | null {
   switch (result.type) {
     case 'text': return text(path, readId, (result as { file: TextFile }).file)
+    case 'image': return opaque(path, readId, 'image')
+    case 'pdf': return opaque(path, readId, 'PDF')
+    case 'parts': {
+      const { firstPage = 1, file } = result as { firstPage?: number; file?: { count?: number } }
+      return opaque(path, readId, `PDF pages ${firstPage} to ${firstPage + (file?.count ?? 1) - 1}`)
+    }
+    case 'notebook': {
+      const n = (result as { file?: { cells?: unknown[] } }).file?.cells?.length ?? 0
+      return opaque(path, readId, `notebook, ${n} cell${n === 1 ? '' : 's'}`)
+    }
     default: return null
   }
 }
