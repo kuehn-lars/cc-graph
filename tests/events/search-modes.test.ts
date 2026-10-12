@@ -53,6 +53,17 @@ test('F02-AC15 with persistedOutputPath set, only the hits in the preview (text)
   })
 })
 
+// DERIVED: the recorded `text` of a persisted run, cut to a single-file search (`rg verify big.log` prints no path).
+test('F02-R9 the persisted-output wrapper lines in text are no hits of the one path operand', async ($, on) => {
+  const answer = setup(on, '')
+  const text = '<persisted-output>\nOutput too large (71.1KB). Full output saved to: /x/tool-results/b.txt\n\nPreview (first 2KB):\nline 1: verify it\nline 2: verify again\n...\n</persisted-output>'
+  Object.assign(answer, { result: { ...persisted.result, stdout: '' }, text })
+  await start($)
+  await bash($, 'rg verify big.log')
+  const lines = ['line 1: verify it', 'line 2: verify again']
+  expect(await nodeOf('big.log')).toMatchObject({ state: 'search', hits: 2, tokens: Math.ceil(lines.reduce((n, l) => n + l.length, 0) / 4) })
+})
+
 test('F02-R9 without persistedOutputPath, text is not parsed (it also carries stderr)', async ($, on) => {
   const answer = setup(on, out['rg-n-verify-src-auth'].stdout)
   Object.assign(answer, { text: 'src/other/file.ts:1:from stderr\n' + out['rg-n-verify-src-auth'].stdout })

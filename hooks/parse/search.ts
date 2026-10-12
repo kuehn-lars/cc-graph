@@ -158,6 +158,9 @@ export function hitsIn(stdout: string, search: Search): Hits {
   return hits
 }
 
+/** The preview Claude read, less the `<persisted-output>` wrapper around it (F02-R9): its lines are no hits. */
+const preview = (text: string) => text.split('\n').filter(l => !/^(<\/?persisted-output>|Output too large.*|Preview \(first .*\):|\.\.\.)$/.test(l)).join('\n')
+
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
 export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
   const search = searchesIn(command)[0]
@@ -165,6 +168,6 @@ export function searchAction(command: string, readId: string, result: { stdout?:
   const files: Searched['files'] = {}
   // F02-R8: a relative hit is under the search's directory, which is under the session's unless absolute.
   const from = (p: string) => (isAbs(p) ? [p] : isAbs(search.dir ?? '') ? [search.dir, p] : [cwd, search.dir, p]).filter(Boolean).join('/')
-  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? text ?? '' : result.stdout ?? '', search))) files[normalize(from(path), cwd)] = h
+  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[normalize(from(path), cwd)] = h
   return Object.keys(files).length ? { type: 'searched', readId, files } : null
 }
