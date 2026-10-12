@@ -22,15 +22,16 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 
 ## Requirements
 
-- **F02-R1** When a `Bash` call succeeds (no `isError`, `result.interrupted` false) and its command holds a search, the mod parses its output for hits (F02-R9). A search is a command segment (split on `|`, `&&`, `||` and `;`, outside quotes) whose first word after any `NAME=value` assignments is `rg`, `grep`, `egrep` or `fgrep`, or whose first two words are `git grep`.
-- **F02-R2** The mod reads these hit forms, one per line: `path:line:text`, `path:text`, and a bare path for `-l` or `--files-with-matches`. When the search has exactly one path operand and no output line starts with a path, every line is a hit in that operand. A line whose path part has a space, or neither a `/` nor a `.`, is skipped.
-- **F02-R3** When a search's flags make it print no hits (`--files`, `-c` or `--count`, `--json`, `-q`, `-L`), or it reads standard input (it is not the first segment of a pipeline and has no path operand), the mod adds nothing for it.
+- **F02-R1** When a `Bash` call succeeds (no `isError`, `result.interrupted` false) and its command holds a search, the mod parses its output for hits (F02-R9). A search is a command segment (split on `|`, `&&`, `||`, `;` and newlines, outside quotes) whose first word after any `NAME=value` assignments is `rg`, `grep`, `egrep` or `fgrep`, or whose first two words are `git grep`.
+- **F02-R2** The mod reads these hit forms, one per line: `path:line:text`, `path:text`, and a bare path for `-l` or `--files-with-matches`. When the search has exactly one path operand and no output line starts with a path, every line is a hit in that operand. A line whose path part has a space, or neither a `/` nor a `.`, is skipped. A flag's value (`-t ts`, `-g '*.ts'`, `-m 5`) and a redirection (`2>&1`) are not operands, and a pattern given by `-e` or `-f` leaves every operand a path.
+- **F02-R3** When a search's flags make it print no hits (`--files`, `-c`, `--count` or `--count-matches`, `--json`, `-q`, `--files-without-match`, and `-L` for `grep` and `git grep`, where it means the same; for `rg` `-L` is `--follow` and its hits count), or it reads standard input (it is not the first segment of a pipeline and has no path operand), the mod adds nothing for it.
 - **F02-R4** When a hit names a path with no node, or a `ghost`, `compacted` or `unread` node, the mod sets it to `search` with `hits` set to this call's hits. A `read`, `partial` or `search` node keeps its state and adds this call's hits to `hits`. One search call adds one copy: the same line found by two calls counts twice, because Claude's context holds both outputs.
-- **F02-R5** For a node that is `search` after the call, the mod adds `ceil(characters of this call's hit lines / 4)` to `tokens` (a node that just became `search` starts from 0), sets `readId` to the call's `tool_use_id`, and sets `seen` to "N search hits, never opened", or to "N search hits since compaction" when the node became `search` from `compacted`. N is `hits`. A `read` or `partial` node keeps its `tokens`, `seen` and `readId`: the file's own size is what the meter counts.
+- **F02-R5** For a node that is `search` after the call, the mod adds `ceil(characters of this call's hit lines / 4)` to `tokens` (a node that just became `search` starts from 0), sets `readId` to the call's `tool_use_id`, and sets `seen` to "N search hits, never opened", or to "N search hits since compaction" when the node became `search` from `compacted`, and it keeps saying so while later searches add to it. N is `hits`, and "1 search hit" when it is 1. A `read` or `partial` node keeps its `tokens`, `seen` and `readId`: the file's own size is what the meter counts.
 - **F02-R6** When a command holds no search (`ls`, `cat`, `npm test`), the mod adds nothing, even when its output looks like `path:line`.
 - **F02-R7** If the call failed or was interrupted, then the mod adds nothing.
-- **F02-R8** The mod resolves relative hit paths against the working directory, or, when the search segment follows `cd <literal path> &&` in the same command, against that path. If the directory cannot be known (a variable, `cd -`, a subshell), then the mod drops that search's hits.
+- **F02-R8** The mod resolves relative hit paths against the working directory, or, when the search segment follows `cd <literal path> &&` in the same command, against that path. If the directory cannot be known (a variable, `cd -`, a subshell, or a `cd` ended by `;`, a newline or `||`, since the search would run even if the `cd` failed), then the mod drops that search's hits.
 - **F02-R9** The mod parses at most 1,000 lines per call, and only what Claude read: `result.stdout`, or, when `result.persistedOutputPath` is set (the output passed `bashOutputMaxChars` and Claude got a preview of it), the call's `text`. `text` is not used otherwise, because it also carries `stderr`.
+- **F02-R10** When a command holds more than one search that reads files, the mod adds nothing, because their outputs run together and cannot be told apart.
 
 ## Acceptance criteria
 
@@ -49,6 +50,8 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 - **F02-AC13** Given `src/a.ts` is `search` with 2 hits from a search, when the same search runs again, then `hits` is 4, `tokens` is twice what it was, and `readId` is the second call's `tool_use_id`.
 - **F02-AC14** Given `src/a.ts` is `compacted` with 5 hits, when a search hits it twice, then it is `search` with `hits` 2 and `seen` "2 search hits since compaction".
 - **F02-AC15** Given a search result with `persistedOutputPath` set, then only the hits in the preview Claude read (`text`) are counted, none from the rest of `stdout`.
+- **F02-AC16** Given `grep -rL verify src`, then nothing changes; given `rg -L verify src`, its hits count.
+- **F02-AC17** Given `rg -n verify src; rg -n error tests`, then nothing changes.
 
 ## Implementation decisions
 
@@ -82,7 +85,8 @@ Adds the `search` state and the `hits` field. A search node's `readId` is its la
 ## Out of scope
 
 - The `Grep` and `Glob` tools, which native builds do not register. Revisit if a build adds them back.
-- Context lines (`-A`, `-B`, `-C`): their lines are not hits, and `rg` marks them with `-` instead of `:`; they are skipped.
+- Context lines (`-A`, `-B`, `-C`): their lines are not hits, and `rg` marks them with `-` instead of `:`; they are skipped. Known limit: without `-n` a context line whose text holds a `:` looks like a hit.
+- A file at the root with no extension (`Makefile`) in `-l` output: R2 skips a path with neither a `/` nor a `.`, so it is missed, never invented.
 - Searches run by subagents are attributed by F15 like any other touch.
 - Tool-result clearing before a compaction (keep-recent microcompact, clearing after idle): both are behind remote flags, off in 2.1.296, and no event reports them. See 02 Data model, Estimates.
 
@@ -96,3 +100,4 @@ Adds the `search` state and the `hits` field. A search node's `readId` is its la
 - 2026-10-11 Review. Checked against the 2.1.296 types: no `Grep` tool. Added the single-operand form, standard-input and count-only exclusions, `cd` handling, the parse limit, and inline-only output.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Ticketing, from `research-repeated-search.md`: one search call adds one copy and a node back from `compacted` starts again (R4, R5, AC13, AC14); a search node's `readId` is its latest search call and its `seen` says "since compaction" when it came back from `compacted`; a persisted output is parsed from the preview Claude read (R9, AC15). Approved by the owner.
+- 2026-10-12 Review of the implementation, approved by the owner: `-L` depends on the tool (R3, AC16); `--count-matches` and newlines listed (R1, R3); flag values and redirections are not operands (R2); "1 search hit" and the sticky "since compaction" (R5); a `cd` ended by `;`, a newline or `||` drops the hits (R8); a command with two file-reading searches adds nothing (R10, AC17); two known limits under Out of scope.

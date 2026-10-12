@@ -86,7 +86,7 @@ Every key is one digit or one lowercase letter, the only hotkeys a `Button` acce
 - **Seam:** the engine test kit's UI noun. `$.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: 'cc-graph', props })` with `bodyColumns`, `scroll` and `placement`, in a loop over `['terminal', 'desktop'] as const` and, for F08-AC5, `vscode` and `mobile`. Rows are found by key and text with `find`; keys are pressed with `press`.
 - `/graph` is run with `$.command.run({ command: 'graph', args })`; the test's own hooks beneath answer `ui.open`, `ui.toast` and `session.surfaces`.
 - Width is measured in terminal columns over every drawn text (F08-AC3, AC10).
-- **A search node is seeded.** Only F02 produces `search`, so until it ships F08-AC2 seeds the graph as it stands after step 6 (the test's own `state.get` hook beneath the mod, as F01-AC12 does), marked derived. Once F02 ships, the test replays steps 1 to 6 instead.
+- **F08-AC2 replays the reference session.** The test replays steps 1 to 6 (F02 produces the `search` node). Its rows are checked at `bodyColumns` 80: rateLimit.ts's row, with the recorded figures, is wider than the 64 columns of F08-R2, and F08-R6 would cut its path.
 
 ## Mods API used
 
@@ -128,3 +128,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Ticketing. `g` ships in v0.1 and sets `view`, drawn as the list until F09 or F10 ships (F08-AC4 presses it). The meter line of the text summary moves to F03 (F03-AC13), which ships after F08; F08-AC8 checks the counts. F08-AC2 seeds its `search` node until F02 ships. Approved by the owner.
 - 2026-10-12 Manual check. Selecting a row drew nothing until F11's card, so the check could not be seen. Added F08-R13 and F08-AC11: the selected row carries a "▸ " marker. Approved by the owner.
+- 2026-10-12 F02 shipped: F08-AC2 and AC8 replay the reference session instead of seeding; AC2 is checked at `bodyColumns` 80. Approved by the owner.
