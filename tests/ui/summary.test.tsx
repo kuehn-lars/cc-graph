@@ -3,9 +3,8 @@ import editReplaceAll from '../../fixtures/tool-results/edit-replace-all'
 import { expect, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
 import { engine } from '../events/kit'
-import { node, run, seed, ui } from './kit'
+import { node, run, seed, start, ui } from './kit'
 
-const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
 
 // DERIVED: only F02 produces `search`, so the graph is seeded as it stands at RS-1 (after step 3 of the reference session).
 const rs1 = (on: On) => seed(on,

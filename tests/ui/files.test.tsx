@@ -1,9 +1,6 @@
 import { expect, test } from 'claude-code/testing'
-import { PANE_ID, SURFACES, node, paneProps, seed, ui } from './kit'
+import { SURFACES, mount, node, seed, start, ui } from './kit'
 
-const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
-const mount = ($: any, surface: any) =>
-  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps() })
 /** The file rows: Text elements that begin with a state glyph. */
 const rows = async (pane: any): Promise<string[]> =>
   (await pane.findAll({ type: 'Text', text: /^[●◐◌○!⋯] / })).map((r: any) => r.text)
@@ -69,8 +66,6 @@ test('F08-R5 a row reads "≈tokens · seen", and "≈?" when tokens is null', a
 
 /** Terminal columns of a string: 2 for CJK and fullwidth, 1 otherwise. Written apart from the code under test. */
 const cols = (s: string) => [...s].reduce((w, c) => w + (/[ᄀ-ᅟ⺀-꓏가-힣＀-｠]/.test(c) ? 2 : 1), 0)
-const mountAt = ($: any, bodyColumns: number) =>
-  $.ui.mount({ plugin: 'cc-graph', surface: 'terminal', component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns) })
 const drawn = async (pane: any): Promise<string[]> => (await pane.findAll({ type: 'Text' })).map((r: any) => r.text)
 
 /** The file rows' widths as drawn: a Button with a hotkey draws "N: " (3 columns) before its text. */
@@ -89,7 +84,7 @@ test('F08-AC3 at bodyColumns 40, no drawn row is wider than 40 columns, its "N: 
     ...Array.from({ length: 7 }, (_, i) => node(`src/some/deep/folder/file-number-${i}.ts`, 5 + i, { change: 'edited', added: 30, removed: 10 })),
   )
   await start($)
-  const pane = await mountAt($, 40)
+  const pane = await mount($, 'terminal', 40)
   const widths = await rowWidths(pane)
   expect(widths).toHaveLength(11)
   for (const w of widths) expect(w).toBeLessThanOrEqual(40)
@@ -99,7 +94,7 @@ for (const bodyColumns of [20, 30, 40]) {
   test(`F08-R6 at bodyColumns ${bodyColumns} the header (view buttons, "Files", "Nothing read yet.") is not wider than the pane`, async ($, on) => {
     ui(on)
     await start($)
-    const pane = await mountAt($, bodyColumns)
+    const pane = await mount($, 'terminal', bodyColumns)
     // The two view Buttons share one row, each drawing "l: " / "g: " (3 columns) before its label.
     const buttons = (await pane.findAll({ type: 'Button' })).filter((b: any) => b.key.startsWith('view-'))
     expect(buttons).toHaveLength(2)
@@ -112,7 +107,7 @@ test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "�
   ui(on)
   seed(on, node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 }))
   await start($)
-  const r = (await rows(await mountAt($, 30)))[0] ?? ''
+  const r = (await rows(await mount($, 'terminal', 30)))[0] ?? ''
   expect(r.slice(2).split('  ')[0]).toMatch(/^….*rateLimit\.ts$/)
   expect(cols(r)).toBeLessThanOrEqual(30)
 })
@@ -165,7 +160,7 @@ test('F08-R8 each row is a plain Button, and a hotkey row still fits bodyColumns
   ui(on)
   seed(on, node('src/auth/a-very-long-directory-name/sessions.ts', 1, { change: 'edited', added: 3, removed: 1 }))
   await start($)
-  const pane = await mountAt($, 30)
+  const pane = await mount($, 'terminal', 30)
   const [b] = await rowButtons(pane)
   expect(b?.props.plain).toBe(true)
   // A plain Button draws "1: " before its text, so the text gets 3 columns less.

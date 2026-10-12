@@ -1,11 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import type { On } from 'claude-code'
-import { PANE_ID, paneProps, run, ui } from './kit'
+import { SURFACES, mount, run, start, ui } from './kit'
 
-const SURFACES = ['terminal', 'desktop', 'vscode', 'mobile'] as const
-const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
-const mount = ($: any, surface: any) =>
-  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps() })
 
 /** What the mod wrote to `view` (the test `$` has no `state` noun). */
 function viewState(on: On) {

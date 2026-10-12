@@ -1,9 +1,6 @@
 import { expect, test } from 'claude-code/testing'
-import { PANE_ID, SURFACES, paneProps, run, ui } from './kit'
+import { SURFACES, mount, paneProps, run, start, ui } from './kit'
 
-const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
-const mount = ($: any, surface: any) =>
-  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps() })
 
 for (const surface of SURFACES) {
   test(`F08-AC1 /graph opens the pane and an empty graph shows "Nothing read yet." on ${surface}`, async ($, on) => {

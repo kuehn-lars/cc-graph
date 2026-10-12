@@ -3,12 +3,18 @@ import type { On, RenderSurface } from 'claude-code'
 import type { FileNode, Graph } from '../../types'
 
 export const PANE_ID = 'cc-graph'
-export const SURFACES = ['terminal', 'desktop'] as const satisfies readonly RenderSurface[]
+export const SURFACES = ['terminal', 'desktop', 'vscode', 'mobile'] as const satisfies readonly RenderSurface[]
 
 export const paneProps = (bodyColumns = 64) => ({
   title: 'CC Graph', isFocused: true, bodyColumns, placement: 'dock' as const,
   scroll: { offset: 0, bodyRows: 30 }, view: {},
 })
+
+export const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
+
+/** The Pane of this plugin drawn on `surface`, `bodyColumns` wide. */
+export const mount = ($: any, surface: RenderSurface, bodyColumns = 64) =>
+  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns) })
 
 /** The person typing `/graph` (or `/graph <args>`) in the composer of a 160-column fullscreen terminal. */
 export const run = ($: any, args = '') =>
