@@ -10,6 +10,9 @@ import { renderList } from './render/list'
 const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
 const PANE = 'cc-graph'
 const TURN = { plugin: 'cc-graph', key: 'turn' } as const
+const VIEW = { plugin: 'cc-graph', key: 'view' } as const
+
+const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
 let cwd = ''
@@ -62,7 +65,9 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
-  on('command.run', { command: 'graph' }, async $ => {
+  on('command.run', { command: 'graph' }, async ($, e) => {
+    const arg = e.args.trim()
+    if (arg === 'list' || arg === 'graph') await setView($, arg)
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
     if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
     return { text: 'CC Graph opened.' }
@@ -70,6 +75,17 @@ export const register: Register = on => {
 
   // NFR-R4: only this plugin's pane. Reads state, never writes.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
-    return renderList($.ui.resolve(e), (await read($, GRAPH)) ?? emptyGraph)
+    const table = $.ui.resolve(e)
+    const { Box, Button } = table
+    // F08-R10: the renderer follows the table (Raster: F09, Svg: F10, else the list). Neither graph has shipped, so `view` changes nothing drawn yet.
+    return (
+      <Box flexDirection="column">
+        <Box>
+          <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
+          <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
+        </Box>
+        {renderList(table, (await read($, GRAPH)) ?? emptyGraph)}
+      </Box>
+    )
   })
 }
