@@ -21,3 +21,13 @@ export const graphOf = async (): Promise<Graph | undefined> => written.graph
 export const nodeOf = async (path: string): Promise<FileNode | undefined> => (await graphOf())?.files[path]
 export const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
 export const turn = ($: any, id = 't1') => $.turn.start({ text: '', turnId: id })
+
+/** Seeds the graph: a `state.get` hook beneath the mod answers the first read of `graph` with `graph` at version 0, then passes on. The answer is `{ value: StateRead }`, as the kit's own `next(e)` returns it. */
+export function seedGraph(on: On, graph: Graph) {
+  let seeded = false
+  on('state.get', async (_$, e: any, next) => {
+    if (e.key !== 'graph' || seeded) return next(e)
+    seeded = true
+    return { value: { value: graph, version: 0 } } as any
+  })
+}

@@ -15,7 +15,7 @@ Real `tool_use` + `toolUseResult` pairs from Claude Code 2.1.296 (Haiku, `claude
 | `write-create` / `write-update` | `Write` a new `src/middleware/rateLimit.ts` / rewrite `src/api/users.ts` |
 | `notebook-edit` | `NotebookEdit` replacing cell `calc` |
 
-**Not recorded: `file_unchanged`.** In 2.1.296 a repeated `Read` of an unchanged file never answered it, in `claude -p` with Haiku and Sonnet: whole, `offset: 1`, ranged, and a memory file (`CLAUDE.md`), each read twice. The engine has a dedup kill switch (`tengu_read_dedup_killswitch`) that is probably on for this account. The shape from the engine's schema is `{ type: 'file_unchanged', file: { filePath }, source?: 'seeded' }`. A test that needs it must say it is typed from the schema, or record it once the dedup works.
+**Not recorded: `file_unchanged`.** In 2.1.296 a repeated `Read` of an unchanged file never answered it, in `claude -p` with Haiku and Sonnet: whole, `offset: 1`, ranged, and a memory file (`CLAUDE.md`), each read twice. The engine has a dedup kill switch (`tengu_read_dedup_killswitch`) that is probably on for this account. The shape from the engine's schema is `{ type: 'file_unchanged', file: { filePath }, source?: 'seeded' }`. `file-unchanged.ts` is therefore DERIVED from that type (the recorded `read-whole` call with the `file_unchanged` result), not recorded; its header says so and the tests that use it say so. Replace it with a recording once a build returns one.
 
 ## Record again
 

@@ -1,11 +1,12 @@
 import readWhole from '../../fixtures/tool-results/read-whole'
+import readRanged from '../../fixtures/tool-results/read-ranged'
 import { expect, test } from 'claude-code/testing'
 import { engine, graphOf, nodeOf, start, turn } from './kit'
 
-// No recording exists for `prompt.mention`: it carries no tool output, and the result `{ type }` is typed from index.d.ts.
+// DERIVED: no recording exists for `prompt.mention`; it carries no tool output, and the result `{ type }` is typed from index.d.ts.
 const mention = ($: any, input: any) => $.prompt.mention({ mention: input.mention ?? input.path, ...input })
 // The test's bottom hooks (cwd, turns, tool calls) plus a `prompt.mention` that resolves to `result`.
-const answerMentions = (on: any, result: any) => (engine(on, readWhole), on('prompt.mention', () => result), result)
+const answerMentions = (on: any, result: any, fixture: any = readWhole) => (engine(on, fixture), on('prompt.mention', () => result), result)
 
 test('F01-AC9 @src/b.ts is read, "mentioned by you", tokens null', async ($, on) => {
   const answer = answerMentions(on, { type: 'file' })
@@ -44,12 +45,52 @@ test('F01-R7 a mention that resolves null leaves the graph unchanged', async ($,
   expect(await graphOf()).toBe(undefined)
 })
 
-test('F01-R7 a ranged mention of a file Claude read sets partial with tokens null', async ($, on) => {
+for (const [kind, fixture] of [['read', readWhole], ['partial', readRanged]] as const)
+  test(`F01-AC18 a mention of a ${kind} node only updates lastTurn and touched`, async ($, on) => {
+    answerMentions(on, { type: 'file' }, fixture)
+    await start($)
+    await turn($, 't1')
+    await $.tool.call({ tool: 'Read', file_path: '/w/src/b.ts' })
+    const before = await nodeOf('src/b.ts')
+    expect(before?.state).toBe(kind)
+    await turn($, 't2')
+    await mention($, { mention: 'src/b.ts#L10-20', path: '/w/src/b.ts', offset: 10, limit: 11 })
+    expect(await nodeOf('src/b.ts')).toEqual({ ...before!, lastTurn: 2, touched: 2 })
+  })
+
+test('F01-AC19 a mention of a ghost makes it read', async ($, on) => {
+  const answer = answerMentions(on, { type: 'pdf_reference' })
+  await start($)
+  await mention($, { path: '/w/src/b.ts' })
+  expect((await nodeOf('src/b.ts'))?.state).toBe('ghost')
+  answer.type = 'file'
+  await mention($, { path: '/w/src/b.ts' })
+  expect(await nodeOf('src/b.ts')).toMatchObject({ state: 'read', seen: 'mentioned by you', tokens: null })
+})
+
+test('F01-AC20 a mention with offset and no limit is partial, "from line 10"', async ($, on) => {
   answerMentions(on, { type: 'file' })
   await start($)
-  await $.tool.call({ tool: 'Read', file_path: '/w/src/b.ts' })
-  await mention($, { path: '/w/src/b.ts', offset: 10, limit: 11 })
-  expect(await nodeOf('src/b.ts')).toMatchObject({ state: 'partial', seen: 'lines 10 to 20, mentioned by you', tokens: null, touched: 2 })
+  await mention($, { path: '/w/src/b.ts', offset: 10 })
+  expect(await nodeOf('src/b.ts')).toMatchObject({ state: 'partial', seen: 'from line 10, mentioned by you', tokens: null })
+})
+
+test('F01-AC21 a mention with limit and no offset is partial, "lines 1 to 20"', async ($, on) => {
+  answerMentions(on, { type: 'file' })
+  await start($)
+  await mention($, { path: '/w/src/b.ts', limit: 20 })
+  expect(await nodeOf('src/b.ts')).toMatchObject({ state: 'partial', seen: 'lines 1 to 20, mentioned by you', tokens: null })
+})
+
+test('F01-AC22 a pdf_reference mention of an existing node only updates lastTurn and touched', async ($, on) => {
+  answerMentions(on, { type: 'pdf_reference' })
+  await start($)
+  await turn($, 't1')
+  await $.tool.call({ tool: 'Read', file_path: '/w/docs/spec.pdf' })
+  const before = await nodeOf('docs/spec.pdf')
+  await turn($, 't2')
+  await mention($, { path: '/w/docs/spec.pdf' })
+  expect(await nodeOf('docs/spec.pdf')).toEqual({ ...before!, lastTurn: 2, touched: 2 })
 })
 
 test('F01-R8 a denied mention leaves the graph unchanged', async ($, on) => {

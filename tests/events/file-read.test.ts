@@ -1,8 +1,10 @@
 import readWhole from '../../fixtures/tool-results/read-whole'
 import readRanged from '../../fixtures/tool-results/read-ranged'
 import readTokenCapped from '../../fixtures/tool-results/read-token-capped'
+import fileUnchanged from '../../fixtures/tool-results/file-unchanged'
 import { expect, test } from 'claude-code/testing'
-import { engine, graphOf, nodeOf, start, turn } from './kit'
+import type { FileNode } from '../../types'
+import { engine, graphOf, nodeOf, seedGraph, start, turn } from './kit'
 
 const read = ($: any, file_path: string) => $.tool.call({ tool: 'Read', file_path })
 
@@ -67,4 +69,42 @@ test('F01-AC10 /w/src/a.ts becomes src/a.ts, /etc/hosts stays absolute', async (
   await read($, '/w/src/a.ts')
   await read($, '/etc/hosts')
   expect(Object.keys((await graphOf())!.files).sort()).toEqual(['/etc/hosts', 'src/a.ts'])
+})
+
+test('F01-AC17 a partial read over a read node keeps read, tokens, seen and readId of the whole read', async ($, on) => {
+  const answer = engine(on, readWhole)
+  await start($)
+  await read($, '/w/src/auth/login.ts')
+  const whole = await nodeOf('src/auth/login.ts')
+  answer.result = readRanged.result as any
+  await read($, '/w/src/auth/login.ts')
+  const n = await nodeOf('src/auth/login.ts')
+  expect(n).toMatchObject({ state: 'read', tokens: whole!.tokens, seen: '49 lines', readId: whole!.readId })
+  expect(n!.touched).toBe(2)
+})
+
+// DERIVED: `file_unchanged` is not recorded (fixtures/tool-results/README.md); the result comes from the type.
+test('F01-AC12 a compacted node answered file_unchanged stays compacted', async ($, on) => {
+  const answer = engine(on, fileUnchanged)
+  // Only F03 produces `compacted`, so the graph is seeded: the first read of `graph` answers a graph holding the node.
+  const compacted: FileNode = {
+    path: 'src/auth/login.ts', state: 'compacted', change: null, reason: null, tokens: 414, seen: '49 lines', hits: 0, added: 0, removed: 0,
+    line: null, readId: 'toolu_seed', agents: [], mainLoop: true, firstTurn: 0, lastTurn: 0, touched: 5,
+  }
+  seedGraph(on, { seq: 5, files: { 'src/auth/login.ts': compacted }, edges: [], decisions: [], compactions: [] })
+  await start($)
+  await read($, '/w/src/auth/login.ts')
+  // Another event writes the graph: the node is as seeded, not touched, not read.
+  answer.result = readWhole.result as any
+  await read($, '/w/src/other.ts')
+  expect((await graphOf())?.files['src/auth/login.ts']).toEqual(compacted)
+  expect(await nodeOf('src/other.ts')).toMatchObject({ state: 'read', touched: 6 })
+})
+
+// DERIVED: see above.
+test('F01-AC23 file_unchanged on a path with no node makes it read, tokens null, "unchanged since an earlier read"', async ($, on) => {
+  engine(on, fileUnchanged)
+  await start($)
+  await read($, '/w/src/a.ts')
+  expect(await nodeOf('src/a.ts')).toMatchObject({ state: 'read', tokens: null, seen: 'unchanged since an earlier read' })
 })
