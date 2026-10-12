@@ -8,8 +8,9 @@ Requirements: F01-R10, NFR-R1.
 
 **Blocked by:** 03 Non-text reads and file_unchanged, 04 Edits and notebook edits, 05 Writes and the created mark, 06 @-mentioned files
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] The reference session fixture is recorded, including the five re-attachments from spike S1
-- [ ] F01-AC8 every tool call of the reference session returns the same object the hook beneath returned
-- [ ] The check command passes
+- [x] The reference session fixture is recorded, including the five re-attachments from spike S1
+- [x] F01-AC8 every tool call of the reference session returns the same object the hook beneath returned
+  (The hook returns an equal object, compared with `toStrictEqual`; the kit hands a test a copy, so identity cannot be observed. See the test's comment.)
+- [x] The check command passes

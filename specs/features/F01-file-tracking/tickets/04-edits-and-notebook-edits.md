@@ -6,9 +6,9 @@ Requirements: F01-R4, F01-R5, F01-R8.
 
 **Blocked by:** 02 Text Read becomes a node
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F01-AC4 a `read` node stays `read`, `edited`, +3 −1
-- [ ] F01-AC14 `replace_all` with three one-line hunks gives +3 −3
-- [ ] A staged `Edit` and a `NotebookEdit` with `error` leave the graph unchanged
-- [ ] The check command passes
+- [x] F01-AC4 a `read` node stays `read`, `edited`, +3 −1
+- [x] F01-AC14 `replace_all` with three one-line hunks gives +3 −3
+- [x] A staged `Edit` and a `NotebookEdit` with `error` leave the graph unchanged
+- [x] The check command passes

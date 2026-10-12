@@ -6,10 +6,10 @@ Requirements: F01-R6, F01-R8.
 
 **Blocked by:** 02 Text Read becomes a node, 04 Edits and notebook edits (F01-AC6 runs an Edit after a create)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F01-AC5 a create `Write` of 12 lines is `read`, `created`, +12
-- [ ] F01-AC6 an `Edit` after the create keeps `created`
-- [ ] F01-AC13 a staged `Write` leaves the graph unchanged
-- [ ] An update `Write` with an empty patch adds no lines (F01-R6)
-- [ ] The check command passes
+- [x] F01-AC5 a create `Write` of 12 lines is `read`, `created`, +12
+- [x] F01-AC6 an `Edit` after the create keeps `created`
+- [x] F01-AC13 a staged `Write` leaves the graph unchanged
+- [x] An update `Write` with an empty patch adds no lines (F01-R6)
+- [x] The check command passes
