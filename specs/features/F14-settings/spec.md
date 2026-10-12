@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
+| Verified | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
 
 ## Problem
 
@@ -100,3 +100,4 @@ None.
 - 2026-10-13 F14-Q1 closed: the engine refuses an out-of-range `maxNodes` at load, so AC5 asserts the refusal.
 - 2026-10-13 Implemented for v0.1: only `maxNodes` ships (AC1, AC3, AC5, AC8). Manual check steps 1 and 2 walked with the owner in a terminal and in the desktop app; step 3 waits for v0.4. A raised `maxNodes` takes effect at the next write to `graph` (R6), so the footer note stays until the next tool call. AC2, AC4, AC6 and AC7 follow with their fields.
 - 2026-10-13 AC2, AC4, AC6 and AC7 marked "(from vX.Y)" so an Implemented F14 does not need tests for fields that ship later (trace rule, specs/README.md). AC3 gets a kit test of the `userConfig` bound; `claude plugin validate` stays in the check command.
+- 2026-10-13 Verified for v0.1: CI green on PR #10.
