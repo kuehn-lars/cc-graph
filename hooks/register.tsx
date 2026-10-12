@@ -18,6 +18,14 @@ async function apply($: StateDollar, action: Action) {
   await update($, GRAPH, g => reduce(g, action, turn))
 }
 
+// The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit', (e: any, result: any) => Action | null> = {
+  Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r),
+  Edit: (e, r) => editAction(normalize(e.file_path, cwd), r),
+  Write: (e, r) => writeAction(normalize(e.file_path, cwd), r),
+  NotebookEdit: (e, r) => notebookEditAction(normalize(e.notebook_path, cwd), r),
+}
+
 export const register: Register = on => {
   on('session.start', async ($, e, next) => {
     const out = await next(e)
@@ -31,37 +39,10 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
-  on('tool.call', { tool: 'Read' }, async ($, e, next) => {
+  on('tool.call', { tool: /^(Read|Edit|Write|NotebookEdit)$/ }, async ($, e: any, next) => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
-      const action = readAction(normalize(e.file_path, cwd), e.tool_use_id, out.result)
-      if (action) await apply($, action)
-    }
-    return out
-  }).catch(($, e, next) => next(e))
-
-  on('tool.call', { tool: 'Edit' }, async ($, e, next) => {
-    const out = await next(e)
-    if (!out.deny && !out.isError && out.result) {
-      const action = editAction(normalize(e.file_path, cwd), out.result)
-      if (action) await apply($, action)
-    }
-    return out
-  }).catch(($, e, next) => next(e))
-
-  on('tool.call', { tool: 'Write' }, async ($, e, next) => {
-    const out = await next(e)
-    if (!out.deny && !out.isError && out.result) {
-      const action = writeAction(normalize(e.file_path, cwd), out.result)
-      if (action) await apply($, action)
-    }
-    return out
-  }).catch(($, e, next) => next(e))
-
-  on('tool.call', { tool: 'NotebookEdit' }, async ($, e, next) => {
-    const out = await next(e)
-    if (!out.deny && !out.isError && out.result) {
-      const action = notebookEditAction(normalize(e.notebook_path, cwd), out.result)
+      const action = parsers[e.tool as keyof typeof parsers](e, out.result)
       if (action) await apply($, action)
     }
     return out

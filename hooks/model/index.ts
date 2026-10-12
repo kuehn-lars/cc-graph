@@ -1,9 +1,8 @@
-// Pure reducers: (graph, action, turn) -> graph. A later F01 ticket adds its action to `Action` and one `case`.
+// Pure reducers: (graph, action, turn) -> graph.
 import type { Graph } from '../../types'
 import { fileEdited, type FileEdited } from './fileEdited'
 import { fileRead, type FileRead } from './fileRead'
 import { fileWritten, type FileWritten } from './fileWritten'
-
 import { mention, type Mention } from './mention'
 
 export type Action = FileRead | FileEdited | FileWritten | Mention

@@ -8,13 +8,13 @@ The session transcript keeps each call's `toolUseResult`, which is the result a 
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** partly done (no real `file_unchanged` could be recorded in Claude Code 2.1.296, so that box stays open)
 
-- [ ] A whole text `Read`, a ranged `Read` and a `Read` with `truncatedByTokenCap` are recorded
-- [ ] An image `Read` and a `file_unchanged` answer are recorded
-- [ ] A whole `pdf` `Read`, a `parts` `Read` of a page range, and a `notebook` `Read` are recorded
-- [ ] An `Edit` with `replace_all` whose patch has several hunks is recorded
-- [ ] A `Write` with `type: 'create'` and a `Write` that updates a file are recorded
-- [ ] A successful `NotebookEdit` is recorded
-- [ ] Each recording keeps its `tool_use_id`, its input and its result exactly as the session produced them
-- [ ] The fixtures say how to record them again
+- [x] A whole text `Read`, a ranged `Read` and a `Read` with `truncatedByTokenCap` are recorded
+- [ ] An image `Read` and a `file_unchanged` answer are recorded (image done; no real `file_unchanged`, see `fixtures/tool-results/README.md`)
+- [x] A whole `pdf` `Read`, a `parts` `Read` of a page range, and a `notebook` `Read` are recorded
+- [x] An `Edit` with `replace_all` whose patch has several hunks is recorded
+- [x] A `Write` with `type: 'create'` and a `Write` that updates a file are recorded
+- [x] A successful `NotebookEdit` is recorded
+- [x] Each recording keeps its `tool_use_id`, its input and its result exactly as the session produced them
+- [x] The fixtures say how to record them again

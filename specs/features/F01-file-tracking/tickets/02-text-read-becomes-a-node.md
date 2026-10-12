@@ -13,7 +13,7 @@ Requirements: F01-R1, F01-R8, F01-R9, F01-R10, F01-R11.
 
 **Blocked by:** 01 Record the F01 tool-result fixtures
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F01-AC1 whole read is `read`, "120 lines", tokens = ceil(length / 4)
 - [x] F01-AC2 ranged read is `partial`, "lines 1 to 40 of 120"

@@ -6,10 +6,10 @@ Requirements: F01-R7, F01-R9, F01-R10, F01-R11.
 
 **Blocked by:** 02 Text Read becomes a node
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F01-AC9 `@src/b.ts` is `read`, "mentioned by you", `tokens: null`
-- [ ] F01-AC15 `@src/b.ts#L10-20` with offset 10, limit 11 is `partial`, "lines 10 to 20, mentioned by you"
-- [ ] F01-AC16 a `pdf_reference` mention is a `ghost` and the meter is unchanged
-- [ ] A mention that resolves `null` leaves the graph unchanged
-- [ ] The check command passes
+- [x] F01-AC9 `@src/b.ts` is `read`, "mentioned by you", `tokens: null`
+- [x] F01-AC15 `@src/b.ts#L10-20` with offset 10, limit 11 is `partial`, "lines 10 to 20, mentioned by you"
+- [x] F01-AC16 a `pdf_reference` mention is a `ghost` and the meter is unchanged
+- [x] A mention that resolves `null` leaves the graph unchanged
+- [x] The check command passes
