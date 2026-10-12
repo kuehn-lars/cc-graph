@@ -1,5 +1,6 @@
 // Shared setup for UI tests: the Pane props the engine would hand the hook, and the test's own hooks beneath.
 import type { On, RenderSurface } from 'claude-code'
+import type { FileNode, Graph } from '../../types'
 
 export const PANE_ID = 'cc-graph'
 export const SURFACES = ['terminal', 'desktop'] as const satisfies readonly RenderSurface[]
@@ -23,4 +24,19 @@ export function ui(on: On, placed: { isPlaced: true } | { isPlaced: false; reaso
   on('ui.open', (_$, e) => (opened.push(e), { value: placed }))
   on('ui.toast', (_$, e) => (toasts.push(e.text), { value: undefined }))
   return { opened, toasts, registered }
+}
+
+/** A file node with the fields a test does not care about filled in. `touched` orders the list. */
+export const node = (path: string, touched: number, over: Partial<FileNode> = {}): FileNode => ({
+  path, state: 'read', change: null, reason: null, tokens: 100, seen: '10 lines', hits: 0, added: 0, removed: 0, line: null,
+  readId: null, agents: [], mainLoop: true, firstTurn: 1, lastTurn: 1, touched, ...over,
+})
+
+/** The test's own `state.get` hook beneath the mod: every read of `graph` answers a graph holding these nodes. */
+export function seed(on: On, ...nodes: FileNode[]) {
+  const graph: Graph = {
+    seq: Math.max(0, ...nodes.map(n => n.touched)),
+    files: Object.fromEntries(nodes.map(n => [n.path, n])), edges: [], decisions: [], compactions: [],
+  }
+  on('state.get', async (_$, e: any, next) => (e.key === 'graph' ? ({ value: { value: graph, version: 0 } } as any) : next(e)))
 }
