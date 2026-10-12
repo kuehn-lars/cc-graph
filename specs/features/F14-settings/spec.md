@@ -41,13 +41,14 @@ A handful of settings appear in `/config` with a title and a description, each w
 
 ## Acceptance criteria
 
-- **F14-AC1** `test(name, { options: { maxNodes: 20 } }, …)` keeps at most 20 file nodes through the reference session, evicting by I5, and keeps every changed file.
+- **F14-AC1** `test(name, { options: { maxNodes: 20 } }, …)` keeps at most 20 file nodes through the wide session (a recording that touches more than 20 files and changes some), evicting by I5, and keeps every changed file.
 - **F14-AC2** With `captureThinking: false`, no note is stored and `turn.step` still passes every chunk.
 - **F14-AC3** With the `userConfig` block, `claude plugin validate --json .` reports no error and no warning about `userConfig`.
 - **F14-AC4** With `blindSpots: false`, a replay of the reference session raises no `process.run`.
 - **F14-AC5** Given `maxNodes: 500` reaches `register`, then the cap is 200.
 - **F14-AC6** Given `editorCommand` `idea --line {line} {path}`, the path `/w/a b.ts` and line 7, then the arguments are `['idea', '--line', '7', '/w/a b.ts']`.
 - **F14-AC7** Given `editorCommand` `zed`, then pressing `o` on `src/a.ts` in `/w` runs `['zed', '/w/src/a.ts']`.
+- **F14-AC8** With `maxNodes: 20`, a session that changes more than 20 files keeps every changed file, and the footer says how many files the graph holds over the cap.
 
 ## Implementation decisions
 
@@ -93,3 +94,4 @@ None.
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the manifest schema (`title` and `description` are required). Each field now ships with its feature; "off" means "not registered"; added empty and `{path}`-less editor commands, and the argument rule shared with F11.
 - 2026-10-11 Approved by the owner.
+- 2026-10-13 AC1 runs on a wide recording: the reference session touches 13 files, so a cap of 20 never bites and the test could not fail first. Added AC8 for the over-cap footer note I5 asks for. Approved by the owner.
