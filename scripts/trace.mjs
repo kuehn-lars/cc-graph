@@ -25,7 +25,8 @@ for (const f of files('specs', /spec\.md$/).filter(f => !f.includes('_template')
   if (status < STATUS.indexOf('Approved')) continue
   const add = (id, isRequired) => tested.has(id) || (isRequired ? required : pending).push(`${id}  (${f})`)
 
-  for (const [, id] of text.matchAll(/^- \*\*(F\d+-AC\d+)\*\*/gm)) add(id, status >= STATUS.indexOf('Implemented'))
+  for (const [, id, from] of text.matchAll(/^- \*\*(F\d+-AC\d+)\*\*(?: \(from (v\d+\.\d+)\))?/gm))
+    add(id, status >= STATUS.indexOf('Implemented') && (!from || milestone(from) <= current))
   for (const [, id, from] of text.matchAll(/^\| (NFR-[A-Z]\d+) \|.*\| (v\d+\.\d+) \|$/gm)) add(id, milestone(from) <= current)
   const rsFrom = {}
   for (const [, ids, from] of text.matchAll(/(RS-\d+(?: and RS-\d+)*) from (v\d+\.\d+)/g))
