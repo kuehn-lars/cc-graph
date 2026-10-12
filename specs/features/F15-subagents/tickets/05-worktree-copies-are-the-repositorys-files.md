@@ -14,11 +14,11 @@ Requirements: F15-R9, I4 (02 Data model).
 
 **Touches:** path normalization, the change reducers, the list row. It overlaps with 03 in the reducers: run it after 03, or rebase onto it.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Parser cases: `/w/.claude/worktrees/agent-a1/src/a.ts` with cwd `/w` gives `src/a.ts` and worktree `agent-a1`; `/w/.claude/worktrees/` alone, and `.claude/worktrees` outside the cwd, stay as I4 had them
-- [ ] F15-AC9 a subagent's read of `/w/.claude/worktrees/agent-a1/src/a.ts` is node `src/a.ts`
-- [ ] F15-AC10 a subagent's edit there: `src/b.ts` edited, `reason` "in worktree agent-a1", the row says "worktree"
-- [ ] The recorded worktree agent's `Read`, `rg` and `Edit` of `src/auth/login.ts` make one node, and no `.claude/worktrees/…` node
-- [ ] A later main-loop edit sets `reason` to `null`
-- [ ] The check command passes
+- [x] Parser cases: `/w/.claude/worktrees/agent-a1/src/a.ts` with cwd `/w` gives `src/a.ts` and worktree `agent-a1`; `/w/.claude/worktrees/` alone, and `.claude/worktrees` outside the cwd, stay as I4 had them
+- [x] F15-AC9 a subagent's read of `/w/.claude/worktrees/agent-a1/src/a.ts` is node `src/a.ts`
+- [x] F15-AC10 a subagent's edit there: `src/b.ts` edited, `reason` "in worktree agent-a1", the row says "worktree"
+- [x] The recorded worktree agent's `Read`, `rg` and `Edit` of `src/auth/login.ts` make one node, and no `.claude/worktrees/…` node
+- [x] A later main-loop edit sets `reason` to `null`
+- [x] The check command passes

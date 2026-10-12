@@ -16,7 +16,7 @@ Requirements: F15-R6, F15-R8.
 
 **Touches:** the node helper and the reducers in the model. Ticket 05 also adds to the reducers (the worktree `reason`), so when both run in parallel worktrees, merge this one first and rebase 05.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F15-AC2 a subagent-only `a.ts`, then a main-loop read: in the meter, the agent's id still in `agents`
 - [x] F15-AC7 a main-loop `a.ts` compacted, then a subagent's read: still `compacted` with its `readId`, the id added, the meter unchanged
