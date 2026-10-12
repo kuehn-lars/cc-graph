@@ -95,3 +95,8 @@ test('F03-R1 a search node whose latest call is kept stays search; ghost and unr
     'src/s.ts': 'search', 'src/t.ts': 'compacted', 'src/g.ts': 'ghost', 'src/u.ts': 'unread', 'src/o.ts': 'read',
   })
 })
+
+test('F15-AC5 a subagent only read node stays read through a main-loop compaction', async ($, on) => {
+  await compact($, on, graphWith(node('src/a.ts', { mainLoop: false, agents: ['ag1'] }), node('src/b.ts', {})), { messages: noToolUse })
+  expect(await states()).toEqual({ 'src/a.ts': 'read', 'src/b.ts': 'compacted' })
+})

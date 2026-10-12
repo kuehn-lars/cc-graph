@@ -2,7 +2,7 @@
 import type { Graph } from '../../types'
 import { touch } from './node'
 
-export type FileEdited = { type: 'fileEdited'; path: string; added: number; removed: number; line: number | null }
+export type FileEdited = { type: 'fileEdited'; path: string; added: number; removed: number; line: number | null; agentId?: string }
 
 export const fileEdited = (g: Graph, a: FileEdited, turn: number): Graph =>
   touch(g, a.path, turn, old => ({
@@ -12,4 +12,4 @@ export const fileEdited = (g: Graph, a: FileEdited, turn: number): Graph =>
     added: (old?.added ?? 0) + a.added,
     removed: (old?.removed ?? 0) + a.removed,
     line: a.line ?? old?.line ?? null,
-  }))
+  }), a.agentId)

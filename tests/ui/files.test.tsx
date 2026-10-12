@@ -167,3 +167,12 @@ test('F08-AC11 after pressing 3 only the third row begins with the marker; press
   await press('1')
   expect(await slots(pane)).toEqual(['▸ ', '  ', '  ', '  '])
 })
+
+test('F15-R2 a subagent only row says "agent"; a main loop row does not', async ($, on) => {
+  ui(on)
+  seed(on, node('a/main', 1), node('a/sub', 2, { mainLoop: false, agents: ['ag1'] }))
+  await start($)
+  const got = await rows(await mount($, 'terminal'))
+  expect(got.find(r => r.includes(' a/sub'))).toMatch(/\bagent\b/)
+  expect(got.find(r => r.includes(' a/main'))).not.toMatch(/\bagent\b/)
+})

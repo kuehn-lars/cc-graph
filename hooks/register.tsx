@@ -74,7 +74,7 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
-      if (action) await apply($, action)
+      if (action) await apply($, e.agentId ? { ...action, agentId: e.agentId } as Action : action)
     }
     return out
   }).catch(($, e, next) => next(e))

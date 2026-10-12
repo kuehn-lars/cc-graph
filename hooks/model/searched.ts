@@ -2,7 +2,7 @@
 import type { Graph } from '../../types'
 import { touch } from './node'
 
-export type Searched = { type: 'searched'; readId: string; files: Record<string, { hits: number; chars: number }> }
+export type Searched = { type: 'searched'; readId: string; files: Record<string, { hits: number; chars: number }>; agentId?: string }
 
 export const searched = (g: Graph, a: Searched, turn: number): Graph =>
   Object.entries(a.files).reduce((g, [path, h]) => touch(g, path, turn, old => {
@@ -17,4 +17,4 @@ export const searched = (g: Graph, a: Searched, turn: number): Graph =>
       tokens: (again ? old.tokens ?? 0 : 0) + Math.ceil(h.chars / 4),
       seen: `${hits} search hit${hits === 1 ? '' : 's'}${sinceCompaction ? ' since compaction' : ', never opened'}`,
     }
-  }), g)
+  }, a.agentId), g)

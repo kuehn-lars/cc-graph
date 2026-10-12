@@ -6,9 +6,14 @@ const fresh = (path: string, turn: number): FileNode => ({
   line: null, readId: null, agents: [], mainLoop: true, firstTurn: turn, lastTurn: turn, touched: 0,
 })
 
-/** Creates the node when missing, merges `patch(old)` over it, stamps `lastTurn` and `touched`, bumps `seq`. */
-export function touch(g: Graph, path: string, turn: number, patch: (old: FileNode | undefined) => Partial<FileNode>): Graph {
+/**
+ * Creates the node when missing, merges `patch(old)` over it, stamps `lastTurn` and `touched`, bumps `seq`.
+ * F15-R1: a call from an agent adds its id to `agents` once, and a node it creates is subagent only; a call without one sets `mainLoop`.
+ */
+export function touch(g: Graph, path: string, turn: number, patch: (old: FileNode | undefined) => Partial<FileNode>, agentId?: string): Graph {
   const old = g.files[path]
   const seq = g.seq + 1
-  return { ...g, seq, files: { ...g.files, [path]: { ...(old ?? fresh(path, turn)), ...patch(old), path, lastTurn: turn, touched: seq } } }
+  const agents = old?.agents ?? []
+  const who = { agents: agentId && !agents.includes(agentId) ? [...agents, agentId] : agents, mainLoop: agentId ? old?.mainLoop ?? false : true }
+  return { ...g, seq, files: { ...g.files, [path]: { ...(old ?? fresh(path, turn)), ...patch(old), ...who, path, lastTurn: turn, touched: seq } } }
 }
