@@ -16,6 +16,8 @@ const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
+const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
+
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
 let cwd = ''
 
@@ -71,7 +73,7 @@ export const register: Register = on => {
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
     // F08-R4 / NFR-C3: where nothing draws, answer in text and open nothing.
-    if ((await $.session.surfaces()).length === 0) return { text: summarize((await read($, GRAPH)) ?? emptyGraph) }
+    if ((await $.session.surfaces()).length === 0) return { text: summarize(await readGraph($)) }
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
     if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
     return { text: 'CC Graph opened.' }
@@ -88,7 +90,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, (await read($, GRAPH)) ?? emptyGraph, e.props.bodyColumns, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), e.props.bodyColumns, path => update($, SELECTED, () => path))}
       </Box>
     )
   })
