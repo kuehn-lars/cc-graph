@@ -1,0 +1,9 @@
+{
+  "name": "cc-graph",
+  "version": "0.0.0",
+  "description": "A live graph of what Claude Code knows, read and changed",
+  "author": {
+    "name": "Lars Kühn"
+  },
+  "types": "./types/index.d.ts"
+}

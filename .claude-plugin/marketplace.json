@@ -1,0 +1,8 @@
+{
+  "name": "cc-graph",
+  "description": "A live graph of what Claude Code knows, read and changed",
+  "owner": { "name": "Lars Kühn" },
+  "plugins": [
+    { "name": "cc-graph", "source": "./", "category": "visualization", "tags": ["mod", "context", "graph"] }
+  ]
+}
