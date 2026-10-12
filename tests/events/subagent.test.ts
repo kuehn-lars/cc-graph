@@ -46,7 +46,7 @@ test('F15-AC3 a subagent edits login.ts: change edited, the agent id in agents (
   expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', mainLoop: false, agents: [agentEdit.input.agentId] })
 })
 
-test('a subagent search makes subagent only search nodes', async ($, on) => {
+test('F15-R1 a subagent search makes subagent only search nodes', async ($, on) => {
   const { call } = await session($, on)
   await call(rg)
   const files = Object.values((await graphOf())!.files)
@@ -54,7 +54,7 @@ test('a subagent search makes subagent only search nodes', async ($, on) => {
   for (const n of files) expect(n).toMatchObject({ state: 'search', mainLoop: false, agents: [AGENT] })
 })
 
-test('a second call by the same agent does not repeat its id in agents', async ($, on) => {
+test('F15-R1 a second call by the same agent does not repeat its id in agents', async ($, on) => {
   const { call } = await session($, on)
   await call(rg)
   await call(agentReadPassword)
@@ -62,7 +62,7 @@ test('a second call by the same agent does not repeat its id in agents', async (
   expect((await nodeOf('src/auth/password.ts'))!.agents).toEqual([AGENT])
 })
 
-test('every subagent call is one write of graph and returns what the handler beneath returned', async ($, on) => {
+test('F15-R1 every subagent call is one write of graph and returns what the handler beneath returned', async ($, on) => {
   const { call } = await session($, on)
   await call(agentReadPassword)
   await call(rg)
