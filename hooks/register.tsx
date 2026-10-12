@@ -15,6 +15,13 @@ const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 
+// F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
+const resetState = async ($: StateDollar) => {
+  await update($, GRAPH, () => emptyGraph)
+  await update($, TURN, () => 0)
+  await update($, SELECTED, () => null)
+}
+
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
@@ -44,6 +51,12 @@ export const register: Register = on => {
     await $.command.register({
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
+    return out
+  }).catch(($, e, next) => next(e))
+
+  on('classic.SessionStart', async ($, e, next) => {
+    const out = await next(e)
+    if (e.source === 'clear' || e.source === 'resume' || e.source === 'fork') await resetState($)
     return out
   }).catch(($, e, next) => next(e))
 
