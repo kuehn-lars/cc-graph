@@ -18,9 +18,9 @@ Requirements: F15-R6, F15-R8.
 
 **Status:** ready-for-agent
 
-- [ ] F15-AC2 a subagent-only `a.ts`, then a main-loop read: in the meter, the agent's id still in `agents`
-- [ ] F15-AC7 a main-loop `a.ts` compacted, then a subagent's read: still `compacted` with its `readId`, the id added, the meter unchanged
-- [ ] F15-AC8 a subagent's whole read, then a main-loop read of lines 1 to 40: `partial` with the main loop's tokens, `seen` and `readId`
-- [ ] A subagent's search of a main-loop `read` node leaves its `hits`; a main-loop search of a subagent-only `read` node makes it `search`
-- [ ] A subagent-only edited node, then a main-loop read: `read`, still `edited` with its line counts
-- [ ] The check command passes
+- [x] F15-AC2 a subagent-only `a.ts`, then a main-loop read: in the meter, the agent's id still in `agents`
+- [x] F15-AC7 a main-loop `a.ts` compacted, then a subagent's read: still `compacted` with its `readId`, the id added, the meter unchanged
+- [x] F15-AC8 a subagent's whole read, then a main-loop read of lines 1 to 40: `partial` with the main loop's tokens, `seen` and `readId`
+- [x] A subagent's search of a main-loop `read` node leaves its `hits`; a main-loop search of a subagent-only `read` node makes it `search`
+- [x] A subagent-only edited node, then a main-loop read: `read`, still `edited` with its line counts
+- [x] The check command passes
