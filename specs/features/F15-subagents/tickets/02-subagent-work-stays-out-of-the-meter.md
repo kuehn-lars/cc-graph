@@ -20,13 +20,13 @@ Requirements: F15-R1, F15-R2 (the list part), F15-R3, F15-R5.
 
 **Touches:** the `tool.call` hook, the action types, the node helper, the list row. Tickets 03, 04 and 05 build on the agent id this ticket passes through, so merge it first.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F15-AC1 a subagent's read of `a.ts`: subagent only, the meter line unchanged
-- [ ] F15-AC3 a subagent's edit of `b.ts`: `change: edited`, the agent's id in `agents`
-- [ ] F15-AC5 a subagent-only `read` node stays `read` through a main-loop compaction
-- [ ] A subagent's search (`Bash` `rg`) makes subagent-only `search` nodes
-- [ ] A second call by the same agent does not repeat its id in `agents`
-- [ ] The list row of a subagent-only node says "agent"; a main-loop row does not
-- [ ] Every case returns what the handler beneath returned, with one `update` of `graph` per call
-- [ ] The check command passes
+- [x] F15-AC1 a subagent's read of `a.ts`: subagent only, the meter line unchanged
+- [x] F15-AC3 a subagent's edit of `b.ts`: `change: edited`, the agent's id in `agents`
+- [x] F15-AC5 a subagent-only `read` node stays `read` through a main-loop compaction
+- [x] A subagent's search (`Bash` `rg`) makes subagent-only `search` nodes
+- [x] A second call by the same agent does not repeat its id in `agents`
+- [x] The list row of a subagent-only node says "agent"; a main-loop row does not
+- [x] Every case returns what the handler beneath returned, with one `update` of `graph` per call
+- [x] The check command passes
