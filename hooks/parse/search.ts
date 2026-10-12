@@ -2,14 +2,15 @@
 import type { Searched } from '../model/searched'
 import { normalize } from './path'
 
-export type Search = { tool: string; flags: string[]; operands: string[] }
+/** `dir`: where the search ran. Absent: the session's directory; a path: that of the `cd … &&` before it (F02-R8); `null`: unknown. */
+export type Search = { tool: string; flags: string[]; operands: string[]; dir?: string | null }
 /** Per path: the hit lines found and their characters, without newlines. */
 export type Hits = Record<string, { hits: number; chars: number }>
 
 const TOOLS = ['rg', 'grep', 'egrep', 'fgrep']
 const MAX_LINES = 1000
 
-type Segment = { words: string[]; piped: boolean }
+type Segment = { words: string[]; piped: boolean; sep: string }
 
 /** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `piped`: a `|` precedes the segment. */
 function segments(command: string): Segment[] {
@@ -19,6 +20,7 @@ function segments(command: string): Segment[] {
   let has = false
   let quote = ''
   let piped = false
+  let sep = ''
   const word = () => { if (has) words.push(cur); cur = ''; has = false }
   for (let i = 0; i < command.length; i++) {
     const c = command[i]!
@@ -31,15 +33,16 @@ function segments(command: string): Segment[] {
     else if (c === "'" || c === '"') (quote = c), (has = true)
     else if (c === ';' || c === '|' || c === '\n' || (c === '&' && command[i + 1] === '&')) {
       word()
-      out.push({ words, piped })
+      out.push({ words, piped, sep })
       words = []
       piped = c === '|' && command[i + 1] !== '|'
-      if (c !== ';' && c !== '\n' && command[i + 1] === c) i++
+      sep = c
+      if (c !== ';' && c !== '\n' && command[i + 1] === c) (sep += c), i++
     } else if (/\s/.test(c)) word()
     else (cur += c), (has = true)
   }
   word()
-  out.push({ words, piped })
+  out.push({ words, piped, sep })
   return out
 }
 
@@ -62,11 +65,27 @@ function searchIn({ words: w }: Segment): Search | null {
   return { tool, flags: args.filter(isFlag), operands: args.filter((a, j) => !isFlag(a, j) && j !== end) }
 }
 
-/** F02-R1, R3: the searches of a command, one per segment that holds one, less those reading standard input. */
+const isAbs = (p: string) => /^([a-z]:)?[\\/]/i.test(p)
+
+/** F02-R8: the directory after segment `s`, given the one before it (`undefined`: the session's, `null`: unknown). Only a literal `cd <path>` ended by `&&` is known; a subshell, any other `cd` or separator is not. */
+// ponytail: `cd a && make || rg …` is taken as in a; if the cd failed the search ran elsewhere. Needs a shell to know.
+function dirAfter(dir: string | null | undefined, s: Segment, next: string): string | null | undefined {
+  const [cmd = '', path = ''] = s.words
+  if (/^[({]/.test(cmd)) return null
+  if (cmd !== 'cd') return dir
+  if (s.words.length !== 2 || next !== '&&' || /[$`~*?[{\\]|^-/.test(path)) return null
+  return isAbs(path) ? path : dir === null ? null : dir === undefined ? path : `${dir}/${path}`
+}
+
+/** F02-R1, R3, R8: the searches of a command, one per segment that holds one, less those reading standard input. */
 export function searchesIn(command: string): Search[] {
-  return segments(command).flatMap(s => {
+  const segs = segments(command)
+  let dir: string | null | undefined
+  return segs.flatMap((s, i) => {
     const search = searchIn(s)
-    return search && (!s.piped || hasPath(search)) ? [search] : []
+    const here = dir
+    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
+    return search && (!s.piped || hasPath(search)) ? [here === undefined ? search : { ...search, dir: here }] : []
   })
 }
 
@@ -86,8 +105,10 @@ export function hitsIn(stdout: string, _search: Search): Hits {
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
 export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean }, cwd: string): Searched | null {
   const search = searchesIn(command)[0]
-  if (!search || result.interrupted) return null
+  if (!search || search.dir === null || result.interrupted) return null
   const files: Searched['files'] = {}
-  for (const [path, h] of Object.entries(hitsIn(result.stdout ?? '', search))) files[normalize(path, cwd)] = h
+  // F02-R8: a relative hit is under the search's directory, which is under the session's unless absolute.
+  const from = (p: string) => (isAbs(p) ? [p] : isAbs(search.dir ?? '') ? [search.dir, p] : [cwd, search.dir, p]).filter(Boolean).join('/')
+  for (const [path, h] of Object.entries(hitsIn(result.stdout ?? '', search))) files[normalize(from(path), cwd)] = h
   return Object.keys(files).length ? { type: 'searched', readId, files } : null
 }

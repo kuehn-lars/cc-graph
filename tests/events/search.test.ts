@@ -153,3 +153,46 @@ test('F02-R3 a search reading standard input adds nothing even when its output l
   await bash($, 'cat log.txt | rg -n x')
   expect(await graphOf()).toBe(undefined)
 })
+
+// Ticket 04: hits under cd. The stdout is the capture run in src (`rg -n verify auth` with cwd src), which is what
+// `cd src && rg -n verify auth` prints; the compound commands are composed from the capture's command.
+const inSrc = out['rg-n-verify-auth-in-src']
+
+test('F02-AC8 cd src && rg -n verify auth gives src/auth/password.ts', async ($, on) => {
+  const { answer } = setup(on, inSrc.stdout)
+  await start($)
+  expect(await bash($, `cd src && ${inSrc.command}`)).toEqual(answer)
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'search', hits: 2, seen: '2 search hits, never opened' })
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'search', hits: 2 })
+  expect((await graphOf())!.files['auth/login.ts']).toBe(undefined)
+})
+
+test('F02-R8 an absolute cd inside the working directory gives the same nodes', async ($, on) => {
+  setup(on, inSrc.stdout)
+  await start($)
+  await bash($, `cd /w/src && ${inSrc.command}`)
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'search', hits: 2 })
+})
+
+test('F02-R8 an absolute cd outside the working directory keeps absolute paths', async ($, on) => {
+  setup(on, inSrc.stdout)
+  await start($)
+  await bash($, `cd /elsewhere && ${inSrc.command}`)
+  expect(await nodeOf('/elsewhere/auth/password.ts')).toMatchObject({ state: 'search', hits: 2 })
+})
+
+test('F02-R8 two cds in a row join', async ($, on) => {
+  setup(on, 'login.ts:2:x\n')
+  await start($)
+  await bash($, 'cd src && cd auth && rg -n x .')
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'search', hits: 1 })
+})
+
+// DERIVED: the capture's stdout under commands whose directory cannot be known; no run of them is recorded.
+for (const command of [`cd $DIR && ${inSrc.command}`, `cd - && ${inSrc.command}`, `(cd src && ${inSrc.command})`])
+  test(`F02-R8 a search after an unknown directory changes nothing: ${command}`, async ($, on) => {
+    const { answer } = setup(on, inSrc.stdout)
+    await start($)
+    expect(await bash($, command)).toEqual(answer)
+    expect(await graphOf()).toBe(undefined)
+  })
