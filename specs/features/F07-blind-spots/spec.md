@@ -99,10 +99,11 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 
 ## Open questions
 
-- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's.
+- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's. Not observed in spike S1 ([spike-s1.md](../F03-context-layer/spike-s1.md)): a file read whole and then changed outside Claude raised no `edited_text_file` in 2.1.296, headless or interactive, and the transcript held none either. F07-R7 is unconfirmed until a run shows the attachment. Untried: a connected IDE, a change other than an append, a file read with a range.
 - [ ] **F07-Q2** Can the `Bash` result's per-command change list (`bashEditDiff.changedFiles`, typed `@internal` in 2.1.296, "for rendering and for PostToolUse Bash hooks") replace the `git status` baseline? It would catch re-changed files and need no `git`. Spike S4: record it for `npm install`, a formatter and `rm` in `fixtures/sample-app`, then decide; an internal field is only used behind a fallback.
 
 ## Changelog
 
 - 2026-10-11 Draft. Adds `edited_text_file`, verified as a `prompt.attachment` type in 2.1.296.
 - 2026-10-11 Review. Added the repository-root step, hit confirmation, clearing blind edges, baseline refresh at `turn.start`, change precedence, the off-path queue, the timeout note, the `blindSpots` switch, and the known re-change limit with spike S4.
+- 2026-10-12 F07-Q1 stays open: spike S1 saw no `edited_text_file`, so F07-R7 is unconfirmed in 2.1.296.
