@@ -1,24 +1,9 @@
 import wide from '../../fixtures/sessions/wide'
 import { expect, test } from 'claude-code/testing'
-import { graphOf, observe } from '../events/kit'
-
-// Replays every recorded process of the wide session: each starts a session and a turn, then sends its tool calls.
-async function replayWide($: any, on: any) {
-  const answer = { ref: 0, result: null as any, text: '' }
-  on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
-  on('turn.start', (_$: any, e: any) => ({ turnId: e.turnId }))
-  on('tool.call', () => answer)
-  observe(on)
-  for (const row of wide.events) {
-    if (row.event === 'session.start') await $.session.start(row.input)
-    else if (row.event === 'turn.start') await $.turn.start(row.input)
-    else (Object.assign(answer, row.result), await $.tool.call(row.input))
-  }
-}
+import { graphOf, replayAll } from '../events/kit'
 
 test('F14-AC1 a cap of 20 holds the wide session to 20 files and keeps the three changed ones', { options: { maxNodes: 20 } }, async ($, on) => {
-  on('session.start', (_$, e) => ({ cwd: e.cwd }))
-  await replayWide($, on)
+  await replayAll($, on, wide)
   const files = Object.values((await graphOf())!.files)
   expect(files).toHaveLength(20)
   // I5: all 26 are `read` or changed, so the oldest reads go: m01 to m06 (turn 1, first touched).
@@ -28,7 +13,6 @@ test('F14-AC1 a cap of 20 holds the wide session to 20 files and keeps the three
 })
 
 test('F14-AC1 at the default cap of 60 the wide session loses nothing', async ($, on) => {
-  on('session.start', (_$, e) => ({ cwd: e.cwd }))
-  await replayWide($, on)
+  await replayAll($, on, wide)
   expect(Object.keys((await graphOf())!.files).length).toBe(26)
 })
