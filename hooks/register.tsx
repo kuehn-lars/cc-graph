@@ -1,6 +1,7 @@
 import { read, update, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
+import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
@@ -13,11 +14,21 @@ const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
 const PANE = 'cc-graph'
 const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
+const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
+
+// F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
+const resetState = async ($: StateDollar) => {
+  await update($, GRAPH, () => emptyGraph)
+  await update($, TURN, () => 0)
+  await update($, SELECTED, () => null)
+  await update($, FILL, () => null)
+}
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
+const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
 let cwd = ''
@@ -47,6 +58,12 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
+  on('classic.SessionStart', async ($, e, next) => {
+    const out = await next(e)
+    if (e.source === 'clear' || e.source === 'resume' || e.source === 'fork') await resetState($)
+    return out
+  }).catch(($, e, next) => next(e))
+
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
@@ -71,11 +88,36 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
+  // F03-R4: the window's real fill, stored as reported.
+  on('session.measure', async ($, e, next) => {
+    const out = await next(e)
+    if (e.changed.includes('context')) await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F03-R1, R8: a compaction that stands, of the main loop. A subagent's (agentId), a skip and a precompute change nothing.
+  on('session.compact', async ($, e, next) => {
+    const out = await next(e)
+    if (out.messages && !e.agentId && e.trigger !== 'precompute') {
+      const keptIds = out.messages.flatMap(m => m.toolUses.map(t => t.tool_use_id))
+      await apply($, { type: 'compacted', keptIds, trigger: e.trigger, tokensBefore: out.tokensBefore ?? null, tokensAfter: out.tokensAfter ?? null })
+    }
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F03-R3: a file Claude Code re-attached after a compaction. The reducer skips every node but a compacted one.
+  on('prompt.attachment', { type: 'file' }, async ($, e, next) => {
+    const out = await next(e)
+    const action = e.agentId ? null : reattachedAction(e.text, cwd)
+    if (action) await apply($, action)
+    return out
+  }).catch(($, e, next) => next(e))
+
   on('command.run', { command: 'graph' }, async ($, e) => {
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
     // F08-R4 / NFR-C3: where nothing draws, answer in text and open nothing.
-    if ((await $.session.surfaces()).length === 0) return { text: summarize(await readGraph($)) }
+    if ((await $.session.surfaces()).length === 0) return { text: summarize(await readGraph($), await readFill($)) }
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
     if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
     return { text: 'CC Graph opened.' }
@@ -92,7 +134,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), await readFill($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

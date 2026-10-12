@@ -1,6 +1,7 @@
 // Pure: the list view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
-import type { FileNode, Graph, NodeState } from '../../types'
+import type { FileNode, Fill, Graph, NodeState } from '../../types'
+import { meterLine } from './meter'
 import { cols, tail } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
@@ -33,10 +34,14 @@ function row(n: FileNode, columns: number) {
   return head + path + suffix()
 }
 
-export function renderList({ Box, Text, Button }: Table, graph: Graph, columns: number, selected: string | null, select: (path: string) => void) {
+// F08-R6: the meter is cut from its end and closed by "…". ponytail: the line is ASCII plus "≈ · –", one column each; no width table.
+const fit = (line: string, columns: number) => (cols(line) <= columns ? line : `${[...line].slice(0, columns - 1).join('')}…`)
+
+export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, columns: number, selected: string | null, select: (path: string) => void) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   return (
     <Box flexDirection="column">
+      <Text>{fit(meterLine(graph, fill), columns)}</Text>
       <Text bold>Files</Text>
       {files.length === 0 && <Text dimColor>Nothing read yet.</Text>}
       {files.map((n, i) => (

@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
+| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
 
 ## Problem
 
@@ -29,7 +29,8 @@ The pane always describes the conversation on screen. A compaction hollows every
 - **F03-R3** When a main-loop `prompt.attachment` of `type: 'file'` names a `compacted` node, the mod sets that node to `read` with `seen` "re-attached after compaction" and `tokens` from the attachment text. The path is the `file_path` of the JSON object on the text's first line, normalized by I4 (F03-Q1). A re-attached memory file, such as a nested `CLAUDE.md`, also arrives as a `file` attachment; it is not a `compacted` file node, so this requirement leaves it alone.
 - **F03-R4** When `session.measure` reports `context` among `changed`, the mod stores `fill` as `{ tokens, window, percent }` from `e.context`, with `null` for a figure that is absent.
 - **F03-R5** The meter shows the estimated tokens of the files in context (I1), marked "≈", the count of files with unknown size, and the window's real fill, for example "≈12.4k in 7 files (+2 unknown) · window 41% of 200k".
-- **F03-R6** While no measurement has reported a fill, the meter shows the window part as "window –".
+- **F03-R6** While no measurement has reported a fill, or one reported without `percent`, the meter shows the window part as "window –".
+- **F03-R5a** A count below 1,000 reads as the plain number ("850"); from 1,000 it reads in thousands with one decimal and no trailing ".0" ("12.4k", "200k", "1k").
 - **F03-R7** When `classic.SessionStart` fires with `source` `clear`, `resume` or `fork`, the mod resets every key to its empty value except `view` (02 Data model, Reset). A `startup` or `compact` source changes nothing.
 - **F03-R8** If a compaction carries `agentId`, then the mod changes no node (I7).
 - **F03-R9** The text summary `/graph` answers where nothing draws (F08-R4) starts with the meter line.
@@ -100,3 +101,5 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 - 2026-10-12 F03-Q1 answered by spike S1; F03-R3 names where the path is read from and that a re-attached memory file is left alone. Approved by the owner.
 - 2026-10-12 F03-R9, AC13: the meter line of F08's text summary moves here, since F08 ships first. Approved by the owner.
 - 2026-10-12 F02 ticketing: a search node's `readId` is its latest search call, so F03-R1 keeps it when the compaction keeps that call. No requirement changes. Approved by the owner.
+- 2026-10-12 Meter wording settled with the owner: number format (F03-R5a) and a fill without `percent` (F03-R6). No criteria change.
+- 2026-10-12 Implemented. Manual check walked with the owner in a terminal; every criterion has a passing test. Re-attached files reach the pane on the next request, not at the compaction (spike S1).
