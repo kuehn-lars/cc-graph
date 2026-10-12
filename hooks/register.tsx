@@ -1,5 +1,5 @@
-import { read, update, type Register, type StateDollar } from 'claude-code'
-import { emptyGraph, reduce, type Action } from './model'
+import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
+import { emptyGraph, reduce, type Action, type FileAction } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
@@ -39,16 +39,16 @@ let cwd = ''
 const named = new Set<string>()
 
 // The name is written by its own update, outside the call that writes `graph` (I9). An id the list does not name is "agent".
-async function nameAgent($: any, id: string) {
+async function nameAgent($: Pick<CoreEngineInterface, 'state' | 'agent'>, id: string) {
   if (named.has(id)) return
   named.add(id)
-  const row = (await $.agent.list().catch(() => [])).find((a: any) => a.id === id)
+  const row = (await $.agent.list().catch(() => [])).find(a => a.id === id)
   await update($, AGENTS, as => ({ ...as, [id]: as?.[id] ?? { id, type: row?.type ?? 'agent', description: row?.description ?? id.slice(0, 8) } }))
 }
 
 // F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
-async function record($: StateDollar, action: Action, agentId?: string) {
-  await apply($, agentId ? { ...action, agentId } as Action : action)
+async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: FileAction, agentId?: string) {
+  await apply($, agentId ? { ...action, agentId } : action)
   if (agentId) await nameAgent($, agentId)
 }
 
@@ -59,13 +59,13 @@ async function apply($: StateDollar, action: Action) {
 }
 
 // F15-R9: a change made in a worktree carries its name.
-const inWorktree = <A extends Action | null>(a: A, path: string): A => {
+const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
   const worktree = worktreeOf(path, cwd)
   return a && worktree ? { ...a, worktree } : a
 }
 
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
-const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => Action | null> = {
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r),
   Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r), e.file_path),
   Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r), e.file_path),
