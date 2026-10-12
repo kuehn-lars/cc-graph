@@ -126,3 +126,30 @@ test('F02-R7 an errored search changes nothing and returns what the handler bene
   expect(await bash($, rgN.command)).toStrictEqual(answer)
   expect(await graphOf()).toBe(undefined)
 })
+
+// Ticket 02: searches inside pipelines and chains.
+// DERIVED: the sample app has no `lint` script, so the stdout is the captured `rg -n verify src | head -20`.
+test('F02-AC5 npm run lint && rg -n verify src | head -20 counts the hits in the output', async ($, on) => {
+  const head = out['rg-n-verify-src-head']
+  const { answer } = setup(on, head.stdout)
+  await start($)
+  expect(await bash($, `npm run lint && ${head.command}`)).toEqual(answer)
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'search', hits: 2, seen: '2 search hits, never opened' })
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'search', hits: 2 })
+})
+
+test('F02-AC11 cat log.txt | rg -n error changes nothing', async ($, on) => {
+  const log = out['cat-log-rg-n-error']
+  const { answer } = setup(on, log.stdout)
+  await start($)
+  expect(await bash($, log.command)).toEqual(answer)
+  expect(await graphOf()).toBe(undefined)
+})
+
+// DERIVED: a standard-input search whose output looks like hits; no real run prints path lines for stdin.
+test('F02-R3 a search reading standard input adds nothing even when its output looks like hits', async ($, on) => {
+  setup(on, 'src/a.ts:3:x\n')
+  await start($)
+  await bash($, 'cat log.txt | rg -n x')
+  expect(await graphOf()).toBe(undefined)
+})
