@@ -1,11 +1,11 @@
-import { read, update, type Register, type StateDollar } from 'claude-code'
-import { emptyGraph, reduce, type Action } from './model'
+import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
+import { emptyGraph, reduce, type Action, type FileAction } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
-import { normalize } from './parse/path'
+import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -16,6 +16,7 @@ const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
 const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
+const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -23,6 +24,8 @@ const resetState = async ($: StateDollar) => {
   await update($, TURN, () => 0)
   await update($, SELECTED, () => null)
   await update($, FILL, () => null)
+  await update($, AGENTS, () => ({}))
+  named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
@@ -32,6 +35,22 @@ const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
 let cwd = ''
+// F15-R4: agent ids already asked for, marked before the list is awaited so parallel calls ask once. A reload asks again, and keeps a name already stored (the list forgets ended agents).
+const named = new Set<string>()
+
+// The name is written by its own update, outside the call that writes `graph` (I9). An id the list does not name is "agent".
+async function nameAgent($: Pick<CoreEngineInterface, 'state' | 'agent'>, id: string) {
+  if (named.has(id)) return
+  named.add(id)
+  const row = (await $.agent.list().catch(() => [])).find(a => a.id === id)
+  await update($, AGENTS, as => ({ ...as, [id]: as?.[id] ?? { id, type: row?.type ?? 'agent', description: row?.description ?? id.slice(0, 8) } }))
+}
+
+// F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
+async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: FileAction, agentId?: string) {
+  await apply($, agentId ? { ...action, agentId } : action)
+  if (agentId) await nameAgent($, agentId)
+}
 
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
 async function apply($: StateDollar, action: Action) {
@@ -39,12 +58,18 @@ async function apply($: StateDollar, action: Action) {
   await update($, GRAPH, g => reduce(g, action, turn))
 }
 
+// F15-R9: a change made in a worktree carries its name.
+const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
+  const worktree = worktreeOf(path, cwd)
+  return a && worktree ? { ...a, worktree } : a
+}
+
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
-const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => Action | null> = {
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r),
-  Edit: (e, r) => editAction(normalize(e.file_path, cwd), r),
-  Write: (e, r) => writeAction(normalize(e.file_path, cwd), r),
-  NotebookEdit: (e, r) => notebookEditAction(normalize(e.notebook_path, cwd), r),
+  Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r), e.file_path),
+  Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r), e.file_path),
+  NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
@@ -74,7 +99,7 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
-      if (action) await apply($, action)
+      if (action) await record($, action, e.agentId)
     }
     return out
   }).catch(($, e, next) => next(e))
@@ -83,7 +108,7 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny) {
       const action = mentionAction(normalize(e.path, cwd), e, out.type ?? null)
-      if (action) await apply($, action)
+      if (action) await record($, action, e.agentId)
     }
     return out
   }).catch(($, e, next) => next(e))

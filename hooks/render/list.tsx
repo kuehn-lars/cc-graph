@@ -26,7 +26,7 @@ const badge = (n: FileNode) =>
 function row(n: FileNode, columns: number) {
   const head = `${GLYPH[n.state]} `
   const name = n.path.slice(n.path.lastIndexOf('/') + 1)
-  const parts = [badge(n), `≈${n.tokens ?? '?'} · ${n.seen}`].filter(Boolean)
+  const parts = [badge(n), n.mainLoop ? '' : 'agent', n.reason?.startsWith('in worktree') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen}`].filter(Boolean)
   const suffix = () => parts.map(p => `  ${p}`).join('')
   const room = () => columns - cols(head + suffix())
   while (parts.length && cols(n.path) > room() && cols(name) + 1 > room()) parts.pop()

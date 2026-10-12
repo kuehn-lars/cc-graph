@@ -1,0 +1,6 @@
+I need you to work through these exact steps, in order. Do not open or search any other files and do not do anything extra.
+
+1. Start one Agent of subagent_type "Explore" with the description "Find uses of verify" and a prompt asking it to find every use of `verify` in this repository: it must run `rg -n verify` and then Read at least two of the files that matched, one of them whole. Wait for its answer.
+2. Read src/auth/login.ts with offset 1 and limit 40 yourself (one Read call).
+3. Start one Agent with isolation "worktree" and the description "Comment login.ts". Its prompt: Read src/auth/login.ts, then use one Edit call to add the single comment line "// Reviewed by the worktree agent." directly above the line starting with "export async function login", then run the Bash command: rg -n verify src/auth. Wait for its answer.
+Then stop and say "done".
