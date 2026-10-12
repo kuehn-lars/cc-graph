@@ -71,6 +71,16 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
+  // F03-R1, R8: a compaction that stands, of the main loop. A subagent's (agentId), a skip and a precompute change nothing.
+  on('session.compact', async ($, e, next) => {
+    const out = await next(e)
+    if (out.messages && !e.agentId && e.trigger !== 'precompute') {
+      const keptIds = out.messages.flatMap(m => m.toolUses.map(t => t.tool_use_id))
+      await apply($, { type: 'compacted', keptIds, trigger: e.trigger, tokensBefore: out.tokensBefore ?? null, tokensAfter: out.tokensAfter ?? null })
+    }
+    return out
+  }).catch(($, e, next) => next(e))
+
   on('command.run', { command: 'graph' }, async ($, e) => {
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
