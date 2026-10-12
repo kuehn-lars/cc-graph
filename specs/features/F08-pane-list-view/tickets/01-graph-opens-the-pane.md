@@ -12,11 +12,11 @@ Requirements: F08-R1, F08-R2 (without the argument), F08-R3, F08-R7 (Files only)
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC1 on `terminal` and `desktop`, `/graph` opens the pane and an empty graph shows "Nothing read yet."
-- [ ] `/graph` is registered at `session.start` with `immediate: true`, its description and the hint `[list|graph]` (F08-R1; no AC of its own, one test)
-- [ ] `$.ui.open` gets `id: 'cc-graph'`, the title, `focus`, `closeOnEscape` and `columns: 64`, and the command answers `{ text: 'CC Graph opened.' }` (F08-R2)
-- [ ] F08-AC7 `isPlaced: false` with "needs 144 columns, has 100" shows the toast "CC Graph is waiting for room: needs 144 columns, has 100"
-- [ ] NFR-R4 a second inline plugin's pane draws its own content beside this one
-- [ ] The check command passes
+- [x] F08-AC1 on `terminal` and `desktop`, `/graph` opens the pane and an empty graph shows "Nothing read yet."
+- [x] `/graph` is registered at `session.start` with `immediate: true`, its description and the hint `[list|graph]` (F08-R1; no AC of its own, one test)
+- [x] `$.ui.open` gets `id: 'cc-graph'`, the title, `focus`, `closeOnEscape` and `columns: 64`, and the command answers `{ text: 'CC Graph opened.' }` (F08-R2)
+- [x] F08-AC7 `isPlaced: false` with "needs 144 columns, has 100" shows the toast "CC Graph is waiting for room: needs 144 columns, has 100"
+- [x] NFR-R4 a second inline plugin's pane draws its own content beside this one
+- [x] The check command passes
