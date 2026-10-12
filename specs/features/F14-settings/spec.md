@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
+| Verified | v0.1, then one field per milestone | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | none |
 
 ## Problem
 
@@ -41,13 +41,16 @@ A handful of settings appear in `/config` with a title and a description, each w
 
 ## Acceptance criteria
 
-- **F14-AC1** `test(name, { options: { maxNodes: 20 } }, …)` keeps at most 20 file nodes through the reference session, evicting by I5, and keeps every changed file.
-- **F14-AC2** With `captureThinking: false`, no note is stored and `turn.step` still passes every chunk.
+A criterion marked "(from vX.Y)" belongs to a field that ships in that milestone; `trace.mjs` lists it as pending until `plugin.json` reaches it.
+
+- **F14-AC1** `test(name, { options: { maxNodes: 20 } }, …)` keeps at most 20 file nodes through the wide session (a recording that touches more than 20 files and changes some), evicting by I5, and keeps every changed file.
+- **F14-AC2** (from v0.4) With `captureThinking: false`, no note is stored and `turn.step` still passes every chunk.
 - **F14-AC3** With the `userConfig` block, `claude plugin validate --json .` reports no error and no warning about `userConfig`.
-- **F14-AC4** With `blindSpots: false`, a replay of the reference session raises no `process.run`.
+- **F14-AC4** (from v0.3) With `blindSpots: false`, a replay of the reference session raises no `process.run`.
 - **F14-AC5** Given `maxNodes: 500` reaches `register`, then the cap is 200.
-- **F14-AC6** Given `editorCommand` `idea --line {line} {path}`, the path `/w/a b.ts` and line 7, then the arguments are `['idea', '--line', '7', '/w/a b.ts']`.
-- **F14-AC7** Given `editorCommand` `zed`, then pressing `o` on `src/a.ts` in `/w` runs `['zed', '/w/src/a.ts']`.
+- **F14-AC6** (from v0.4) Given `editorCommand` `idea --line {line} {path}`, the path `/w/a b.ts` and line 7, then the arguments are `['idea', '--line', '7', '/w/a b.ts']`.
+- **F14-AC7** (from v0.4) Given `editorCommand` `zed`, then pressing `o` on `src/a.ts` in `/w` runs `['zed', '/w/src/a.ts']`.
+- **F14-AC8** With `maxNodes: 20`, a session that changes more than 20 files keeps every changed file, and the footer says how many files the graph holds over the cap.
 
 ## Implementation decisions
 
@@ -59,7 +62,7 @@ A handful of settings appear in `/config` with a title and a description, each w
 ## Testing decisions
 
 - **Seam:** the engine test kit's `test(name, { options }, body)`, which hands the plugin its values as a load does (defaults filled, then validated). F14-AC3 is the CI validate step.
-- F14-AC5 depends on F14-Q1: if the engine refuses an out-of-range value before `register` runs, the test asserts that refusal instead and the clamp stays as defence.
+- F14-AC5 asserts the engine's refusal of an out-of-range value (F14-Q1); the clamp stays as defence and no test reaches it.
 
 ## Mods API used
 
@@ -77,7 +80,7 @@ None.
 
 1. Install the mod from the local marketplace (`claude plugin marketplace add ./`, `claude plugin install cc-graph@cc-graph`) and open `/config`. The fields of the current milestone show with their titles and defaults.
 2. Set `maxNodes` to 20 and run the reference session. The graph holds at most 20 files, and every changed file stays.
-3. Set `editorCommand` to your editor and press `o` on a file with a space in its name.
+3. Set `editorCommand` to your editor and press `o` on a file with a space in its name. *Waits for v0.4, when `editorCommand` ships; not walked in v0.1.*
 
 ## Out of scope
 
@@ -86,10 +89,15 @@ None.
 
 ## Open questions
 
-- [ ] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Does not block: F14-R3 clamps either way, and F14-AC5 records which behaviour the engine has in the red phase of v0.1.
+- [x] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Answered 2026-10-13 on Claude Code 2.1.296: it refuses. The load fails with `options do not fit plugin.json userConfig: Most files in the graph must be at most 200`, and `register` never runs. F14-AC5 asserts that refusal; the clamp of F14-R3 stays as defence.
 
 ## Changelog
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the manifest schema (`title` and `description` are required). Each field now ships with its feature; "off" means "not registered"; added empty and `{path}`-less editor commands, and the argument rule shared with F11.
 - 2026-10-11 Approved by the owner.
+- 2026-10-13 AC1 runs on a wide recording: the reference session touches 13 files, so a cap of 20 never bites and the test could not fail first. Added AC8 for the over-cap footer note I5 asks for. Approved by the owner.
+- 2026-10-13 F14-Q1 closed: the engine refuses an out-of-range `maxNodes` at load, so AC5 asserts the refusal.
+- 2026-10-13 Implemented for v0.1: only `maxNodes` ships (AC1, AC3, AC5, AC8). Manual check steps 1 and 2 walked with the owner in a terminal and in the desktop app; step 3 waits for v0.4. A raised `maxNodes` takes effect at the next write to `graph` (R6), so the footer note stays until the next tool call. AC2, AC4, AC6 and AC7 follow with their fields.
+- 2026-10-13 AC2, AC4, AC6 and AC7 marked "(from vX.Y)" so an Implemented F14 does not need tests for fields that ship later (trace rule, specs/README.md). AC3 gets a kit test of the `userConfig` bound; `claude plugin validate` stays in the check command.
+- 2026-10-13 Verified for v0.1: CI green on PR #10.

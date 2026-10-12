@@ -1,6 +1,8 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
+import { withCapNote } from './model/notes'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
@@ -20,6 +22,7 @@ const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
+const NOTES = { plugin: 'cc-graph', key: 'notes' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -29,6 +32,7 @@ const resetState = async ($: StateDollar) => {
   await update($, FILL, () => null)
   await update($, AGENTS, () => ({}))
   await update($, MEMORY, () => [])
+  await update($, NOTES, () => [])
   named.clear()
 }
 
@@ -66,7 +70,11 @@ async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: F
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
 async function apply($: StateDollar, action: Action) {
   const turn = (await read($, TURN)) ?? 0
-  await update($, GRAPH, g => reduce(g, action, turn))
+  const graph = await update($, GRAPH, g => evict(reduce(g, action, turn), maxNodes)) // I5: the cap is held in the same write
+  // I5: what could not be evicted is said in the footer. A write of `notes` only when the note changes.
+  const files = Object.keys(graph.files).length
+  const notes = (await read($, NOTES)) ?? []
+  if (withCapNote(notes, files, maxNodes) !== notes) await update($, NOTES, ns => withCapNote(ns ?? [], files, maxNodes))
 }
 
 // F15-R9: a change made in a worktree carries its name.
@@ -84,7 +92,11 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
-export const register: Register = on => {
+// F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
+let maxNodes = 60
+
+export const register: Register = (on, options) => {
+  maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
@@ -189,7 +201,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), await readFill($), await readMemory($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), await readFill($), await readMemory($), (await read($, NOTES)) ?? [], e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

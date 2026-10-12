@@ -16,7 +16,7 @@ export function engine(on: On, fixture: Fixture) {
 }
 
 /** Records every `state.set` (see `written`, `writes`) and forgets what an earlier test recorded. */
-function observe(on: On) {
+export function observe(on: On) {
   for (const k of Object.keys(written)) delete written[k]
   writes.length = toolIds.length = 0
   on('state.set', (_$, e, next) => ((written[e.key] = e.value), writes.push(e.key), next(e)))
@@ -40,6 +40,21 @@ export function seedGraph(on: On, graph: Graph) {
     seeded = true
     return { value: { value: graph, version: 0 } } as any
   })
+}
+
+/** Replays every row of a recording made with a probe that logs `session.start`, `turn.start` and `tool.call` (wide.ts, many-changes.ts), each answered beneath the mod as recorded. */
+export async function replayAll($: any, on: On, recording: { events: readonly { event: string; input: any; result: any }[] }) {
+  const answer = { ref: 0, result: null as any, text: '' }
+  on('session.start', (_$, e) => ({ cwd: e.cwd }))
+  on('command.register', (_$, e) => ({ value: { command: e.name } }))
+  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
+  on('tool.call', () => answer)
+  observe(on)
+  for (const row of recording.events) {
+    if (row.event === 'session.start') await $.session.start(row.input)
+    else if (row.event === 'turn.start') await $.turn.start(row.input)
+    else (Object.assign(answer, row.result), await $.tool.call(row.input))
+  }
 }
 
 /**

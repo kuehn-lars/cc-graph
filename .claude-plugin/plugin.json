@@ -5,5 +5,15 @@
   "author": {
     "name": "Lars Kühn"
   },
-  "types": "./types/index.d.ts"
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "maxNodes": {
+      "type": "number",
+      "title": "Most files in the graph",
+      "description": "The graph keeps at most this many files; the oldest unchanged ones leave first. Files Claude changed always stay.",
+      "default": 60,
+      "min": 20,
+      "max": 200
+    }
+  }
 }

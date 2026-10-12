@@ -90,6 +90,22 @@ One `claude -p` run (Haiku, Claude Code 2.1.296, 2026-10-12) in a copy of `fixtu
 3. `node scripts/record-memory-session.mjs fixtures/sessions/memory.ts /tmp/cc-graph-memory/log-*.json`
 4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars" fixtures/sessions/memory.ts` is 0).
 
+## `wide.ts` and `many-changes.ts`: more files than a cap of 20 (F14)
+
+Two recordings (Haiku, Claude Code 2.1.296, 2026-10-13) with the throwaway probe `wide-probe/`, which logs `session.start`, `turn.start` and every `tool.call` and changes nothing. `export default { claudeCode, events }`; each event is `{ process, event, input, result }` in the order the hooks ran. Nothing is edited; `scripts/record-wide-session.mjs` adds `process` and rewrites the home folder to `/home/user`.
+
+- **`wide.ts` (F14-AC1):** a generated project of 30 files (`src/m01.ts` to `src/m30.ts`, four lines each; `m14`, `m20`, `m25` hold a `// TODO` line) in `/private/tmp/claude-501/rec-wide/wide/`. Two `claude -p` processes (`--resume` for the second), prompts `wide-turn1.txt` and `wide-turn2.txt`. Turn 1: `Read` of `m01` to `m13`, then `rg -n "TODO" src`. Turn 2: `Read` of `m14` to `m26`, then three `Edit`s (`m14`, `m20`, `m25`). 30 tool calls: 26 files read over two turns, one search, three changed files. Each process fires `session.start` and one `turn.start`.
+- **`many-changes.ts` (F14-AC8):** one process in a fresh repository holding only a `README.md` (`/private/tmp/claude-501/rec-wide/many/`), prompt `many-changes-turn1.txt`: 24 `Write`s of new files `out/g01.ts` to `out/g24.ts`, every result `type: "create"`. 24 changed files.
+
+How the runs differed from the ticket: the ticket asks for a throwaway config directory, and the runs used the real one, because a throwaway `CLAUDE_CONFIG_DIR` is not logged in (as for `memory.ts`). It has no user `CLAUDE.md` and no rules folder, the copies' paths have no auto-memory, and `--setting-sources project` kept the settings out, so no personal file was in context. The grep in step 4 below is the evidence that no personal text got in; the `/private/tmp/claude-501/…` paths stay in the rows, as in the other recordings. The first attempt never loaded the probe (`on(event, …)` with a variable event name; the engine wants string literals), so its log is not the recording. The generated project and the prompts are the only inputs; the files are not committed (the script writes them).
+
+### Record again
+
+1. `node scripts/record-wide-session.mjs gen /private/tmp/claude-501/rec-wide/wide`, `git init` and commit there. For the second recording make `/private/tmp/claude-501/rec-wide/many` with a `README.md`, `git init`, commit. Empty `/tmp/cc-graph-wide/` before each recording.
+2. From inside the copy: `claude -p --model haiku --setting-sources project --plugin-dir <repo>/fixtures/sessions/wide-probe --permission-mode acceptEdits --session-id <new uuid> --allowedTools "Bash(rg:*)" < /dev/null -- "$(cat <repo>/fixtures/sessions/wide-turn1.txt)"`, then the same with `--resume <that uuid>` and `wide-turn2.txt`. For `many-changes` only the first command, with `many-changes-turn1.txt` and no `--allowedTools`.
+3. `node scripts/record-wide-session.mjs fixtures/sessions/wide.ts 30 /tmp/cc-graph-wide/log-*.json` (the two logs in order of their timestamps), and `… fixtures/sessions/many-changes.ts 24 /tmp/cc-graph-wide/log-*.json`. The number is the tool calls expected.
+4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars\|/Users" fixtures/sessions/wide.ts fixtures/sessions/many-changes.ts` is 0).
+
 ## `spike-s1/`
 
 The five `file` attachment texts and the compaction result captured in spike S1 (F03-Q1); see `specs/features/F03-context-layer/spike-s1.md`.
