@@ -32,6 +32,7 @@ The pane always describes the conversation on screen. A compaction hollows every
 - **F03-R6** While no measurement has reported a fill, the meter shows the window part as "window –".
 - **F03-R7** When `classic.SessionStart` fires with `source` `clear`, `resume` or `fork`, the mod resets every key to its empty value except `view` (02 Data model, Reset). A `startup` or `compact` source changes nothing.
 - **F03-R8** If a compaction carries `agentId`, then the mod changes no node (I7).
+- **F03-R9** The text summary `/graph` answers where nothing draws (F08-R4) starts with the meter line.
 
 ## Acceptance criteria
 
@@ -47,6 +48,7 @@ The pane always describes the conversation on screen. A compaction hollows every
 - **F03-AC10** Given a graph with nodes, when `classic.SessionStart` fires with `source: 'compact'`, then nothing changes.
 - **F03-AC11** Given `src/a.ts` is `compacted`, when a `file` attachment re-attaches it, then it is `read` with `seen` "re-attached after compaction".
 - **F03-AC12** Given no measurement yet, then the meter's window part reads "window –".
+- **F03-AC13** Given no surface is attached and no measurement yet, then `/graph` answers a text whose first line is the meter line, ending "window –".
 
 ## Implementation decisions
 
@@ -96,3 +98,4 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Reads kept in the compaction's messages now survive (F03-AC9); the fill comes from `session.measure`; `source: 'compact'` must not reset (F03-AC10); re-attachment limited to compacted nodes; meter wording fixed.
 - 2026-10-12 F03-Q1 answered by spike S1; F03-R3 names where the path is read from and that a re-attached memory file is left alone. Approved by the owner.
+- 2026-10-12 F03-R9, AC13: the meter line of F08's text summary moves here, since F08 ships first. Approved by the owner.
