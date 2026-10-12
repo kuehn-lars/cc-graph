@@ -60,7 +60,7 @@ A handful of settings appear in `/config` with a title and a description, each w
 ## Testing decisions
 
 - **Seam:** the engine test kit's `test(name, { options }, body)`, which hands the plugin its values as a load does (defaults filled, then validated). F14-AC3 is the CI validate step.
-- F14-AC5 depends on F14-Q1: if the engine refuses an out-of-range value before `register` runs, the test asserts that refusal instead and the clamp stays as defence.
+- F14-AC5 asserts the engine's refusal of an out-of-range value (F14-Q1); the clamp stays as defence and no test reaches it.
 
 ## Mods API used
 
@@ -87,7 +87,7 @@ None.
 
 ## Open questions
 
-- [ ] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Does not block: F14-R3 clamps either way, and F14-AC5 records which behaviour the engine has in the red phase of v0.1.
+- [x] **F14-Q1** Does the engine refuse a `number` value outside its declared `min` and `max` before `register` runs, or pass it through? Answered 2026-10-13 on Claude Code 2.1.296: it refuses. The load fails with `options do not fit plugin.json userConfig: Most files in the graph must be at most 200`, and `register` never runs. F14-AC5 asserts that refusal; the clamp of F14-R3 stays as defence.
 
 ## Changelog
 
@@ -95,3 +95,4 @@ None.
 - 2026-10-11 Review. Checked against the manifest schema (`title` and `description` are required). Each field now ships with its feature; "off" means "not registered"; added empty and `{path}`-less editor commands, and the argument rule shared with F11.
 - 2026-10-11 Approved by the owner.
 - 2026-10-13 AC1 runs on a wide recording: the reference session touches 13 files, so a cap of 20 never bites and the test could not fail first. Added AC8 for the over-cap footer note I5 asks for. Approved by the owner.
+- 2026-10-13 F14-Q1 closed: the engine refuses an out-of-range `maxNodes` at load, so AC5 asserts the refusal.

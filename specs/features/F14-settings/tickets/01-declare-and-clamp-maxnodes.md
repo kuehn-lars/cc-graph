@@ -8,9 +8,9 @@ Only `maxNodes` lands; the other F14 fields ship with their features.
 
 **Blocked by:** None (can start immediately)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F14-AC3: `claude plugin validate --json .` reports no error and no warning about `userConfig` (the check command covers it)
-- [ ] F14-AC5: test named `F14-AC5 …`, failing first, then passing
-- [ ] F14-Q1 ticked in the spec with the observed engine behaviour
-- [ ] The check command passes
+- [x] F14-AC3: `claude plugin validate --json .` reports no error and no warning about `userConfig` (the check command covers it)
+- [x] F14-AC5: test named `F14-AC5 …`, failing first, then passing
+- [x] F14-Q1 ticked in the spec with the observed engine behaviour
+- [x] The check command passes
