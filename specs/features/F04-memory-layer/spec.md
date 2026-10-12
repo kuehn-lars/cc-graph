@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
+| Verified | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
 
 ## Problem
 
@@ -89,3 +89,4 @@ Adds `MemoryNote` (with `reason`) and the `memory` key.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Revised after the ticket 01 recording: the summary breakdown never lists a nested `CLAUDE.md`, so a plain replace (R1) dropped the note R3 adds. R1 keeps notes loaded mid-conversation that the breakdown does not list; R6 sizes a nested note from its `nested_memory` attachment (owner chose this option). Added AC7, AC8, Q2.
 - 2026-10-13 Implemented. Manual check walked with the owner; F04-Q2 answered (nested notes survive a compaction; an explicit `Read` of a nested `CLAUDE.md` loads no memory note).
+- 2026-10-13 Verified: CI green on PR #9.
