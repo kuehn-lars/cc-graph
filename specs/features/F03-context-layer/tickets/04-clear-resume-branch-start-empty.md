@@ -12,9 +12,9 @@ Requirements: F03-R7.
 
 **Status:** ready-for-agent
 
-- [ ] F03-AC8 a graph with nodes and `view: 'graph'`, then `source: 'clear'`: the graph is empty and `view` is still `'graph'`
-- [ ] `resume` and `fork` reset the same way; `turn` and `selected` are emptied too
-- [ ] F03-AC10 `source: 'compact'` changes nothing, nor does `startup`
+- [x] F03-AC8 a graph with nodes and `view: 'graph'`, then `source: 'clear'`: the graph is empty and `view` is still `'graph'`
+- [x] `resume` and `fork` reset the same way; `turn` and `selected` are emptied too
+- [x] F03-AC10 `source: 'compact'` changes nothing, nor does `startup`
 - [ ] If ticket 03 has landed: `fill` is reset to `null`
-- [ ] Every case returns what the handler beneath returned
-- [ ] The check command passes
+- [x] Every case returns what the handler beneath returned
+- [x] The check command passes
