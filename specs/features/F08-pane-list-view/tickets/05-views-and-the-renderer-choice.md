@@ -8,11 +8,11 @@ Requirements: F08-R2 (the argument), F08-R9 (`l`, `g`), F08-R10, F08-R11, NFR-C2
 
 **Blocked by:** 01 `/graph` opens the pane
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F08-AC4 pressing `l` then `g` switches `view`, and the choice survives a second `session.start`
-- [ ] F08-AC5 on `vscode` and `mobile`, with `view: 'graph'`, the list is drawn
-- [ ] `/graph list` and `/graph graph` set `view`; any other argument leaves it (F08-R2; one test)
-- [ ] NFR-C2 the pane draws without error on all four surfaces
-- [ ] NFR-A2 `l` and `g` are pressed by a UI test
-- [ ] The check command passes
+- [x] F08-AC4 pressing `l` then `g` switches `view`, and the choice survives a second `session.start`
+- [x] F08-AC5 on `vscode` and `mobile`, with `view: 'graph'`, the list is drawn
+- [x] `/graph list` and `/graph graph` set `view`; any other argument leaves it (F08-R2; one test)
+- [x] NFR-C2 the pane draws without error on all four surfaces
+- [x] NFR-A2 `l` and `g` are pressed by a UI test
+- [x] The check command passes
