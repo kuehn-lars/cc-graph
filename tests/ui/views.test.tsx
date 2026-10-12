@@ -63,3 +63,13 @@ test('F08-R2 /graph list and /graph graph set view; any other argument leaves it
   await run($)
   expect(seen.written).toEqual(['graph', 'list'])
 })
+
+test('F08-R2 /graph list sets view even when no surface is attached, and still answers in text', async ($, on) => {
+  const { opened } = ui(on, undefined, [])
+  const seen = viewState(on)
+  await start($)
+  const out = await run($, 'list')
+  expect(seen.written).toEqual(['list'])
+  expect(opened).toEqual([])
+  expect(out.text).toBe('Nothing read yet.')
+})
