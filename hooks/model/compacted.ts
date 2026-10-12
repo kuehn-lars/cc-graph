@@ -3,7 +3,7 @@ import type { CompactMark, FileNode, Graph } from '../../types'
 
 export type Compacted = { type: 'compacted'; keptIds: string[]; trigger: CompactMark['trigger']; tokensBefore: number | null; tokensAfter: number | null }
 
-const inContext = (n: FileNode) => n.mainLoop && (n.state === 'read' || n.state === 'partial' || n.state === 'search')
+export const inContext = (n: FileNode) => n.mainLoop && (n.state === 'read' || n.state === 'partial' || n.state === 'search')
 
 export const compacted = (g: Graph, a: Compacted, turn: number): Graph => {
   // Only in-context nodes change; `touched` and `seq` stay, since no file was touched.
