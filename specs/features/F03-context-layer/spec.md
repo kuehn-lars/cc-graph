@@ -52,7 +52,7 @@ The pane always describes the conversation on screen. A compaction hollows every
 
 ## Implementation decisions
 
-- **Kept messages decide what survives.** A compaction's result is the conversation afterwards: the summary plus the messages Claude Code kept verbatim. A read whose tool use is among them is still in context. Storing each node's `readId` makes that check exact and cheap.
+- **Kept messages decide what survives.** A compaction's result is the conversation afterwards: the summary plus the messages Claude Code kept verbatim. A read whose tool use is among them is still in context, and so is a search whose call is among them (a search node's `readId` is its latest search call, F02-R5). Storing each node's `readId` makes that check exact and cheap.
 - **Re-attached files only revive compacted nodes.** `file` attachments also carry `@` mentions, which F01 already handles through `prompt.mention`; limiting F03-R3 to compacted nodes keeps the two from double-counting.
 - **`session.measure` over polling.** The engine pushes the fill after each main-thread turn, only when it moved, at no cost. Polling `$.session.usage()` at `turn.complete` would read the same figures later.
 - **Reset on `classic.SessionStart`.** `/clear` raises `session.end` with `reason: 'clear'` and no new `session.start` (that event fires once per load), so the classic event, which carries `source`, is the one signal for every new conversation. Its `compact` source fires after every compaction and must not reset. The reset is explicit, so it holds whether or not the host keeps `$.state` across `/clear`.
@@ -99,3 +99,4 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 - 2026-10-11 Review. Checked against the 2.1.296 types. Reads kept in the compaction's messages now survive (F03-AC9); the fill comes from `session.measure`; `source: 'compact'` must not reset (F03-AC10); re-attachment limited to compacted nodes; meter wording fixed.
 - 2026-10-12 F03-Q1 answered by spike S1; F03-R3 names where the path is read from and that a re-attached memory file is left alone. Approved by the owner.
 - 2026-10-12 F03-R9, AC13: the meter line of F08's text summary moves here, since F08 ships first. Approved by the owner.
+- 2026-10-12 F02 ticketing: a search node's `readId` is its latest search call, so F03-R1 keeps it when the compaction keeps that call. No requirement changes. Approved by the owner.

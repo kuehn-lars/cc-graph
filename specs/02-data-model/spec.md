@@ -39,7 +39,7 @@ export type FileNode = {
   added: number              // lines added by Claude's edits and writes
   removed: number            // lines removed by them
   line: number | null        // first line of the latest change, for "open in editor" (F11)
-  readId: string | null      // tool_use_id of the read that put the file in context (F03)
+  readId: string | null      // tool_use_id of the read, or a search node's latest search, that put it in context (F01, F02, F03)
   agents: string[]           // ids of subagents that touched it (F15)
   mainLoop: boolean          // the main conversation touched it (F15)
   firstTurn: number
@@ -144,8 +144,8 @@ declare module 'claude-code' {
 | Ranged or token-capped text `Read`; `@` mention of a line range | any but `read` | `partial` | F01 |
 | `Read` answered `file_unchanged` | any | unchanged | F01 |
 | `Edit`, `NotebookEdit` | any | unchanged (a new node starts `partial`) | F01 |
-| Search hit | new, `ghost`, `compacted`, `unread` | `search` | F02 |
-| Search hit | `read`, `partial`, `search` | unchanged, hits counted | F02 |
+| Search hit | new, `ghost`, `compacted`, `unread` | `search`, hits and tokens from this call | F02 |
+| Search hit | `read`, `partial`, `search` | unchanged, hits added (a `search` node's tokens too) | F02 |
 | Main-loop compaction that stands | `read`, `partial`, `search` touched by the main loop, whose read was not kept | `compacted` | F03, F15 |
 | Shell change seen by `git` | new, `ghost` | `unread` | F07 |
 | Shell change seen by `git` | any other | unchanged, `change: blind` | F07 |
@@ -169,6 +169,7 @@ Every reducer keeps these true. Each has a test, named by its ID, in the event t
 ## Estimates
 
 - File, search and memory sizes are estimates, `ceil(characters / 4)`, always shown with "≈". Claude reads a file with line numbers added, so the estimate runs low; the window fill beside it is the engine's own figure.
+- Search tokens add up per call, because Claude's context holds every search output. Claude Code 2.1.296 has two ways to clear old tool results before a compaction, a keep-recent microcompact and a clearing after 65 minutes idle. Both are behind remote flags, off, and no event reports them, so the graph does not model them: with either on, old search tokens are overstated ([F02 research](../features/F02-search-tracking/research-repeated-search.md)).
 - The window fill is not an estimate. It is what `session.measure` reports: `context.tokens` over `context.window`. Before the first response it is unknown and shown as "–".
 
 ## Limits
@@ -190,3 +191,4 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Graph fields merged into one `graph` key written atomically (I9); positions moved to their own `layout` key; added `readId`, `hits`, `line`, `touched` and `Graph.seq` (a stable "most recent first"), `turn`, `agents`, `notes`, `Timeline.base` (replay stays exact after pruning) and `Why.failure`; `unread` and `ghost` meanings sharpened; eviction order completed; symbolic links named as a known limit.
 - 2026-10-11 Approved by the owner.
+- 2026-10-12 F02 ticketing: `readId` also holds a search node's latest search call; search hits and tokens add up per call and restart from `compacted`; tool-result clearing named as a known limit under Estimates. Approved by the owner.

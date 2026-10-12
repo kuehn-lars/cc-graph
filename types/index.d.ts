@@ -12,7 +12,7 @@ export type FileNode = {
   added: number              // lines added by Claude's edits and writes
   removed: number            // lines removed by them
   line: number | null        // first line of the latest change, for "open in editor" (F11)
-  readId: string | null      // tool_use_id of the read that put the file in context (F03)
+  readId: string | null      // tool_use_id of the read, or a search node's latest search, that put it in context (F01, F02, F03)
   agents: string[]           // ids of subagents that touched it (F15)
   mainLoop: boolean          // the main conversation touched it (F15)
   firstTurn: number
