@@ -1,6 +1,7 @@
 import subagents from '../../fixtures/sessions/subagents'
 import { expect, test } from 'claude-code/testing'
-import { engine, graphOf, nodeOf, start, writes } from './kit'
+import type { FileNode } from '../../types'
+import { engine, graphOf, nodeOf, seedGraph, writes } from './kit'
 
 // The recorded Explore agent (fixtures/sessions/subagents.ts) and the main loop's partial Read of login.ts (step 2).
 const cwd = (subagents.events[0]!.input as any).cwd as string
@@ -19,6 +20,7 @@ async function session($: any, on: any) {
   const answer = engine(on, { tool: '', tool_use_id: '', input: {}, result: null })
   on('session.surfaces', () => ({ value: [] })) // no surface: /graph answers its text
   on('command.register', () => ({ value: { command: 'graph' } }))
+  on('prompt.mention', () => ({ type: 'file' })) // DERIVED: no recording, the type
   await $.session.start({ cwd, surface: null, isInteractive: false })
   const call = async (row: any, input: object = {}) => {
     Object.assign(answer, row.result)
@@ -67,4 +69,70 @@ test('F15-R1 every subagent call is one write of graph and returns what the hand
   await call(agentReadPassword)
   await call(rg)
   expect(writes.filter(k => k === 'graph')).toHaveLength(2)
+})
+
+// DERIVED: a main-loop call is a recorded agent row with its agentId removed.
+const asMain = { agentId: undefined }
+
+test('F15-AC2 a subagent reads password.ts, then the main loop does: it joins the meter and keeps the agent id (DERIVED: the main-loop row)', async ($, on) => {
+  const { call, meter } = await session($, on)
+  await call(agentReadPassword)
+  const before = await meter()
+  await call(agentReadPassword, asMain)
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ mainLoop: true, agents: [AGENT] })
+  expect(await meter()).not.toBe(before)
+})
+
+test('F15-AC7 a compacted main-loop node read by a subagent stays compacted with its readId; the id is added (DERIVED: the seeded graph)', async ($, on) => {
+  const compacted = { path: 'src/auth/login.ts', state: 'compacted', change: null, reason: null, tokens: 300, seen: '49 lines', hits: 0, added: 0, removed: 0,
+    line: null, readId: 'toolu_main', agents: [], mainLoop: true, firstTurn: 0, lastTurn: 0, touched: 1 } satisfies FileNode
+  seedGraph(on, { seq: 1, files: { [compacted.path]: compacted }, edges: [], decisions: [], compactions: [] })
+  // The meter sums in-context nodes only (F03-R5), so a node that stays compacted leaves it unchanged; no /graph call here, it would consume the seed.
+  const { call } = await session($, on)
+  await call(agentReadLogin)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'compacted', readId: 'toolu_main', tokens: 300, seen: '49 lines', agents: [AGENT], mainLoop: true })
+})
+
+test('F15-AC8 a subagent reads login.ts whole, then the main loop reads lines 1 to 40: partial with the main loop\'s tokens, seen and readId', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadLogin)
+  const whole = (await nodeOf('src/auth/login.ts'))!
+  expect(whole.state).toBe('read')
+  await call(mainReadLogin)
+  const n = (await nodeOf('src/auth/login.ts'))!
+  expect(n).toMatchObject({ state: 'partial', mainLoop: true, agents: [AGENT], readId: mainReadLogin.input.tool_use_id })
+  expect(n.tokens).toBeLessThan(whole.tokens!)
+  expect(n.seen).not.toBe(whole.seen)
+})
+
+test('F15-R8 a subagent search of a main-loop read node leaves its hits and state; the id is added', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadLogin, asMain) // DERIVED: the main-loop row
+  const before = (await nodeOf('src/auth/login.ts'))!
+  await call(rg)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: before.state, hits: before.hits, tokens: before.tokens, seen: before.seen, readId: before.readId, agents: [AGENT] })
+})
+
+test('F15-R8 a main-loop search of a subagent-only read node makes it search (DERIVED: the main-loop row)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadLogin)
+  await call(rg, asMain)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'search', mainLoop: true, agents: [AGENT] })
+})
+
+test('F15-R8 a subagent-only edited node, then a main-loop read: read, still edited with its line counts (DERIVED: the moved Edit and the main-loop row)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentEdit, { file_path: `${cwd}/src/auth/login.ts` })
+  const edited = (await nodeOf('src/auth/login.ts'))!
+  await call(agentReadLogin, asMain)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({
+    state: 'read', mainLoop: true, change: 'edited', added: edited.added, removed: edited.removed, line: edited.line, firstTurn: edited.firstTurn, agents: [agentEdit.input.agentId],
+  })
+})
+
+test('F15-R8 a main-loop @-mention of a subagent-only node sizes it from the mention, not the agent (DERIVED: the mention result)', async ($, on) => {
+  const { call } = await session($, on)
+  await call(agentReadPassword)
+  await $.prompt.mention({ mention: 'src/auth/password.ts', path: `${cwd}/src/auth/password.ts` })
+  expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'read', tokens: null, seen: 'mentioned by you', mainLoop: true, agents: [AGENT] })
 })
