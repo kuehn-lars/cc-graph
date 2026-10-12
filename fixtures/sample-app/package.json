@@ -1,0 +1,14 @@
+{
+  "name": "sample-app",
+  "version": "1.0.0",
+  "private": true,
+  "description": "A tiny TypeScript web app, the reference project for CC Graph",
+  "type": "module",
+  "scripts": {
+    "start": "node src/routes/index.ts",
+    "test": "node --test"
+  },
+  "devDependencies": {
+    "typescript": "^5.9.3"
+  }
+}

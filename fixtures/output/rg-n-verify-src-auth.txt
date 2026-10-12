@@ -1,0 +1,4 @@
+src/auth/password.ts:21:// verify compares in constant time, so a wrong guess takes as long as a right one.
+src/auth/password.ts:22:export async function verifyPassword(password: string, stored: string): Promise<boolean> {
+src/auth/login.ts:2:import { hashPassword, verifyPassword } from './password'
+src/auth/login.ts:23:  if (!(await verifyPassword(password, user.passwordHash))) {

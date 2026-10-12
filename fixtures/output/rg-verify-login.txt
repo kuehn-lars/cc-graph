@@ -1,0 +1,2 @@
+import { hashPassword, verifyPassword } from './password'
+  if (!(await verifyPassword(password, user.passwordHash))) {
