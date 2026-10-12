@@ -19,8 +19,11 @@ test('F08-AC4 pressing l then g switches view, and the choice survives a second 
   const seen = viewState(on)
   await start($)
   const pane = await mount($, 'terminal')
-  await pane.press({ key: 'view-list' })
-  await pane.press({ key: 'view-graph' })
+  // Press by hotkey: find the Button that carries 'l' (then 'g'), so a wrong hotkey fails.
+  for (const hotkey of ['l', 'g']) {
+    const button = (await pane.findAll({ type: 'Button' })).find((b: any) => b.props.hotkey === hotkey)
+    await pane.press({ key: button.key })
+  }
   expect(seen.written).toEqual(['list', 'graph'])
   await start($)
   await run($)
@@ -33,6 +36,8 @@ test('NFR-A2 l and g are Buttons', async ($, on) => {
   ui(on)
   await start($)
   const pane = await mount($, 'terminal')
+  expect((await pane.find({ key: 'view-list' }))?.props.hotkey).toBe('l')
+  expect((await pane.find({ key: 'view-graph' }))?.props.hotkey).toBe('g')
   expect((await pane.find({ key: 'view-list' }))?.type).toBe('Button')
   expect((await pane.find({ key: 'view-graph' }))?.type).toBe('Button')
 })
