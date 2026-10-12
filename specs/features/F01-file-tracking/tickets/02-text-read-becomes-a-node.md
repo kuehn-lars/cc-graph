@@ -15,11 +15,11 @@ Requirements: F01-R1, F01-R8, F01-R9, F01-R10, F01-R11.
 
 **Status:** ready-for-agent
 
-- [ ] F01-AC1 whole read is `read`, "120 lines", tokens = ceil(length / 4)
-- [ ] F01-AC2 ranged read is `partial`, "lines 1 to 40 of 120"
-- [ ] F01-AC3 token-capped read is `partial`
-- [ ] F01-AC7 denied read leaves the graph unchanged and returns the errored result it received
-- [ ] F01-AC10 `/w/src/a.ts` becomes `src/a.ts`, `/etc/hosts` stays absolute
-- [ ] `firstTurn`, `lastTurn` and `touched` are set as F01-R9 says (no AC of its own; covered in the AC1 test)
-- [ ] The M0 placeholder test is deleted
-- [ ] The check command passes
+- [x] F01-AC1 whole read is `read`, "120 lines", tokens = ceil(length / 4)
+- [x] F01-AC2 ranged read is `partial`, "lines 1 to 40 of 120"
+- [x] F01-AC3 token-capped read is `partial`
+- [x] F01-AC7 denied read leaves the graph unchanged and returns the errored result it received
+- [x] F01-AC10 `/w/src/a.ts` becomes `src/a.ts`, `/etc/hosts` stays absolute
+- [x] `firstTurn`, `lastTurn` and `touched` are set as F01-R9 says (no AC of its own; covered in the AC1 test)
+- [x] The M0 placeholder test is deleted
+- [x] The check command passes
