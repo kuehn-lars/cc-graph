@@ -14,6 +14,7 @@ const GRAPH = { plugin: 'cc-graph', key: 'graph' } as const
 const PANE = 'cc-graph'
 const TURN = { plugin: 'cc-graph', key: 'turn' } as const
 const VIEW = { plugin: 'cc-graph', key: 'view' } as const
+const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
@@ -21,6 +22,7 @@ const resetState = async ($: StateDollar) => {
   await update($, GRAPH, () => emptyGraph)
   await update($, TURN, () => 0)
   await update($, SELECTED, () => null)
+  await update($, FILL, () => null)
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
@@ -85,6 +87,13 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
+  // F03-R4: the window's real fill, stored as reported.
+  on('session.measure', async ($, e, next) => {
+    const out = await next(e)
+    if (e.changed.includes('context')) await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+    return out
+  }).catch(($, e, next) => next(e))
+
   // F03-R1, R8: a compaction that stands, of the main loop. A subagent's (agentId), a skip and a precompute change nothing.
   on('session.compact', async ($, e, next) => {
     const out = await next(e)
@@ -107,7 +116,7 @@ export const register: Register = on => {
     const arg = e.args.trim()
     if (arg === 'list' || arg === 'graph') await setView($, arg) // F08-R2: also where nothing draws
     // F08-R4 / NFR-C3: where nothing draws, answer in text and open nothing.
-    if ((await $.session.surfaces()).length === 0) return { text: summarize(await readGraph($)) }
+    if ((await $.session.surfaces()).length === 0) return { text: summarize(await readGraph($), (await read($, FILL)) ?? null) }
     const opened = await $.ui.open({ id: PANE, title: 'CC Graph', focus: true, closeOnEscape: true, columns: 64 })
     if (!opened.isPlaced) $.ui.toast(`CC Graph is waiting for room: ${opened.reason}`)
     return { text: 'CC Graph opened.' }
@@ -124,7 +133,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), (await read($, FILL)) ?? null, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

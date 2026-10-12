@@ -25,13 +25,13 @@ test('F08-R4 change counts follow the state counts, zero counts are left out', a
   )
   await start($)
   const out = await run($)
-  expect(out.text).toBe('2 read, 1 compacted, 2 unread, 1 ghost\n1 edited, 2 created, 1 blind')
+  expect(out.text).toBe('≈200 in 2 files · window –\n2 read, 1 compacted, 2 unread, 1 ghost\n1 edited, 2 created, 1 blind')
 })
 
 test('F08-R4 an empty graph says so', async ($, on) => {
   ui(on, undefined, [])
   await start($)
-  expect((await run($)).text).toBe('Nothing read yet.')
+  expect((await run($)).text).toBe('≈0 in 0 files · window –\nNothing read yet.')
 })
 
 test('NFR-C3 with no surface every F01 hook and /graph run without error', async ($, on) => {
@@ -49,5 +49,5 @@ test('NFR-C3 with no surface every F01 hook and /graph run without error', async
   await $.prompt.mention({ mention: 'src/b.ts', path: '/w/src/b.ts' })
   const out = await run($)
   expect(opened).toEqual([])
-  expect(out.text).toMatch(/^2 read\n1 edited$/)
+  expect(out.text).toMatch(/\n2 read\n1 edited$/)
 })

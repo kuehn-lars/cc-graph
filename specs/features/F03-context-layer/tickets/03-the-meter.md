@@ -20,11 +20,11 @@ Requirements: F03-R4, F03-R5, F03-R6, F03-R9.
 
 **Status:** ready-for-agent
 
-- [ ] The two open wording points are settled in the spec
-- [ ] F03-AC5 `tokens: 82000`, `window: 200000`, `percent: 41` give "window 41% of 200k"
-- [ ] F03-AC12 with no measurement, the window part reads "window –"
-- [ ] F03-AC13 with no surface and no measurement, `/graph` answers a text whose first line is the meter line, ending "window –"
-- [ ] The left part over a graph with known and unknown sizes, a `compacted` node and a `ghost` (neither counted)
-- [ ] A measurement whose `changed` lacks `context` writes nothing, and the hook returns what the handler beneath returned
+- [x] The two open wording points are settled in the spec
+- [x] F03-AC5 `tokens: 82000`, `window: 200000`, `percent: 41` give "window 41% of 200k"
+- [x] F03-AC12 with no measurement, the window part reads "window –"
+- [x] F03-AC13 with no surface and no measurement, `/graph` answers a text whose first line is the meter line, ending "window –"
+- [x] The left part over a graph with known and unknown sizes, a `compacted` node and a `ghost` (neither counted)
+- [x] A measurement whose `changed` lacks `context` writes nothing, and the hook returns what the handler beneath returned
 - [ ] If ticket 04 has landed: its reset also empties `fill`
-- [ ] The check command passes
+- [x] The check command passes
