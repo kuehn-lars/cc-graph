@@ -73,18 +73,26 @@ const mountAt = ($: any, bodyColumns: number) =>
   $.ui.mount({ plugin: 'cc-graph', surface: 'terminal', component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns) })
 const drawn = async (pane: any): Promise<string[]> => (await pane.findAll({ type: 'Text' })).map((r: any) => r.text)
 
-test('F08-AC3 at bodyColumns 40, no drawn row is wider than 40 columns', async ($, on) => {
+/** The file rows' widths as drawn: a Button with a hotkey draws "N: " (3 columns) before its text. */
+const rowWidths = async (pane: any) => {
+  const buttons = (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))
+  return (await rows(pane)).map((r, i) => cols(r) + (buttons[i].props.hotkey ? 3 : 0))
+}
+
+test('F08-AC3 at bodyColumns 40, no drawn row is wider than 40 columns, its "N: " label counted', async ($, on) => {
   ui(on)
   seed(on,
     node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 }),
     node('src/auth/a-very-long-directory-name/sessions.ts', 2, { change: 'edited', added: 3, removed: 1 }),
     node('docs/日本語のドキュメント/設計書.md', 3, { tokens: null, seen: 'image' }),
     node('a.ts', 4),
+    ...Array.from({ length: 7 }, (_, i) => node(`src/some/deep/folder/file-number-${i}.ts`, 5 + i, { change: 'edited', added: 30, removed: 10 })),
   )
   await start($)
-  const got = await drawn(await mountAt($, 40))
-  expect(got.length).toBeGreaterThan(4)
-  for (const r of got) expect(cols(r)).toBeLessThanOrEqual(40)
+  const pane = await mountAt($, 40)
+  const widths = await rowWidths(pane)
+  expect(widths).toHaveLength(11)
+  for (const w of widths) expect(w).toBeLessThanOrEqual(40)
 })
 
 test('F08-AC10 at bodyColumns 30, rateLimit.ts shows a path that starts with "…" and ends with rateLimit.ts', async ($, on) => {
