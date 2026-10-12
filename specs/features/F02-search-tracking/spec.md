@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01 |
+| Verified | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01 |
 
 ## Problem
 
@@ -101,3 +101,4 @@ Adds the `search` state and the `hits` field. A search node's `readId` is its la
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Ticketing, from `research-repeated-search.md`: one search call adds one copy and a node back from `compacted` starts again (R4, R5, AC13, AC14); a search node's `readId` is its latest search call and its `seen` says "since compaction" when it came back from `compacted`; a persisted output is parsed from the preview Claude read (R9, AC15). Approved by the owner.
 - 2026-10-12 Review of the implementation, approved by the owner: `-L` depends on the tool (R3, AC16); `--count-matches` and newlines listed (R1, R3); flag values and redirections are not operands (R2); "1 search hit" and the sticky "since compaction" (R5); a `cd` ended by `;`, a newline or `||` drops the hits (R8); a command with two file-reading searches adds nothing (R10, AC17); two known limits under Out of scope.
+- 2026-10-12 Implemented and manually checked by the owner; CI green. Verified.
