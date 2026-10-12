@@ -56,4 +56,5 @@ code=0; (cd "$none" && GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel) > "$o
 index=$(jq --arg x "$code" '.["git-rev-parse-outside"] = { command: "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel", cwd: "(not a repository)", exitCode: ($x | tonumber), stderr: true }' <<< "$index")
 
 printf '%s\n' "$index" > "$out/index.json"
+"$out/to-module.sh"
 echo "captured $(jq length <<< "$index") outputs from $work"
