@@ -13,7 +13,9 @@ for (const f of files) {
       if (b.type === 'tool_use') uses.set(b.id, b)
       if (b.type === 'tool_result' && uses.has(b.tool_use_id) && !b.is_error) {
         const u = uses.get(b.tool_use_id)
-        calls.push({ tool: u.name, tool_use_id: u.id, input: u.input, result: row.toolUseResult })
+        // A persisted Bash output keeps what the model read too (the preview), for `text`; no other call needs it.
+        const text = u.name === 'Bash' && row.toolUseResult?.persistedOutputPath ? b.content : undefined
+        calls.push({ tool: u.name, tool_use_id: u.id, input: u.input, result: row.toolUseResult, ...(text && { text }) })
       }
     }
   }
@@ -32,6 +34,7 @@ const picks = {
   'write-create': ['Write', (r) => r.type === 'create'],
   'write-update': ['Write', (r) => r.type === 'update'],
   'notebook-edit': ['NotebookEdit', (r) => !r.error],
+  'bash-persisted': ['Bash', (r) => r.persistedOutputPath],
 }
 mkdirSync(out, { recursive: true })
 for (const [name, [tool, pred]] of Object.entries(picks)) {
