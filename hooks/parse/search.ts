@@ -48,24 +48,38 @@ export function searchesIn(command: string): Search[] {
   return [{ tool, flags: args.filter(isFlag), operands: args.filter((a, j) => !isFlag(a, j) && j !== end) }]
 }
 
-/** F02-R2: the `path:line:text` and `path:text` lines. A path with a space, or with neither a `/` nor a `.`, is no hit. */
-export function hitsIn(stdout: string, _search: Search): Hits {
+/** Whether the search has the short flag, alone or in a cluster (`-rl`), or one of the long flags. A cluster ends at a flag that takes its value attached (`-tlua`, `-m5`). */
+const has = (search: Search, short: string, ...long: string[]) =>
+  search.flags.some(f => long.includes(f) || (/^-[^-]/.test(f) && f.slice(1).split(/[ABCDMdefgjmtT0-9]/)[0]!.includes(short)))
+
+/** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, is no hit. F02-R3: modes that print no hits give none. */
+export function hitsIn(stdout: string, search: Search): Hits {
+  // ponytail: F02-R3 says -L; for rg that is --follow (hits as usual). Spec proposal pending with the owner.
+  if (has(search, 'c', '--count') || has(search, 'q', '--quiet') || has(search, 'L', '--files-without-match') || search.flags.some(f => f === '--files' || f === '--json')) return {}
+  const listing = has(search, 'l', '--files-with-matches')
   const hits: Hits = {}
-  for (const line of stdout.split('\n', MAX_LINES)) {
-    const path = line.slice(0, Math.max(line.indexOf(':'), 0))
-    if (path === '' || /\s/.test(path) || !/[/.]/.test(path)) continue
+  const add = (path: string, line: string) => {
     const h = (hits[path] ??= { hits: 0, chars: 0 })
     h.hits++
     h.chars += line.length
   }
+  const lines = stdout.split('\n', MAX_LINES)
+  for (const line of lines) {
+    const path = listing ? line : line.slice(0, Math.max(line.indexOf(':'), 0))
+    if (path === '' || /\s/.test(path) || !/[/.]/.test(path)) continue
+    add(path, line)
+  }
+  // The pattern and one path: rg and grep print no path for a single file.
+  if (!listing && !Object.keys(hits).length && search.operands.length === 2)
+    for (const line of lines) if (line !== '') add(search.operands[1]!, line)
   return hits
 }
 
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
-export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean }, cwd: string): Searched | null {
+export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
   const search = searchesIn(command)[0]
   if (!search || result.interrupted) return null
   const files: Searched['files'] = {}
-  for (const [path, h] of Object.entries(hitsIn(result.stdout ?? '', search))) files[normalize(path, cwd)] = h
+  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? text ?? '' : result.stdout ?? '', search))) files[normalize(path, cwd)] = h
   return Object.keys(files).length ? { type: 'searched', readId, files } : null
 }
