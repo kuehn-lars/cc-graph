@@ -24,3 +24,4 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 - F08 text summary: with no surface, `/graph` opens no pane and answers the count of files per state, then per change, zero counts left out (F08-AC8, R4, NFR-C3). AC8 seeds its RS-1 graph until F02 ships.
 - F08 list view: rows fit `bodyColumns`, counted in terminal columns: a long path is cut from its start and led by "…" so the file name stays; if the name alone does not fit with the badge and size, those are dropped from the end (F08-AC3, AC10, R6).
 - F08 list view: every file row is a plain `Button` keyed by its path; a press (click, Tab and Enter, or `1` to `9` on the first nine rows) sets `selected` and writes nothing else. Hotkey rows give up 3 columns to the "1: " label (F08-AC6, AC9, R8, NFR-A2).
+- F08 selected row: the row whose path is `selected` begins with "▸ ", the others with two spaces, so a press is visible before the card of F11 (F08-R13, AC11).

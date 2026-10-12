@@ -166,3 +166,21 @@ test('F08-R8 each row is a plain Button, and a hotkey row still fits bodyColumns
   // A plain Button draws "1: " before its text, so the text gets 3 columns less.
   for (const r of await rows(pane)) expect(cols(r) + 3).toBeLessThanOrEqual(30)
 })
+
+/** The marker slot at the front of each file row: "▸ " on the selected one, two spaces on the rest. */
+const slots = async (pane: any): Promise<string[]> =>
+  (await pane.findAll({ type: 'Text', text: /^(▸| ) $/ })).map((t: any) => t.text)
+
+test('F08-AC11 after pressing 3 only the third row begins with the marker; pressing 1 moves it to the first', async ($, on) => {
+  ui(on)
+  seed(on, node('a.ts', 1), node('b.ts', 2), node('c.ts', 3), node('d.ts', 4))
+  await start($)
+  const pane = await mount($, 'terminal')
+  expect(await slots(pane)).toEqual(['  ', '  ', '  ', '  '])
+  const press = async (hotkey: string) =>
+    pane.press({ key: (await rowButtons(pane)).find((b: any) => b.props.hotkey === hotkey).key })
+  await press('3')
+  expect(await slots(pane)).toEqual(['  ', '  ', '▸ ', '  '])
+  await press('1')
+  expect(await slots(pane)).toEqual(['▸ ', '  ', '  ', '  '])
+})

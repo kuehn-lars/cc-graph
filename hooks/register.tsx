@@ -90,7 +90,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), e.props.bodyColumns, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })
