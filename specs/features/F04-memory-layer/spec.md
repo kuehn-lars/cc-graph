@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
+| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 |
 
 ## Problem
 
@@ -79,7 +79,7 @@ Adds `MemoryNote` (with `reason`) and the `memory` key.
 
 ## Open questions
 
-- [ ] **F04-Q2** Does a nested file load again after a compaction, and does the breakdown then list it? Its note stays until `/clear`, resume or fork meanwhile (a compaction does not remove it). Not blocking: check in the manual check and, if wrong, add a requirement.
+- [x] **F04-Q2** Does a nested file load again after a compaction, and does the breakdown then list it? Answered in the manual check (2.1.296): a nested note stays through `/compact`, as R1 has it. The project `CLAUDE.md` does fire `classic.InstructionsLoaded` with `load_reason: 'compact'`, but the note written then does not survive, so its reason stays "at start" and "after compaction" is not seen in practice (cosmetic, no requirement changes). A nested file that Claude also reads with `Read` fires neither `InstructionsLoaded` nor a `nested_memory` attachment: it is a file node only, no memory note.
 - [x] **F04-Q1** Does a nested `CLAUDE.md` loaded mid-turn show up before the next `turn.complete`? Answered from the 2.1.296 types: `classic.InstructionsLoaded` fires with `load_reason: 'nested_traversal'` when it loads (F04-R3).
 
 ## Changelog
@@ -88,3 +88,4 @@ Adds `MemoryNote` (with `reason`) and the `memory` key.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Refresh moved to `session.measure`; added `classic.InstructionsLoaded` for immediate nested loads and their reason; memory kept outside the file meter.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 Revised after the ticket 01 recording: the summary breakdown never lists a nested `CLAUDE.md`, so a plain replace (R1) dropped the note R3 adds. R1 keeps notes loaded mid-conversation that the breakdown does not list; R6 sizes a nested note from its `nested_memory` attachment (owner chose this option). Added AC7, AC8, Q2.
+- 2026-10-13 Implemented. Manual check walked with the owner; F04-Q2 answered (nested notes survive a compaction; an explicit `Read` of a nested `CLAUDE.md` loads no memory note).
