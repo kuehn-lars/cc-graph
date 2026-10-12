@@ -6,8 +6,8 @@ Eviction runs inside the one `update` of `graph` the event already makes (I9), s
 
 **Blocked by:** 01 (the cap reaches the model), 02 (the wide recording)
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F14-AC1: test named `F14-AC1 …` replays the wide session with `{ options: { maxNodes: 20 } }`, failing first, then holding at most 20 files with every changed file kept
-- [ ] At the default 60 the reference-session tests stay green unchanged
-- [ ] The check command passes
+- [x] F14-AC1: test named `F14-AC1 …` replays the wide session with `{ options: { maxNodes: 20 } }`, failing first, then holding at most 20 files with every changed file kept
+- [x] At the default 60 the reference-session tests stay green unchanged
+- [x] The check command passes
