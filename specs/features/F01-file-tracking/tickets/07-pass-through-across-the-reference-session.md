@@ -11,6 +11,6 @@ Requirements: F01-R10, NFR-R1.
 **Status:** done
 
 - [x] The reference session fixture is recorded, including the five re-attachments from spike S1
-- [x] F01-AC8 every tool call of the reference session returns the same object the hook beneath returned
+- [x] F01-AC8 every tool call of the reference session returns a result deep-equal (`toStrictEqual`) to the one the hook beneath returned
   (The hook returns an equal object, compared with `toStrictEqual`; the kit hands a test a copy, so identity cannot be observed. See the test's comment.)
 - [x] The check command passes

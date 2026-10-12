@@ -11,5 +11,9 @@ Requirements: F01-R7, F01-R9, F01-R10, F01-R11.
 - [x] F01-AC9 `@src/b.ts` is `read`, "mentioned by you", `tokens: null`
 - [x] F01-AC15 `@src/b.ts#L10-20` with offset 10, limit 11 is `partial`, "lines 10 to 20, mentioned by you"
 - [x] F01-AC16 a `pdf_reference` mention is a `ghost` and the meter is unchanged
+- [x] F01-AC18 a mention of a `read` or `partial` node only updates `lastTurn` and `touched`
+- [x] F01-AC19 a mention of a `ghost` makes it `read`
+- [x] F01-AC20, AC21 `offset` without `limit` is "from line 10"; `limit` without `offset` is "lines 1 to 20"
+- [x] F01-AC22 a `pdf_reference` mention of an existing node only updates `lastTurn` and `touched`
 - [x] A mention that resolves `null` leaves the graph unchanged
 - [x] The check command passes

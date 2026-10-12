@@ -8,7 +8,7 @@ Requirements: F01-R4, F01-R5, F01-R8.
 
 **Status:** done
 
-- [x] F01-AC4 a `read` node stays `read`, `edited`, +3 −1
-- [x] F01-AC14 `replace_all` with three one-line hunks gives +3 −3
+- [x] F01-AC4 a `read` node stays `read`, `edited`, counts the recorded patch (+6 −6)
+- [x] F01-AC14 `replace_all` counts the `+` and `-` lines across all hunks (recorded: 3 hunks, +6 −6)
 - [x] A staged `Edit` and a `NotebookEdit` with `error` leave the graph unchanged
 - [x] The check command passes

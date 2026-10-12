@@ -8,10 +8,10 @@ The session transcript keeps each call's `toolUseResult`, which is the result a 
 
 **Blocked by:** None (can start immediately)
 
-**Status:** partly done (no real `file_unchanged` could be recorded in Claude Code 2.1.296, so that box stays open)
+**Status:** done (no real `file_unchanged` could be recorded in Claude Code 2.1.296; `fixtures/tool-results/file-unchanged.ts` is derived from the type and says so, to be replaced by a recording when a build returns one)
 
 - [x] A whole text `Read`, a ranged `Read` and a `Read` with `truncatedByTokenCap` are recorded
-- [ ] An image `Read` and a `file_unchanged` answer are recorded (image done; no real `file_unchanged`, see `fixtures/tool-results/README.md`)
+- [x] An image `Read` is recorded, and a `file_unchanged` answer is derived from the type and marked so (no real one exists, see `fixtures/tool-results/README.md`)
 - [x] A whole `pdf` `Read`, a `parts` `Read` of a page range, and a `notebook` `Read` are recorded
 - [x] An `Edit` with `replace_all` whose patch has several hunks is recorded
 - [x] A `Write` with `type: 'create'` and a `Write` that updates a file are recorded

@@ -4,13 +4,14 @@
 
 Requirements: F01-R2, F01-R3.
 
-F01-AC12 needs a `compacted` node, and only F03 produces that state. The test seeds the graph instead: a `state.get` hook from the test sits beneath the mod, so it can answer the first read of `graph` with a seeded value at version 0 and pass on every later read. Confirm this with `/plugin-authoring` before relying on it.
+F01-AC12 needs a `compacted` node, and only F03 produces that state. The test seeds the graph instead: a `state.get` hook from the test sits beneath the mod and answers the first read of `graph` with a seeded value at version 0 (as `{ value: { value, version } }`, the shape the kit's `next(e)` returns), then passes on. Confirmed: `seedGraph` in `tests/events/kit.ts`. The `file_unchanged` result is derived from the type (`fixtures/tool-results/file-unchanged.ts`), and the tests say so.
 
 **Blocked by:** 02 Text Read becomes a node
 
-**Status:** partly done (F01-R2 / AC11 only; F01-R3 / AC12 wait for a recorded `file_unchanged`)
+**Status:** done
 
 - [x] F01-AC11 image read is `read`, `tokens: null`, "image"
-- [ ] F01-AC12 a `compacted` node answered `file_unchanged` stays `compacted` (deferred: no real `file_unchanged` result could be recorded in Claude Code 2.1.296, see `fixtures/tool-results/README.md`, and fixtures are never hand-typed; F01-R3 is deferred with it)
+- [x] F01-AC12 a `compacted` node answered `file_unchanged` stays `compacted` (derived result, seeded graph)
+- [x] F01-AC23 `file_unchanged` on a path with no node makes it `read`, `tokens: null`, "unchanged since an earlier read"
 - [x] `pdf`, `parts` and `notebook` results give the `seen` wording of F01-R2 (no AC of their own; one test each is enough)
 - [x] The check command passes

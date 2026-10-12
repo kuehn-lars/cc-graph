@@ -21,5 +21,6 @@ Requirements: F01-R1, F01-R8, F01-R9, F01-R10, F01-R11.
 - [x] F01-AC7 denied read leaves the graph unchanged and returns the errored result it received
 - [x] F01-AC10 `/w/src/a.ts` becomes `src/a.ts`, `/etc/hosts` stays absolute
 - [x] `firstTurn`, `lastTurn` and `touched` are set as F01-R9 says (no AC of its own; covered in the AC1 test)
+- [x] F01-AC17 a partial read over a `read` node keeps `read`, `tokens`, `seen` and `readId`
 - [x] The M0 placeholder test is deleted
 - [x] The check command passes

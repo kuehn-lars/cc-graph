@@ -8,7 +8,7 @@ Requirements: F01-R6, F01-R8.
 
 **Status:** done
 
-- [x] F01-AC5 a create `Write` of 12 lines is `read`, `created`, +12
+- [x] F01-AC5 a create `Write` of the recorded 14 lines is `read`, `created`, +14
 - [x] F01-AC6 an `Edit` after the create keeps `created`
 - [x] F01-AC13 a staged `Write` leaves the graph unchanged
 - [x] An update `Write` with an empty patch adds no lines (F01-R6)
