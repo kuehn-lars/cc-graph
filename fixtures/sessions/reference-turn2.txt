@@ -1,0 +1,14 @@
+Add a test for the limit. I need you to work through these exact steps, in order, one tool call each. Do not open or search any other files and do not do anything extra.
+
+1. Write the new file test/login.test.ts with exactly these 7 lines:
+import { test } from 'node:test'
+import assert from 'node:assert'
+import { login } from '../src/auth/login'
+import { email, password } from './helpers'
+
+test('login works', async () => assert.ok(await login(email(1), password)))
+test('login is limited', async () => assert.ok(await login(email(2), password)))
+2. Read test/helpers.ts (whole file).
+3. Call the log_decision tool (mcp__cc-graph__log_decision) with title "Limit by IP, 5 attempts per minute", files ["src/middleware/rateLimit.ts", "src/auth/login.ts"] and because "Five a minute stops guessing without locking out a shared office".
+4. Run the Bash command: npm test
+Then stop and say "done".

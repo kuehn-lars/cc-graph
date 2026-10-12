@@ -25,9 +25,9 @@ When the person switches it on, Claude gets a small tool to log a decision with 
 - **F12-R1** While the `decisions` setting is on, the mod registers at `session.start` a tool with `$.tool.register({ name: 'log_decision', description, inputSchema, isDeferred: false })`, which Claude Code lists as `mcp__cc-graph__log_decision`. Its input is `{ title: string, files: string[], because?: string }`.
 - **F12-R2** While the setting is on, the mod's `prompt.compose` hook appends one section `{ id: 'cc-graph-decisions', text, scope: 'session' }` after the sections `next(e)` resolved, with the text: "When you choose between real alternatives that shape the code (a library, a data structure, where logic lives), call log_decision once with a short title, the files it affects and why. Don't log routine steps."
 - **F12-R3** While the setting is off, the mod registers neither the tool nor the `prompt.compose` hook (P1).
-- **F12-R4** When `mcp__cc-graph__log_decision` is called with valid input, the mod's `tool.call` hook answers at once with `{ result: { logged: true, id } }` (it is the tool, so it does not call `next`), and stores a `Decision` with the next id (`D1`, `D2`, …) and the current turn.
+- **F12-R4** When `mcp__cc-graph__log_decision` is called with valid input, the mod's `tool.call` hook answers at once with `{ result: '{"logged":true,"id":"D1"}' }`, the JSON string of `{ logged, id }` (the engine accepts only a string, an array or `undefined` as a plugin tool's result; it is the tool, so it does not call `next`), and stores a `Decision` with the next id (`D1`, `D2`, …) and the current turn.
 - **F12-R5** The mod cuts `title` to 60 characters and `because` to 160, keeps at most 20 `files`, normalizes them by I4, and adds a `ghost` for each that has no node (I3), with a `decision` edge to each.
-- **F12-R6** If the input is malformed (no `title`, or `files` not a list of strings), then the mod answers `{ result: { logged: false, error } }` naming the problem and stores nothing.
+- **F12-R6** If the input is malformed (no `title`, or `files` not a list of strings), then the mod answers `{ result: '{"logged":false,"error":"…"}' }`, a JSON string, with `error` naming the problem and stores nothing.
 - **F12-R7** Decisions draw as violet diamonds `◆` with dashed edges to their files (F09, F10), and the list view gains a Decisions section, newest first, each row the title and its file count.
 
 ## Acceptance criteria
@@ -82,3 +82,4 @@ Adds `Decision`, `Graph.decisions`, and `Edge` with `kind: 'decision'`.
 
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Named the listed tool `mcp__cc-graph__log_decision`, added `isDeferred: false`, the exact instruction text, input validation, ids, the list section, and the permission question.
+- 2026-10-12 F01 ticket 07 and the reference recording showed the engine refuses an object as a plugin tool's result: F12-R4 and F12-R6 answer a JSON string. Change approved by the owner; the status stays Review.

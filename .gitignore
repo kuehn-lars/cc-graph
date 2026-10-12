@@ -1,0 +1,26 @@
+# Claude Code: personal overrides and agent worktrees
+.claude/settings.local.json
+.claude/worktrees/
+.claude/scheduled_tasks.lock
+
+# macOS
+.DS_Store
+
+# Dependencies and build output
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Secrets and logs
+.env
+.env.*
+*.pem
+*.key
+*.log
+npm-debug.log*
+
+# Editors
+.idea/
+.vscode/
+*.swp

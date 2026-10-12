@@ -1,0 +1,24 @@
+Add rate limiting to the login route. I need you to work through these exact steps, in order, one tool call each unless a step says otherwise. Do not open or search any other files and do not do anything extra.
+
+1. Read src/routes/index.ts with offset 1 and limit 40.
+2. Read src/auth/login.ts (whole file).
+3. Run the Bash command: rg -n "verify" src/auth
+4. Read src/auth/sessions.ts (whole file).
+5. Read src/db/redis.ts, then read src/config.ts (whole files, one Read call each).
+6. Write the new file src/middleware/rateLimit.ts with exactly these 12 lines:
+import { RateLimiterMemory } from 'rate-limiter-flexible'
+// In-memory limiter: five attempts per minute for each key.
+const limiter = new RateLimiterMemory({ points: 5, duration: 60 })
+
+export async function limit(key: string): Promise<boolean> {
+  try {
+    await limiter.consume(key)
+    return true
+  } catch {
+    return false
+  }
+}
+7. Call the log_decision tool (mcp__cc-graph__log_decision) with title "In-memory limiter, not Redis", files ["src/middleware/rateLimit.ts", "src/db/redis.ts"] and because "No new infrastructure for five attempts a minute".
+8. Make one Edit call on src/auth/login.ts: replace the line "import { createSession, endSession, userForSession } from './sessions'" with that same line followed by two new lines, "import { limit } from '../middleware/rateLimit'" and "const ATTEMPTS_PER_MINUTE = 5" (two lines added, none removed).
+9. Run the Bash command: npm install rate-limiter-flexible
+Then stop and say "done".
