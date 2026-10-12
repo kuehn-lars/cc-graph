@@ -2,6 +2,7 @@ import { read, update, type Register, type StateDollar } from 'claude-code'
 import { reduce, type Action } from './model'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { readAction } from './parse/fileRead'
+import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
 import { normalize } from './parse/path'
 
@@ -43,6 +44,15 @@ export const register: Register = on => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
       const action = editAction(normalize(e.file_path, cwd), out.result)
+      if (action) await apply($, action)
+    }
+    return out
+  }).catch(($, e, next) => next(e))
+
+  on('tool.call', { tool: 'Write' }, async ($, e, next) => {
+    const out = await next(e)
+    if (!out.deny && !out.isError && out.result) {
+      const action = writeAction(normalize(e.file_path, cwd), out.result)
       if (action) await apply($, action)
     }
     return out

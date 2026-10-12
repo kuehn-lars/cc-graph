@@ -2,10 +2,11 @@
 import type { Graph } from '../../types'
 import { fileEdited, type FileEdited } from './fileEdited'
 import { fileRead, type FileRead } from './fileRead'
+import { fileWritten, type FileWritten } from './fileWritten'
 
 import { mention, type Mention } from './mention'
 
-export type Action = FileRead | FileEdited | Mention
+export type Action = FileRead | FileEdited | FileWritten | Mention
 
 export const emptyGraph: Graph = { seq: 0, files: {}, edges: [], decisions: [], compactions: [] }
 
@@ -15,5 +16,6 @@ export function reduce(g: Graph | undefined, a: Action, turn: number): Graph {
     case 'fileRead': return fileRead(graph, a, turn)
     case 'mention': return mention(graph, a, turn)
     case 'fileEdited': return fileEdited(graph, a, turn)
+    case 'fileWritten': return fileWritten(graph, a, turn)
   }
 }
