@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 (to show it), F15 (agent marks) |
+| Verified | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F08 (to show it), F15 (agent marks) |
 
 ## Problem
 

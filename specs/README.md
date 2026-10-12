@@ -22,7 +22,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 
 | ID | Feature | Milestone | Status |
 | --- | --- | --- | --- |
-| [F01](features/F01-file-tracking/spec.md) | File tracking: reads, edits, writes, mentions | v0.1 | Approved |
+| [F01](features/F01-file-tracking/spec.md) | File tracking: reads, edits, writes, mentions | v0.1 | Verified |
 | [F02](features/F02-search-tracking/spec.md) | Search-only tracking | v0.1 | Approved |
 | [F03](features/F03-context-layer/spec.md) | Context layer: compaction, fill, reset | v0.1 | Approved |
 | [F04](features/F04-memory-layer/spec.md) | Memory layer | v0.1 | Approved |
