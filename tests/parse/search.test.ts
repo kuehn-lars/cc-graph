@@ -26,7 +26,6 @@ const commands: [name: string, command: string, expected: ReturnType<typeof sear
   ['git without grep', out['git-status-clean'].command, []],
   ['git log --grep is not git grep', 'git log --grep verify', []],
   ['grep inside a quoted word', 'echo "rg -n x"', []],
-  ['a pipeline (ticket 02 splits segments)', out['rg-n-verify-src-head'].command, []],
 ]
 
 for (const [name, command, expected] of commands)
@@ -78,3 +77,34 @@ test('F02-R9 hitsIn: at most 1,000 lines', () => {
 test('F02-R2 hitsIn: empty output has no hits', () => {
   expect(hitsIn('', search)).toEqual({})
 })
+
+// F02-R1 / F02-R3 (ticket 02): a search counts wherever it sits in the command. Separators split segments outside
+// quotes; a search piped into from another segment with no path operand reads standard input and is no search.
+const pipeline: [name: string, command: string, expected: ReturnType<typeof searchesIn>][] = [
+  ['a pipe: the search is the first segment', out['rg-n-verify-src-head'].command, rg(['-n'], ['verify', 'src'])],
+  ['&&: the search is after a chain', 'npm run lint && rg -n verify src | head -20', rg(['-n'], ['verify', 'src'])],
+  ['||', 'false || rg -n verify src', rg(['-n'], ['verify', 'src'])],
+  [';', 'cd src; rg -n verify .', rg(['-n'], ['verify', '.'])],
+  ['a newline', 'cd src\nrg -n verify .', rg(['-n'], ['verify', '.'])],
+  ['separators without spaces', 'ls&&rg -n a src||echo;rg -n b src', [...rg(['-n'], ['a', 'src']), ...rg(['-n'], ['b', 'src'])]],
+  ['two searches in two segments', 'rg -n a src && grep -rn b lib', [...rg(['-n'], ['a', 'src']), { tool: 'grep', flags: ['-rn'], operands: ['b', 'lib'] }]],
+  ['a separator in double quotes', 'rg -n "a|b" src', rg(['-n'], ['a|b', 'src'])],
+  ['a separator in single quotes', "rg -n 'a && b; c' src", rg(['-n'], ['a && b; c', 'src'])],
+  ['an escaped separator', 'rg -n a\\|b src', rg(['-n'], ['a|b', 'src'])],
+  ['an escaped semicolon', 'rg -n a\\;b src', rg(['-n'], ['a;b', 'src'])],
+  ['a quoted command holding a separator and a search', 'echo "x; rg -n a src"', []],
+  ['standard input: the captured cat log.txt | rg -n error', out['cat-log-rg-n-error'].command, []],
+  ['standard input: grep after a pipe, no path', 'cat log | grep -n error', []],
+  ['standard input: git grep after a pipe, no path', 'echo x | git grep -n error', []],
+  ['a pipe with a path operand reads the path', 'echo x | rg -n error src', rg(['-n'], ['error', 'src'])],
+  ['a pipe with -e and a path operand', 'echo x | rg -n -e error src', rg(['-n', '-e'], ['error', 'src'])],
+  ['a pipe with -e and no path operand', 'echo x | grep -n -e error', []],
+  ['not piped into: the first of a pipeline reads its own paths', 'rg -n error | sort', rg(['-n'], ['error'])],
+  ['not piped into: after && it reads no pipe', 'cd src && rg -n error', rg(['-n'], ['error'])],
+  ['a search in the middle of a pipeline, with a path', 'cat a | rg -n error src | head', rg(['-n'], ['error', 'src'])],
+]
+
+for (const [name, command, expected] of pipeline)
+  test(`F02-R1 searchesIn: ${name}`, () => {
+    expect(searchesIn(command)).toEqual(expected)
+  })
