@@ -1,12 +1,12 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
-import { loaded } from './model/memory'
+import { loaded, refreshed, sized } from './model/memory'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
-import { memoryNote } from './parse/memory'
+import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { renderList } from './render/list'
@@ -35,6 +35,12 @@ const resetState = async ($: StateDollar) => {
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
+// F04-R1, R2: the memory files the summary breakdown lists (never 'full', which costs a request per file). No breakdown, or no answer, no change; a throw here would run the handlers beneath twice (the hook's .catch).
+async function refreshMemory($: Pick<CoreEngineInterface, 'state' | 'session'>) {
+  const files = (await $.session.usage({ breakdown: 'summary' }).catch(() => undefined))?.context.breakdown?.memoryFiles
+  if (files) await update($, MEMORY, notes => refreshed(notes ?? [], listed(files, cwd)))
+}
+
 const readMemory = async ($: StateDollar) => (await read($, MEMORY)) ?? []
 const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
@@ -85,6 +91,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
+    await refreshMemory($)
     return out
   }).catch(($, e, next) => next(e))
 
@@ -121,7 +128,10 @@ export const register: Register = on => {
   // F03-R4: the window's real fill, stored as reported.
   on('session.measure', async ($, e, next) => {
     const out = await next(e)
-    if (e.changed.includes('context')) await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+    if (e.changed.includes('context')) {
+      await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+      await refreshMemory($)
+    }
     return out
   }).catch(($, e, next) => next(e))
 
@@ -147,6 +157,14 @@ export const register: Register = on => {
   on('classic.InstructionsLoaded', async ($, e, next) => {
     const out = await next(e)
     await update($, MEMORY, notes => loaded(notes ?? [], memoryNote(e, cwd)))
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F04-R6: the size of a nested file, from the text Claude Code put in the window. A subagent's attachment (agentId) is not the main loop's.
+  on('prompt.attachment', { type: 'nested_memory' }, async ($, e, next) => {
+    const out = await next(e)
+    const size = e.agentId ? null : nestedSize(e.text, cwd)
+    if (size) await update($, MEMORY, notes => sized(notes ?? [], size.path, size.tokens))
     return out
   }).catch(($, e, next) => next(e))
 
