@@ -1,6 +1,5 @@
 // Pure: a search call lands in the graph (F02-R4, R5). One call adds one copy of its hits, because the context holds each output.
 import type { Graph } from '../../types'
-import { plural } from '../parse/measure'
 import { touch } from './node'
 
 export type Searched = { type: 'searched'; readId: string; files: Record<string, { hits: number; chars: number }> }
@@ -16,6 +15,6 @@ export const searched = (g: Graph, a: Searched, turn: number): Graph =>
     return {
       state: 'search', hits, readId: a.readId,
       tokens: (again ? old.tokens ?? 0 : 0) + Math.ceil(h.chars / 4),
-      seen: `${plural(hits, 'search hit')}${sinceCompaction ? ' since compaction' : ', never opened'}`,
+      seen: `${hits} search hit${hits === 1 ? '' : 's'}${sinceCompaction ? ' since compaction' : ', never opened'}`,
     }
   }), g)
