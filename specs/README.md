@@ -81,5 +81,5 @@ An ID is never reused. Once a spec is Approved its IDs are frozen: a dropped req
 ## Traceability
 
 - Every test name starts with the ID it proves: `test('F03-AC4 a compacted node read whole again is read', …)`, `test('NFR-P1 …')`, `test('RS-5 …')`.
-- `node scripts/trace.mjs --check` reads every `Fxx-ACn`, `NFR-*` and `RS-n` in specs whose status is Approved or later, matches them against test names, and fails when one has no test.
+- `node scripts/trace.mjs --check` matches criteria against test names and fails when a required one has no test. Required: every `Fxx-ACn` of a feature spec at Implemented or Verified, and every `NFR-*` and `RS-n` whose milestone (the NFR's "From", the checkpoint's milestone in 04) is at or below the `version` in `plugin.json`. Criteria of Approved specs that are not yet required are listed as pending.
 - Commits name what they implement: `feat(F03): compaction state (F03-AC1..AC4)`. Spec-only commits use `spec(F03): …`.
