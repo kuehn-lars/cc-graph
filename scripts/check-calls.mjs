@@ -3,6 +3,7 @@
 import { spawnSync } from 'node:child_process'
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import { join, resolve } from 'node:path'
+import { fullBreakdowns } from './full-breakdown.mjs'
 
 const root = resolve(process.argv[2] ?? '.')
 const ALLOWED = new Set([
@@ -51,8 +52,7 @@ for (const file of sources) {
     if (!['rev-parse', 'status', 'grep'].includes(m[1])) problems.push(`NFR-S5: ${at(m.index)}: git ${m[1]} is not read-only`)
   if (/['"`]git['"`]/.test(src) && !/GIT_OPTIONAL_LOCKS\s*:\s*['"`]0['"`]/.test(src))
     problems.push(`NFR-S5: ${file}: git runs without GIT_OPTIONAL_LOCKS: '0'`)
-  for (const m of src.matchAll(/breakdown\s*:\s*['"`]full['"`]/g))
-    problems.push(`NFR-S6: ${at(m.index)}: $.session.usage with breakdown 'full'`)
+  for (const i of fullBreakdowns(src)) problems.push(`NFR-S6: ${at(i)}: $.session.usage with breakdown 'full'`)
   if ((src.match(/\.model\.fork\(/g) ?? []).length > 1)
     problems.push(`NFR-S6: ${file}: $.model.fork has more than one call site (only the "Ask why" press)`)
 }

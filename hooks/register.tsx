@@ -1,10 +1,12 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import { loaded, refreshed, sized } from './model/memory'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
+import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { renderList } from './render/list'
@@ -17,6 +19,7 @@ const VIEW = { plugin: 'cc-graph', key: 'view' } as const
 const FILL = { plugin: 'cc-graph', key: 'fill' } as const
 const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
+const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -25,12 +28,20 @@ const resetState = async ($: StateDollar) => {
   await update($, SELECTED, () => null)
   await update($, FILL, () => null)
   await update($, AGENTS, () => ({}))
+  await update($, MEMORY, () => [])
   named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
+// F04-R1, R2: the memory files the summary breakdown lists (never 'full', which costs a request per file). No breakdown, or no answer, no change; a throw here would run the handlers beneath twice (the hook's .catch).
+async function refreshMemory($: Pick<CoreEngineInterface, 'state' | 'session'>) {
+  const files = (await $.session.usage({ breakdown: 'summary' }).catch(() => undefined))?.context.breakdown?.memoryFiles
+  if (files) await update($, MEMORY, notes => refreshed(notes ?? [], listed(files, cwd)))
+}
+
+const readMemory = async ($: StateDollar) => (await read($, MEMORY)) ?? []
 const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
@@ -80,6 +91,7 @@ export const register: Register = on => {
     await $.command.register({
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
+    await refreshMemory($)
     return out
   }).catch(($, e, next) => next(e))
 
@@ -116,7 +128,10 @@ export const register: Register = on => {
   // F03-R4: the window's real fill, stored as reported.
   on('session.measure', async ($, e, next) => {
     const out = await next(e)
-    if (e.changed.includes('context')) await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+    if (e.changed.includes('context')) {
+      await update($, FILL, () => ({ tokens: e.context.tokens ?? null, window: e.context.window, percent: e.context.percent ?? null }))
+      await refreshMemory($)
+    }
     return out
   }).catch(($, e, next) => next(e))
 
@@ -135,6 +150,21 @@ export const register: Register = on => {
     const out = await next(e)
     const action = e.agentId ? null : reattachedAction(e.text, cwd)
     if (action) await apply($, action)
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F04-R3: a memory file Claude Code loads, noted at once. Its size waits for the usage breakdown (ticket 03).
+  on('classic.InstructionsLoaded', async ($, e, next) => {
+    const out = await next(e)
+    await update($, MEMORY, notes => loaded(notes ?? [], memoryNote(e, cwd)))
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F04-R6: the size of a nested file, from the text Claude Code put in the window. A subagent's attachment (agentId) is not the main loop's.
+  on('prompt.attachment', { type: 'nested_memory' }, async ($, e, next) => {
+    const out = await next(e)
+    const size = e.agentId ? null : nestedSize(e.text, cwd)
+    if (size) await update($, MEMORY, notes => sized(notes ?? [], size.path, size.tokens))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -159,7 +189,7 @@ export const register: Register = on => {
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), await readFill($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {renderList(table, await readGraph($), await readFill($), await readMemory($), e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })
