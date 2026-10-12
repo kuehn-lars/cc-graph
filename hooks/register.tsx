@@ -5,6 +5,7 @@ import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
 import { normalize } from './parse/path'
+import { searchAction } from './parse/search'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
 
@@ -28,11 +29,12 @@ async function apply($: StateDollar, action: Action) {
 }
 
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
-const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit', (e: any, result: any) => Action | null> = {
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => Action | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r),
   Edit: (e, r) => editAction(normalize(e.file_path, cwd), r),
   Write: (e, r) => writeAction(normalize(e.file_path, cwd), r),
   NotebookEdit: (e, r) => notebookEditAction(normalize(e.notebook_path, cwd), r),
+  Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
 export const register: Register = on => {
@@ -51,10 +53,10 @@ export const register: Register = on => {
     return out
   }).catch(($, e, next) => next(e))
 
-  on('tool.call', { tool: /^(Read|Edit|Write|NotebookEdit)$/ }, async ($, e: any, next) => {
+  on('tool.call', { tool: /^(Read|Edit|Write|NotebookEdit|Bash)$/ }, async ($, e: any, next) => {
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
-      const action = parsers[e.tool as keyof typeof parsers](e, out.result)
+      const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
       if (action) await apply($, action)
     }
     return out

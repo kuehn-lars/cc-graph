@@ -32,6 +32,9 @@ run rg-files . 'rg --files'
 run grep-rn-verify-src . 'grep -rn verify src'
 run grep-rl-verify-src . 'grep -rl verify src'
 run git-grep-n-verify . 'git grep -n verify'
+# log.txt exists in this capture copy only; the sample app stays as it is.
+printf 'start\nerror: token expired\nlogin ok\nerror: store down\n' > log.txt
+run cat-log-rg-n-error . 'cat log.txt | rg -n error'
 
 # Blind spots (F07): root, clean baseline, importers of login.ts
 git_ro='GIT_OPTIONAL_LOCKS=0 git'
@@ -56,4 +59,5 @@ code=0; (cd "$none" && GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel) > "$o
 index=$(jq --arg x "$code" '.["git-rev-parse-outside"] = { command: "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel", cwd: "(not a repository)", exitCode: ($x | tonumber), stderr: true }' <<< "$index")
 
 printf '%s\n' "$index" > "$out/index.json"
+"$out/to-module.sh"
 echo "captured $(jq length <<< "$index") outputs from $work"

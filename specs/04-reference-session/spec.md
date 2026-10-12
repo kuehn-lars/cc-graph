@@ -73,7 +73,7 @@ Settings: defaults, except `decisions: true` for the steps marked F12. Window: 2
 
 The scenario test asserts each checkpoint at the step named, in one test per checkpoint. A checkpoint is part of a milestone's gate only once every feature it needs has shipped: RS-1 and RS-4 from v0.1, RS-2 and RS-3 from v0.3, RS-5 from v0.6.
 
-- **RS-1** After step 3: `routes/index.ts` is `partial` with `seen` "lines 1 to 40 of 120"; `login.ts` is `read` with 2 hits; `password.ts` is `search` with `seen` "2 search hits, never opened".
+- **RS-1** After step 3: `routes/index.ts` is `partial` with `seen` "lines 1 to 40 of 121"; `login.ts` is `read` with 2 hits; `password.ts` is `search` with `seen` "2 search hits, never opened".
 - **RS-2** After step 8 and its queued work: `api/users.ts` is a `ghost` with a `blind` edge to `login.ts`, and the footer names it; `routes/index.ts` has no blind mark because Claude opened it.
 - **RS-3** After step 9: `package.json` and `package-lock.json` are `unread` with `change: blind` and a reason naming the command; `login.ts` and `rateLimit.ts` carry no blind mark.
 - **RS-4** After the compaction and the five re-attachments: `routes/index.ts` and `password.ts` are `compacted`, every change mark is kept, `login.ts`, `rateLimit.ts`, `config.ts`, `redis.ts` and `sessions.ts` are `read` again, and one `CompactMark` records 22,694 and 4,959 with `kept: 0` (no read survived in the kept messages; the five came back as attachments).

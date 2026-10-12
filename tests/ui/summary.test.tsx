@@ -1,22 +1,13 @@
 import readWhole from '../../fixtures/tool-results/read-whole'
 import editReplaceAll from '../../fixtures/tool-results/edit-replace-all'
 import { expect, test } from 'claude-code/testing'
-import type { On } from 'claude-code'
-import { engine } from '../events/kit'
+import { engine, replay } from '../events/kit'
 import { node, run, seed, start, ui } from './kit'
 
 
-// DERIVED: only F02 produces `search`, so the graph is seeded as it stands at RS-1 (after step 3 of the reference session).
-const rs1 = (on: On) => seed(on,
-  node('src/routes/index.ts', 1, { state: 'partial' }),
-  node('src/auth/login.ts', 2),
-  node('src/auth/password.ts', 3, { state: 'search' }),
-)
-
 test('F08-AC8 with no surface and the graph at RS-1, /graph opens no pane and answers the counts', async ($, on) => {
   const { opened } = ui(on, undefined, [])
-  rs1(on)
-  await start($)
+  await replay($, on, 3)
   const out = await run($)
   expect(opened).toEqual([])
   expect(out.text).toContain('1 read, 1 partial, 1 search')
