@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        claude: ['2.1.296', 'latest']
+        claude: ['2.1.296', 'latest'] # NFR-C1: the pinned tested version and the latest
     continue-on-error: ${{ matrix.claude == 'latest' }}
     steps:
       - uses: actions/checkout@v4
