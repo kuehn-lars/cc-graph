@@ -35,10 +35,10 @@ function row(n: FileNode, columns: number) {
 }
 
 // F08-R6: the meter is cut from its end and closed by "…". ponytail: the line is ASCII plus "≈ · –", one column each; no width table.
-const fit = (line: string, columns: number) => (cols(line) <= columns ? line : `${[...line].slice(0, columns - 1).join('')}…`)
+export const fit = (line: string, columns: number) => (cols(line) <= columns ? line : `${[...line].slice(0, columns - 1).join('')}…`)
 
 // F08-R5, 02 Data model (retention): the footer shows the newest five notes, one line each.
-const FOOTER_NOTES = 5
+export const FOOTER_NOTES = 5
 
 // F04-R4: `Memory  ≈150 (+1 unknown)`; a note of unknown size is counted apart, as the meter does (I1).
 function memoryTotal(notes: MemoryNote[]) {

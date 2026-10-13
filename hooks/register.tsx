@@ -11,6 +11,7 @@ import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
+import { MIN_ROWS, TOO_SHORT, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
 
@@ -197,14 +198,19 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     const table = $.ui.resolve(e)
     const { Box, Button } = table
-    // F08-R10: the renderer follows the table (Raster: F09, Svg: F10, else the list). Neither graph has shipped, so `view` changes nothing drawn yet.
+    const notes = (await read($, NOTES)) ?? []
+    // F08-R10: the renderer follows the table (Raster on terminal: F09, Svg: F10, else the list), then `view`.
+    const rows = graphRows(e.props.scroll.bodyRows, notes)
+    const graphed = e.surface === 'terminal' && 'Raster' in table && (await read($, VIEW)) === 'graph'
     return (
       <Box flexDirection="column">
         <Box gap={2}>
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), await readFill($), await readMemory($), (await read($, NOTES)) ?? [], e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {graphed && rows >= MIN_ROWS
+          ? renderGraph(table, await readGraph($), await readFill($), notes, e.props.bodyColumns, rows)
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), graphed ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

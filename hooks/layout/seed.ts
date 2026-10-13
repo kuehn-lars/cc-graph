@@ -1,0 +1,20 @@
+// Pure: where a folder's nodes start on the 100 × 64 canvas (F09-R3). The layout (F09 ticket 02) starts from the same point.
+import type { Point } from '../../types'
+
+export const CANVAS = { width: 100, height: 64 }
+
+/** The path up to its last `/`; a file at the root has the empty folder. */
+export const folderOf = (path: string) => path.slice(0, Math.max(path.lastIndexOf('/'), 0))
+
+// FNV-1a over code points.
+const hash = (s: string) => {
+  let h = 2166136261
+  for (const c of s) h = Math.imul(h ^ c.codePointAt(0)!, 16777619)
+  return h >>> 0
+}
+
+/** A point of the canvas, kept off its edges so a node's cell and label have room. */
+export function seedPoint(folder: string): Point {
+  const h = hash(folder)
+  return { x: 5 + (h % 9000) / 100, y: 4 + ((h >>> 12) % 5600) / 100 }
+}

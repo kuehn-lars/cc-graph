@@ -5,16 +5,16 @@ import type { FileNode, Graph } from '../../types'
 export const PANE_ID = 'cc-graph'
 export const SURFACES = ['terminal', 'desktop', 'vscode', 'mobile'] as const satisfies readonly RenderSurface[]
 
-export const paneProps = (bodyColumns = 64) => ({
+export const paneProps = (bodyColumns = 64, bodyRows = 30) => ({
   title: 'CC Graph', isFocused: true, bodyColumns, placement: 'dock' as const,
-  scroll: { offset: 0, bodyRows: 30 }, view: {},
+  scroll: { offset: 0, bodyRows }, view: {},
 })
 
 export const start = ($: any) => $.session.start({ cwd: '/w', surface: null, isInteractive: false })
 
 /** The Pane of this plugin drawn on `surface`, `bodyColumns` wide. */
-export const mount = ($: any, surface: RenderSurface, bodyColumns = 64) =>
-  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns) })
+export const mount = ($: any, surface: RenderSurface, bodyColumns = 64, bodyRows = 30) =>
+  $.ui.mount({ plugin: 'cc-graph', surface, component: 'Pane', requestId: PANE_ID, props: paneProps(bodyColumns, bodyRows) })
 
 /** The person typing `/graph` (or `/graph <args>`) in the composer of a 160-column fullscreen terminal. */
 export const run = ($: any, args = '') =>
@@ -57,3 +57,16 @@ export function writes(on: On) {
 
 /** The file row Buttons, in drawn order: the ones not keyed `view-*`. */
 export const rowButtons = async (pane: any): Promise<any[]> => (await pane.findAll({ type: 'Button' })).filter((b: any) => !b.key.startsWith('view-'))
+
+/** The test's own `state.get` hook beneath the mod: `view` is `graph`, `notes` are seeded, and with `nodes` so is the graph; every other read passes on. */
+export function viewGraph(on: On, notes: string[] = [], ...nodes: FileNode[]) {
+  const values: Record<string, unknown> = { view: 'graph', ...(notes.length ? { notes } : {}) }
+  if (nodes.length) values.graph = { seq: Math.max(...nodes.map(n => n.touched)), files: Object.fromEntries(nodes.map(n => [n.path, n])), edges: [], decisions: [], compactions: [] } satisfies Graph
+  on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
+}
+
+/** The cells of a mounted `Raster`, row-major: its glyph, foreground and background. */
+export function decode(raster: any): { char: string; fg: number; bg: number }[] {
+  const words = new Uint32Array(Uint8Array.from(atob(raster.props.cells), c => c.charCodeAt(0)).buffer)
+  return Array.from({ length: words.length / 3 }, (_, i) => ({ char: String.fromCodePoint(words[i * 3]!), fg: words[i * 3 + 1]!, bg: words[i * 3 + 2]! }))
+}

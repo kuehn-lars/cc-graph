@@ -20,7 +20,7 @@ test('F08-AC4 pressing l then g switches view, and the choice survives a second 
   await run($)
   // The host keeps `view`; a second session.start and a bare /graph write nothing over it.
   expect(views(seen)).toEqual(['list', 'graph'])
-  expect((await pane.find({ type: 'Text', text: 'Nothing read yet.' }))?.type).toBe('Text')
+  expect((await pane.find({ type: 'Raster' }))?.key).toBe('graph') // the terminal draws the graph now (F09)
 })
 
 test('NFR-A2 l and g are Buttons', async ($, on) => {
@@ -33,7 +33,7 @@ test('NFR-A2 l and g are Buttons', async ($, on) => {
   expect((await pane.find({ key: 'view-graph' }))?.type).toBe('Button')
 })
 
-for (const surface of SURFACES) {
+for (const surface of SURFACES.filter(s => s !== 'terminal')) {
   test(`F08-AC5 / NFR-C2 with view: graph the list is drawn on ${surface}`, async ($, on) => {
     ui(on)
     on('state.get', (_$, e: any, next) => (e.key === 'view' ? ({ value: { value: 'graph', version: 0 } } as any) : next(e)))
