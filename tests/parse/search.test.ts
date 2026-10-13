@@ -74,6 +74,14 @@ test('F02-AC18 hitsIn: the folder headers of an ls run after the search are no h
   expect(Object.keys(hits).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
 })
 
+// DERIVED: the captured grep line with its text cut after `verify(password, user.passwordHash`; no capture holds a hit ending in a colon.
+test('F02-R2 hitsIn: a hit whose text ends in a colon is still a hit; only a line that is its path and the colon is skipped', () => {
+  const run = out['grep-rn-verify-then-ls']
+  const line = run.stdout.split('\n').find(l => l.startsWith('src/auth/login.ts:'))!
+  const hits = hitsIn(`${line.slice(0, line.indexOf('verifyPassword('))}case 'x':\nsrc/auth:\n`, searchesIn(run.command)[0]!)
+  expect(Object.keys(hits)).toEqual(['src/auth/login.ts'])
+})
+
 test('F02-R9 hitsIn: at most 1,000 lines', () => {
   const stdout = Array.from({ length: 1200 }, (_, i) => `src/f${i % 2}.ts:${i}:x`).join('\n')
   const hits = hitsIn(stdout, search)

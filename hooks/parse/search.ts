@@ -131,7 +131,7 @@ const printsNoHits = (search: Search) =>
   has(search, 'c', '--count', '--count-matches') || has(search, 'q', '--quiet') || (search.tool !== 'rg' && has(search, 'L')) ||
   ['--files-without-match', '--files', '--json'].some(f => search.flags.includes(f))
 
-/** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, or a line ending in its colon, is no hit. F02-R3: modes that print no hits give none. */
+/** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, or a line that is its path and a colon, is no hit. F02-R3: modes that print no hits give none. */
 export function hitsIn(stdout: string, search: Search): Hits {
   if (printsNoHits(search)) return {}
   const listing = has(search, 'l', '--files-with-matches')
@@ -144,7 +144,7 @@ export function hitsIn(stdout: string, search: Search): Hits {
   const lines = stdout.split('\n', MAX_LINES)
   for (const line of lines) {
     const path = listing ? line : line.slice(0, Math.max(line.indexOf(':'), 0))
-    if (path === '' || /\s/.test(path) || !/[/.]/.test(path) || line.endsWith(':')) continue // `src/auth:` heads an ls listing
+    if (path === '' || /\s/.test(path) || !/[/.]/.test(path) || line === `${path}:`) continue // `src/auth:` heads an ls listing
     add(path, line)
   }
   // The pattern and one path: rg and grep print no path for a single file.
