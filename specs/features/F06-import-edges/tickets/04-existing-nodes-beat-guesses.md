@@ -8,9 +8,9 @@ Requirements: F06-R3 (the full order, including the `.js` rule), R6.
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F06-AC6 `password.js` already a node: the edge from `login.ts` points to `src/auth/password.js`, not `guessed`
-- [ ] F06-AC7 no nodes: `src/a.ts` importing `./util.js` points to `src/util.ts`, `guessed`
-- [ ] `candidatesFor` table: TypeScript and JavaScript importers, each family's order, `/index`, a specifier with an extension
-- [ ] The check command passes
+- [x] F06-AC6 `password.js` already a node: the edge from `login.ts` points to `src/auth/password.js`, not `guessed`
+- [x] F06-AC7 no nodes: `src/a.ts` importing `./util.js` points to `src/util.ts`, `guessed`
+- [x] `candidatesFor` table: TypeScript and JavaScript importers, each family's order, `/index`, a specifier with an extension
+- [x] The check command passes
