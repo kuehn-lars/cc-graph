@@ -4,7 +4,7 @@ import { decode, dots, mount, start, ui } from '../ui/kit'
 import { observe } from './kit'
 
 const COLUMNS = 64
-const ROWS = 27 // a 30-row pane less the view keys, the meter line and the legend
+const ROWS = 26 // a 30-row pane less the view keys, the meter line, the now line and the legend
 const read = reference.events.find(c => c.event === 'tool.call' && c.process === 1 && c.step === 1)!
 
 /**

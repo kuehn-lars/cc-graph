@@ -20,7 +20,7 @@ const badge = (n: FileNode) =>
   n.change === 'edited' ? `edited +${n.added} −${n.removed}` : n.change === 'created' ? `created +${n.added}` : n.change
 
 /** F09-R10 (NFR-A3): per path, "imports 2" for a file that imports, "imported by login.ts +1" for a ghost: its most recently touched importer and the count of the others. */
-function edgeWords(graph: Graph) {
+export function edgeWords(graph: Graph) {
   const words = new Map<string, string>()
   const importers = new Map<string, string[]>(), imports = new Map<string, number>()
   for (const e of graph.edges)

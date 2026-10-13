@@ -139,6 +139,7 @@ The `layout` key (`Point` per node id) is unchanged. 02's state table: the termi
 ## Open questions
 
 - [ ] **F09-Q1** (not blocking) Does the dark card read well in a light terminal theme, and does braille render evenly in the common fonts? Checked in the manual check; a change would only touch R22's colours.
+- [ ] **F09-Q2** (not blocking) R17 asks for the now node's label in bold, but a `Raster` cell is a code point and two colours (RasterProps): there is no bold on the card. Ticket 11 leaves the label plain; the now line under the card carries the bold name. Propose striking "the now node's in bold" from R17.
 
 ## Changelog
 

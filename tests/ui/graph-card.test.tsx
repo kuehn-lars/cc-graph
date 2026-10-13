@@ -8,14 +8,17 @@ const IN_CONTEXT = 0x7aa7ff
 const GREY = 0x5f6672
 const GHOST = 0x7d8590
 const EDGE = 0x353a42
+const HALO = 0x9aa4b1
 const AMBER = 0xf0b45a
 const WHITE = 0xf0f3f6
 const near = (r: number) => (dx: number, dy: number) => Math.round(Math.hypot(dx, dy)) === r
 
 const draw = async ($: any, columns: number, rows: number) => {
   await start($)
-  const cells = decode(await (await mount($, 'terminal', columns, rows + 3)).find({ type: 'Raster' })) // the pane gives 3 rows to the view keys, the meter line and the legend
-  return { cells, lit: dots(cells, columns) }
+  const cells = decode(await (await mount($, 'terminal', columns, rows + 4)).find({ type: 'Raster' })) // the pane gives 4 rows to the view keys, the meter line, the now line and the legend
+  const lit = dots(cells, columns)
+  for (const [k, c] of lit) if (c === HALO) lit.delete(k) // the focus's halo is read in graph-focus
+  return { cells, lit }
 }
 
 test('F09-AC13 an 84 × 24 Raster is a card: rounded half-block corners in #14161b, card background everywhere else', async ($, on) => {
@@ -123,7 +126,7 @@ test('F09-R14 a node at the edge of the layout keeps its whole outer ring inside
 
 test('F09-R16 an import edge is a dotted line of #353a42 from ring to ring, and an edge to a missing file is not drawn', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('a.ts', 1), node('b.ts', 2, { state: 'partial' })], [['a.ts', 'b.ts'], ['a.ts', 'gone.ts']], { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 90, y: 50 } })
+  viewLaidOut(on, [node('a.ts', 1), node('b.ts', 2, { state: 'partial' }), node('c.ts', 3, { state: 'compacted' })], [['a.ts', 'b.ts'], ['a.ts', 'gone.ts']], { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 90, y: 50 }, 'c.ts': { x: 50, y: 30 } }) // c.ts is touched last, so it is the focus
   const { lit } = await draw($, 84, 24)
   const edge = ofColor(lit, EDGE).points
   expect(edge.length).toBeGreaterThan(10)

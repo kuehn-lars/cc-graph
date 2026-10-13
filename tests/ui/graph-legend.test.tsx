@@ -3,10 +3,10 @@ import { replay } from '../events/kit'
 import { decode, mount, node, start, ui, viewLaidOut } from './kit'
 
 const COLUMNS = 64
-const ROWS = 27 // a 30-row pane less the view keys, the meter line and the legend
+const ROWS = 26 // a 30-row pane less the view keys, the meter line, the now line and the legend
 const note = (path: string) => ({ path, type: 'Project', tokens: 10, reason: null })
 // The dim Text: these tests have no footer notes.
-const legend = async (pane: any): Promise<string> => (await pane.findAll({ type: 'Text' })).find((t: any) => t.props.dimColor)?.text ?? ''
+const legend = async (pane: any): Promise<string> => (await pane.findAll({ type: 'Text' })).filter((t: any) => t.props.dimColor).at(-1)?.text ?? ''
 
 test('F09-R20 memory files are not drawn on the card', async ($, on) => {
   ui(on)

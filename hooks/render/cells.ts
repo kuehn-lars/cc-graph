@@ -10,7 +10,7 @@ export type Cell = [char: string, fg: number, bg: number]
 export const DEFAULT = 0x01000000
 
 // F09-R22: the card is dark in every theme, so the colours are fixed.
-const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5, DIMMED = 0x9aa3ae
+const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, LIT_EDGE = 0x8a94a3, HALO = 0x9aa4b1, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5, DIMMED = 0x9aa3ae
 
 const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
 
@@ -23,8 +23,14 @@ export const RING: Record<Change, { color: number; name: string }> = {
   edited: { color: 0xf0b45a, name: 'amber' }, created: { color: 0x63d494, name: 'green' }, external: { color: 0x9aa3ae, name: 'grey' }, blind: { color: 0xff6b72, name: 'red' },
 }
 
+/** A colour as the hex string a `Text` takes. */
+export const hex = (color: number) => `#${color.toString(16).padStart(6, '0')}`
+
+/** F09-R18: the now node, the node that is not a ghost with the highest `touched`. */
+export const nowNode = (graph: Graph) => Object.values(graph.files).filter(n => n.state !== 'ghost').reduce<FileNode | null>((top, n) => (!top || n.touched > top.touched ? n : top), null)
+
 /** F09-R17: what a change says on its node's label. */
-const changeWord = (n: FileNode) => (n.change === 'edited' ? `+${n.added} −${n.removed}` : n.change === 'created' ? `+${n.added} new` : n.change === 'external' ? 'changed' : 'changed unseen')
+export const changeWord = (n: FileNode) => (n.change === 'edited' ? `+${n.added} −${n.removed}` : n.change === 'created' ? `+${n.added} new` : n.change === 'external' ? 'changed' : 'changed unseen')
 
 /** The dots of a straight line between two dots, Bresenham. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
@@ -58,27 +64,29 @@ const SHAPE: Record<FileNode['state'], (dx: number, dy: number, r: number) => bo
 }
 
 /** F09-R15: a circle of every other dot, counted round the ring so the gaps are even. */
-function dotted(c: Canvas, cx: number, cy: number, r: number, color: number, priority: number) {
+function dotted(c: Canvas, cx: number, cy: number, r: number, color: number, priority: number, keep: (x: number, y: number) => boolean = () => true) {
   const ring: [number, number][] = []
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (onRing(dx, dy, r)) ring.push([dx, dy])
   ring.sort(([ax, ay], [bx, by]) => Math.atan2(ay, ax) - Math.atan2(by, bx))
-  ring.forEach(([dx, dy], i) => { if (i % 2 === 0) c.set(cx + dx, cy + dy, color, priority) })
+  ring.forEach(([dx, dy], i) => { if (i % 2 === 0 && keep(cx + dx, cy + dy)) c.set(cx + dx, cy + dy, color, priority) })
 }
 
-type Placed = { node: FileNode; x: number; y: number; outer: number }
+type Placed = { node: FileNode; x: number; y: number; outer: number; reach: number }
 
 /** F09-R14: a dot of the area, from `t` dots off its centre; a node and its mirror image land on mirrored dots. */
 const place = (t: number, size: number) => (t > 0 ? size / 2 + Math.ceil(t) - 1 : size / 2 + Math.floor(t))
 
 /**
  * `columns × rows` cells: the card (F09-R12), the file nodes as shapes at their positions in `layout`, else at their folder's seed point (F09-R9), fitted to the dot area (R14), joined by dotted import edges (R16).
- * Every node is labelled (R17). A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
+ * The focus, the selected node or else the now node, wears a halo and lights its edges (R16). Every node is labelled (R17). A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
  */
 export function paint(graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
   const files = Object.values(graph.files)
   const W = (columns - 2) * 2, H = (rows - 2) * 4
   const dots = canvas(Math.max(W, 0), Math.max(H, 0))
   const placed = new Map<string, Placed>()
+  const now = nowNode(graph)
+  const focus = selected ?? now?.path ?? null
   if (W > 0 && H > 0 && files.length) {
     const at = files.map(n => layout[n.path] ?? seedPoint(folderOf(n.path)))
     const xs = at.map(p => p.x), ys = at.map(p => p.y)
@@ -89,15 +97,19 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
       const base = node.state === 'ghost' ? 2 : node.tokens === null ? 3 : 2 + Math.round(7 * Math.sqrt(node.tokens / biggest))
       const r = columns < 84 ? Math.max(2, Math.round(base * columns / 84)) : base
       const changeAt = r + 3, outer = node.path !== selected ? (node.change ? changeAt : r) : node.change ? changeAt + 2 : changeAt // F09-R15: the change ring 3 dots out, the selected ring 2 further out (or 3 without a change)
-      const fit = (v: number, size: number) => (size - 1 - outer < outer ? v : Math.min(Math.max(v, outer), size - 1 - outer)) // the outermost ring stays inside
+      const reach = node.path === focus ? outer + 4 : outer // the halo is the outermost ring of the focus (R17)
+      const fit = (v: number, size: number) => (size - 1 - reach < reach ? v : Math.min(Math.max(v, reach), size - 1 - reach)) // the outermost ring stays inside
       const x = fit(place((at[i]!.x - (minX + maxX) / 2) * scale, W), W), y = fit(place((at[i]!.y - (minY + maxY) / 2) * scale, H), H)
-      placed.set(node.path, { node, x, y, outer })
+      placed.set(node.path, { node, x, y, outer, reach })
       if (node.state === 'search') dotted(dots, x, y, r, SEARCH, PRIORITY.body)
       else stamp(dots, x, y, r, COLOR[node.state], PRIORITY.body, (dx, dy) => SHAPE[node.state](dx, dy, r))
       const ring = (radius: number, color: number, priority: number) => stamp(dots, x, y, radius, color, priority, (dx, dy) => onRing(dx, dy, radius))
       if (node.change) ring(changeAt, RING[node.change].color, PRIORITY.change)
       if (node.path === selected) ring(outer, SELECTED, PRIORITY.selected)
     })
+    // The halo goes on last and gives way to any body or ring that shares its cell: a cell has one colour, so a halo dot there would show as a stray dot of the body's.
+    const halo = placed.get(focus ?? '')
+    if (halo) dotted(dots, halo.x, halo.y, halo.reach, HALO, PRIORITY.halo, (x, y) => dots.cell(x >> 1, y >> 2).priority <= PRIORITY.halo)
     for (const e of graph.edges) {
       const a = placed.get(e.from), b = placed.get(e.to)
       if (e.kind !== 'import' || !a || !b) continue
@@ -105,7 +117,8 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
       if (d <= ua + ub) continue // the rings meet: no room for a line
       const [ux, uy] = [(b.x - a.x) / d, (b.y - a.y) / d]
       let i = 0
-      for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) dots.set(x, y, EDGE, PRIORITY.edge)
+      const lit = e.from === focus || e.to === focus
+      for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) lit ? dots.set(x, y, LIT_EDGE, PRIORITY.litEdge) : dots.set(x, y, EDGE, PRIORITY.edge)
     }
     for (const path of pulse) {
       const p = placed.get(path)
@@ -123,17 +136,16 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
     return (col - 1) % 4 === 0 && (row - 1) % 2 === 0 ? ['·', GRID, CARD] : [' ', DEFAULT, CARD]
   })
   // Labels last (F09-R17): a label covers edge dots and the grid, never a node's dots or another label (NFR-A3).
-  const now = files.filter(n => n.state !== 'ghost').reduce<FileNode | null>((top, n) => (!top || n.touched > top.touched ? n : top), null)
   const rank = (n: FileNode) => (n.path === selected ? 0 : n === now ? 1 : n.change ? 2 : 3)
   const order = [...placed.values()].sort((a, b) => rank(a.node) - rank(b.node) || (rank(a.node) === 2 ? b.node.touched - a.node.touched : (b.node.tokens ?? 0) - (a.node.tokens ?? 0)) || (a.node.path < b.node.path ? -1 : 1))
   const busy = new Set<number>()
-  for (const { node, x, y, outer } of order) {
+  for (const { node, x, y, reach } of order) {
     const name = [...node.path.slice(node.path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
     const label: [string, number][] = name.map(c => [c, node.state === 'read' || node.state === 'partial' || node.state === 'search' ? TEXT : DIMMED])
     if (node.change) label.push(...[...`  ${changeWord(node)}`].map(c => [c, RING[node.change!].color] as [string, number]))
     const row = Math.floor(y / 4)
     // the right side first, then the left
-    for (const start of [Math.floor((x + outer) / 2) + 2, Math.floor((x - outer) / 2) - 2 - label.length + 1]) {
+    for (const start of [Math.floor((x + reach) / 2) + 2, Math.floor((x - reach) / 2) - 2 - label.length + 1]) {
       if (start < 0 || start + label.length > columns - 2) continue
       const span = label.map((_, i) => row * columns + start + i)
       if (span.some((at, i) => busy.has(at) || dots.cell(start + i, row).priority >= PRIORITY.halo)) continue

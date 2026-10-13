@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import { decode, dots, mount, node, ofColor, start, ui, viewLaidOut } from './kit'
 
 const COLUMNS = 64
-const ROWS = 27 // a 30-row pane less the view keys, the meter line and the legend
+const ROWS = 26 // a 30-row pane less the view keys, the meter line, the now line and the legend
 const raster = async ($: any) => decode(await (await mount($, 'terminal', COLUMNS, 30)).find({ type: 'Raster' }))
 const text = (cells: { char: string }[]) => cells.map(c => c.char).join('')
 const rowOf = (cells: { char: string }[], y: number) => text(cells.slice(Math.floor(y / 4) * COLUMNS, (Math.floor(y / 4) + 1) * COLUMNS))
@@ -32,7 +32,7 @@ test('F09-R17 a label starts two columns right of its node\'s outermost ring, on
   viewLaidOut(on, [node('src/a.ts', 1)], [], { 'src/a.ts': { x: 10, y: 10 } }, [], 'src/a.ts')
   await start($)
   const cells = await raster($)
-  const ring = ofColor(dots(cells, COLUMNS), 0xf0f3f6) // the selected ring is the outermost
+  const ring = ofColor(dots(cells, COLUMNS), 0x9aa4b1) // the selected node is the focus: its halo is the outermost ring
   expect(rowOf(cells, ring.y).indexOf('a.ts')).toBe(Math.floor(ring.maxX / 2) + 2)
 })
 
@@ -77,7 +77,7 @@ test('F09-AC17 5 nodes placed apart on an 84 × 24 card: all 5 file names are in
   const nodes = ['a', 'b', 'c', 'd', 'e'].map((n, i) => node(`${n}${n}.ts`, i + 1, { tokens: 100 + i }))
   viewLaidOut(on, nodes, [], Object.fromEntries(nodes.map((n, i) => [n.path, { x: (i % 3) * 30, y: Math.floor(i / 3) * 20 }])))
   await start($)
-  const t = text(decode(await (await mount($, 'terminal', 84, 27)).find({ type: 'Raster' })))
+  const t = text(decode(await (await mount($, 'terminal', 84, 28)).find({ type: 'Raster' })))
   for (const n of nodes) expect(t).toContain(n.path)
 })
 
@@ -86,7 +86,7 @@ test('F09-AC18 a node near the right edge: its label ends two columns left of it
   viewLaidOut(on, [node('a.ts', 1), node('src/long-name.ts', 2)], [], { 'a.ts': { x: 0, y: 10 }, 'src/long-name.ts': { x: 99, y: 10 } }, [], 'src/long-name.ts')
   await start($)
   const cells = await raster($)
-  const ring = ofColor(dots(cells, COLUMNS), 0xf0f3f6)
+  const ring = ofColor(dots(cells, COLUMNS), 0x9aa4b1) // the halo
   const row = rowOf(cells, ring.y)
   expect(row.indexOf('long-name.ts') + 'long-name.ts'.length - 1).toBe(Math.floor(ring.minX / 2) - 2)
 })
