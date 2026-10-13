@@ -1,0 +1,15 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="880" height="56" viewBox="0 0 880 56" role="img" aria-label="install">
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+    .w { fill: #D97757; } .d { fill: #8c8b86; } .r { stop-color: #8c8b86; stop-opacity: .55; }
+    .c { animation: blink 1.1s steps(1) infinite; }
+    @keyframes blink { 50% { opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { .c { animation: none; } }
+  </style>
+  <defs><linearGradient id="f"><stop offset="0" class="r"/><stop offset="1" class="r" stop-opacity="0"/></linearGradient></defs>
+  <path d="M6 18 L18 28 L6 38" fill="none" stroke="#8c8b86" stroke-width="3.2" stroke-linecap="round" stroke-linejoin="round"/>
+  <text class="w" x="34" y="38" font-size="30" font-weight="800" letter-spacing="-0.5">install</text>
+  <rect class="c" x="178" y="17" width="3" height="25" fill="#D97757"/>
+  <rect x="206" y="28" width="594" height="1.2" fill="url(#f)"/>
+  <text class="d" x="876" y="34" font-size="14" text-anchor="end">01/04</text>
+</svg>

@@ -1,0 +1,69 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1280" height="270" viewBox="0 0 1280 270" role="img" aria-labelledby="t d">
+  <title id="t">cc-graph roadmap</title>
+  <desc id="d">M0 Foundations, v0.1 What Claude knows and v0.2 The graph are shipped. Next: v0.3 Blind spots, then v0.4 Why it did that, v0.5 Desktop graph and pointer, v0.6 Decisions and timeline, v1.0 Hardening and listing.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c1b1a"/><stop offset="1" stop-color="#121211"/></linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#D97757" stop-opacity="0.35"/><stop offset="1" stop-color="#D97757" stop-opacity="0"/></radialGradient>
+    <pattern id="dots" width="24" height="24" patternUnits="userSpaceOnUse"><circle cx="12" cy="12" r="1" fill="#fff" fill-opacity="0.06"/></pattern>
+    <linearGradient id="done" x1="0" x2="1"><stop offset="0" stop-color="#D97757" stop-opacity="0.35"/><stop offset="1" stop-color="#D97757"/></linearGradient>
+    <clipPath id="card"><rect width="1280" height="270" rx="18"/></clipPath>
+  </defs>
+  <style>
+    text { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas, "Liberation Mono", monospace; }
+    .v { font-size: 20px; font-weight: 800; }
+    .l { font-size: 14px; }
+    .s { font-size: 11px; font-weight: 700; letter-spacing: 1.5px; }
+    .todo { fill: none; stroke: #4a4944; stroke-width: 2; stroke-dasharray: 2 7; stroke-linecap: round; animation: flow 1.4s linear infinite; }
+    .ring { transform-box: fill-box; transform-origin: center; animation: ring 2.4s ease-out infinite; }
+    @keyframes flow { to { stroke-dashoffset: -18; } }
+    @keyframes ring { 0% { transform: scale(1); opacity: .9; } 80%, 100% { transform: scale(2.6); opacity: 0; } }
+    @media (prefers-reduced-motion: reduce) { * { animation: none !important; } }
+  </style>
+  <g clip-path="url(#card)">
+    <rect width="1280" height="270" fill="url(#bg)"/>
+    <rect width="1280" height="270" fill="url(#dots)"/>
+    <circle cx="413" cy="112" r="170" fill="url(#glow)"/>
+  </g>
+  <rect x="0.5" y="0.5" width="1279" height="269" rx="18" fill="none" stroke="#2c2b28"/>
+  <text x="96" y="44" class="s" fill="#8c8b86">// ROADMAP</text>
+  <path class="todo" d="M412.9 112 H1170.0"/>
+  <rect x="110.0" y="110.5" width="302.9" height="3" rx="1.5" fill="url(#done)"/>
+  <circle cx="110.0" cy="112" r="11" fill="#D97757"/><path d="M105.0 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="110.0" y="82" class="v" fill="#f5f4ef" text-anchor="middle">M0</text>
+  <text x="110.0" y="154" class="l" fill="#b5b3ac" text-anchor="middle">Foundations</text>
+  <text x="110.0" y="216" class="s" fill="#D97757" text-anchor="middle">SHIPPED</text>
+  <circle cx="261.4" cy="112" r="11" fill="#D97757"/><path d="M256.4 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="261.4" y="82" class="v" fill="#f5f4ef" text-anchor="middle">v0.1</text>
+  <text x="261.4" y="154" class="l" fill="#b5b3ac" text-anchor="middle">What Claude</text>
+  <text x="261.4" y="173" class="l" fill="#b5b3ac" text-anchor="middle">knows</text>
+  <text x="261.4" y="216" class="s" fill="#D97757" text-anchor="middle">SHIPPED</text>
+  <circle class="ring" cx="412.9" cy="112" r="11" fill="none" stroke="#D97757" stroke-width="2"/>
+  <circle cx="412.9" cy="112" r="11" fill="#D97757"/><path d="M407.9 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="412.9" y="82" class="v" fill="#f5f4ef" text-anchor="middle">v0.2</text>
+  <text x="412.9" y="154" class="l" fill="#ecebe7" text-anchor="middle">The graph</text>
+  <text x="412.9" y="216" class="s" fill="#D97757" text-anchor="middle">LATEST</text>
+  <circle cx="564.3" cy="112" r="9" fill="#171716" stroke="#B1B9F9" stroke-width="2"/>
+  <text x="564.3" y="82" class="v" fill="#ecebe7" text-anchor="middle">v0.3</text>
+  <text x="564.3" y="154" class="l" fill="#9b9a94" text-anchor="middle">Blind spots</text>
+  <text x="564.3" y="216" class="s" fill="#B1B9F9" text-anchor="middle">NEXT</text>
+  <circle cx="715.7" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
+  <text x="715.7" y="82" class="v" fill="#8c8b86" text-anchor="middle">v0.4</text>
+  <text x="715.7" y="154" class="l" fill="#6f6e69" text-anchor="middle">Why it did</text>
+  <text x="715.7" y="173" class="l" fill="#6f6e69" text-anchor="middle">that</text>
+  <text x="715.7" y="216" class="s" fill="#55544f" text-anchor="middle">PLANNED</text>
+  <circle cx="867.1" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
+  <text x="867.1" y="82" class="v" fill="#8c8b86" text-anchor="middle">v0.5</text>
+  <text x="867.1" y="154" class="l" fill="#6f6e69" text-anchor="middle">Desktop graph</text>
+  <text x="867.1" y="173" class="l" fill="#6f6e69" text-anchor="middle">and pointer</text>
+  <text x="867.1" y="216" class="s" fill="#55544f" text-anchor="middle">PLANNED</text>
+  <circle cx="1018.6" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
+  <text x="1018.6" y="82" class="v" fill="#8c8b86" text-anchor="middle">v0.6</text>
+  <text x="1018.6" y="154" class="l" fill="#6f6e69" text-anchor="middle">Decisions and</text>
+  <text x="1018.6" y="173" class="l" fill="#6f6e69" text-anchor="middle">timeline</text>
+  <text x="1018.6" y="216" class="s" fill="#55544f" text-anchor="middle">PLANNED</text>
+  <circle cx="1170.0" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
+  <text x="1170.0" y="82" class="v" fill="#8c8b86" text-anchor="middle">v1.0</text>
+  <text x="1170.0" y="154" class="l" fill="#6f6e69" text-anchor="middle">Hardening and</text>
+  <text x="1170.0" y="173" class="l" fill="#6f6e69" text-anchor="middle">listing</text>
+  <text x="1170.0" y="216" class="s" fill="#55544f" text-anchor="middle">PLANNED</text>
+</svg>
