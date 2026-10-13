@@ -32,7 +32,7 @@ test('F06-AC10 reading login.ts twice still leaves one edge to password.ts', asy
   expect(await edgesOf()).toHaveLength(2)
 })
 
-test('F06-R10 a file importing itself adds no edge', async ($, on) => {
+test('F06-R10 (derived) a file importing itself adds no edge', async ($, on) => {
   engine(on, { ...readWhole, result: { ...readWhole.result, file: { ...readWhole.result.file, content: "import { x } from './login'\nimport './login.ts'" } } })
   await start($)
   await read($, login)
@@ -40,7 +40,7 @@ test('F06-R10 a file importing itself adds no edge', async ($, on) => {
   expect(Object.keys((await graphOf())!.files)).toEqual(['src/auth/login.ts'])
 })
 
-test('F06-R10 a target that is already a read node keeps its state', async ($, on) => {
+test('F06-R10 (derived) a target that is already a read node keeps its state', async ($, on) => {
   const answer = engine(on, readWhole)
   await start($)
   await read($, '/w/src/auth/password.ts') // the recorded result is login.ts's text; only the node matters here
@@ -106,21 +106,21 @@ test('F06-AC5 (derived) a 300,000-character Read result adds no edge', async ($,
 
 const big = "import './password'\n" + 'x'.repeat(200_000) // 200,019 characters
 
-test('F06-R9 a Write over 200,000 characters adds no edge', async ($, on) => {
+test('F06-R9 (derived) a Write over 200,000 characters adds no edge', async ($, on) => {
   engine(on, { ...write, result: { ...write.result, content: big } })
   await start($)
   await $.tool.call({ ...write.input, file_path: login })
   expect(await edgesOf()).toEqual([])
 })
 
-test('F06-R9 an Edit over 200,000 characters adds no edge', async ($, on) => {
+test('F06-R9 (derived) an Edit over 200,000 characters adds no edge', async ($, on) => {
   engine(on, { ...edit, result: { ...edit.result, newString: big } })
   await start($)
   await $.tool.call({ ...edit.input, file_path: login })
   expect(await edgesOf()).toEqual([])
 })
 
-test('F06-R9 a Write of exactly 200,000 characters is still parsed', async ($, on) => {
+test('F06-R9 (derived) a Write of exactly 200,000 characters is still parsed', async ($, on) => {
   const content = "import './password'\n".padEnd(200_000, 'x')
   engine(on, { ...write, result: { ...write.result, content } })
   await start($)
