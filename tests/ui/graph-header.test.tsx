@@ -30,7 +30,7 @@ test('F09-R21 without a percent the meter says "window –" and draws no bar', a
   expect(text).toBe('window –  ≈100 tokens · 1 files')
 })
 
-test('F09-AC4 the title leads the view keys, which stay pressable when the meter line is cut', async ($, on) => {
+test('F09-R11 R21 the title leads the view keys, which stay pressable when the meter line is cut', async ($, on) => {
   ui(on)
   viewFilled(on, FILL, ...files())
   await start($)
