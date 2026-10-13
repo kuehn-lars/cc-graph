@@ -52,8 +52,8 @@ test('F06-R3 ../ climbs and . or .. name the folder index', () => {
   expect(ts('.', 'src/auth/login.ts')[0]).toBe('src/auth/index.ts')
 })
 
-test('F06-R3 a TypeScript importer\'s .js specifier tries the matching TypeScript file before the path as written (F06-AC7)', () => {
-  expect(ts('./util.js', 'src/a.ts')).toEqual(['src/util.ts', 'src/util.js'])
+test('F06-R3 a TypeScript importer\'s .js specifier tries .ts, then .tsx, before the path as written (F06-AC7)', () => {
+  expect(ts('./util.js', 'src/a.ts')).toEqual(['src/util.ts', 'src/util.tsx', 'src/util.js'])
   expect(ts('./view.jsx', 'src/a.tsx')).toEqual(['src/view.tsx', 'src/view.jsx'])
   expect(ts('./m.mjs', 'src/a.mts')).toEqual(['src/m.mts', 'src/m.mjs'])
   expect(ts('./c.cjs', 'src/a.cts')).toEqual(['src/c.cts', 'src/c.cjs'])
@@ -77,8 +77,21 @@ test('F06-R10 a file importing itself resolves to its own path first, so the red
   expect(ts('./login.ts')).toEqual(['src/auth/login.ts'])
 })
 
-test('F06-R3 a specifier that climbs out of the working folder has no candidates', () => {
-  expect(ts('../../x', 'src/a.ts')).toEqual([])
+test('F06-R3 a specifier that climbs out of the working directory gives absolute candidates (I4)', () => {
+  expect(ts('../../shared/x', 'src/a.ts')[0]).toBe('/shared/x.ts')
+  expect(candidatesFor('../../shared/x', 'src/a.ts', '/w/pkg')[0]).toBe('/w/shared/x.ts')
+})
+
+test('F06-R3 an importer outside the working directory gives candidates inside it relative to it (I4)', () => {
+  expect(candidatesFor('../w/src/x', '/other/a.ts', '/w')[0]).toBe('src/x.ts')
+})
+
+test('F06-R3 a specifier whose extension belongs to no language links only to an existing node', () => {
+  expect(importCandidates("import './styles.css'\nimport { U } from './user.service'\nimport './a'", 'src/a.tsx', '/w')).toEqual([
+    { candidates: expect.arrayContaining(['src/styles.css.ts']), existing: true },
+    { candidates: expect.arrayContaining(['src/user.service.ts']), existing: true },
+    { candidates: expect.arrayContaining(['src/a.tsx']) },
+  ])
 })
 
 test('F06-R11 an importer of no known language has no candidates', () => {
@@ -125,7 +138,7 @@ test('F06-R4 a relative module is x.py, then x/__init__.py, beside the importer'
 test('F06-R4 one level up per extra dot', () => {
   expect(pyc('..models', 'app/sub/views.py')).toEqual(['app/models.py', 'app/models/__init__.py'])
   expect(pyc('...models', 'app/sub/views.py')).toEqual(['models.py', 'models/__init__.py'])
-  expect(pyc('....models', 'app/sub/views.py')).toEqual([])
+  expect(pyc('....models', 'app/sub/views.py')).toEqual(['/models.py', '/models/__init__.py']) // out of the working directory: absolute (I4)
 })
 
 test('F06-R4 an absolute module resolves against the working directory, x.py before x/__init__.py', () => {

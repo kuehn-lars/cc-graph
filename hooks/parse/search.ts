@@ -1,6 +1,6 @@
 // Pure: a Bash command that holds a search, and the hits in its output (F02-R1, R2, R9).
 import type { Searched } from '../model/searched'
-import { normalize } from './path'
+import { isAbs, normalize } from './path'
 
 /** `dir`: where the search ran. Absent: the session's directory; a path: that of the `cd … &&` before it (F02-R8); `null`: unknown. */
 export type Search = { tool: string; flags: string[]; operands: string[]; dir?: string | null }
@@ -99,8 +99,6 @@ function searchIn({ words: w, redirs }: Segment): Search | null {
   if (pattern !== undefined) operands.unshift(pattern)
   return { tool, flags, operands }
 }
-
-const isAbs = (p: string) => /^([a-z]:)?[\\/]/i.test(p)
 
 /** F02-R8: the directory after segment `s`, given the one before it (`undefined`: the session's, `null`: unknown). Only a literal `cd <path>` ended by `&&` is known; a subshell, any other `cd` or separator is not. */
 // ponytail: `cd a && make || rg …` is taken as in a; if the cd failed the search ran elsewhere. Needs a shell to know.

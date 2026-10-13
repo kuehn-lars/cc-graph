@@ -1,20 +1,28 @@
 import type { ImportTarget } from '../model/imports'
+import { isAbs, normalize } from './path'
 
 // Pure: F06. The imports of a text Claude's own tool result carried, one entry per language (F06 Implementation decisions).
 type Language = {
-  name: string
   extensions: string[]
   /** Every module specifier the text names, in order, bare ones included. */
   specifiers: (text: string) => string[]
-  /** Ordered candidate paths for one specifier, relative to `workingDir` like the importer; none for a specifier the language does not link. */
+  /** Ordered candidate paths for one specifier, as node paths (I4); none for a specifier the language does not link. */
   candidatesFor: (specifier: string, importer: string, workingDir: string) => string[]
-  /** True for a specifier that may only link to a node that already exists (F06-R4). */
+  /** True for a specifier that may only link to a node that already exists (F06-R3, R4). */
   existingOnly?: (specifier: string) => boolean
 }
 
 const TS_FAMILY = ['.ts', '.tsx', '.mts', '.cts']
 const JS_FAMILY = ['.js', '.jsx', '.mjs', '.cjs']
+const CODE = [...TS_FAMILY, ...JS_FAMILY]
+// `./util.js` in a TypeScript file names `util.ts` or `util.tsx`, as TypeScript resolves it.
+const TWINS: Record<string, string[]> = { '.js': ['.ts', '.tsx'], '.jsx': ['.tsx'], '.mjs': ['.mts'], '.cjs': ['.cts'] }
 const extOf = (path: string) => /\.[^./]+$/.exec(path)?.[0] ?? ''
+const dirOf = (path: string) => path.slice(0, path.lastIndexOf('/') + 1)
+
+/** `rel` against the importer's folder, as a node path (I4): relative inside the working directory, absolute outside. */
+const near = (importer: string, rel: string, workingDir: string) =>
+  normalize(`${isAbs(importer) ? '' : workingDir + '/'}${dirOf(importer)}${rel}`, workingDir)
 
 // Left to right, so a comment or string that starts earlier swallows what looks like an import inside it.
 // ponytail: a regex literal or a `${}` holding a quote can still confuse this; a real tokenizer if a recording shows it.
@@ -27,36 +35,20 @@ const TS_TOKENS = new RegExp([
 ].join('|'), 'g')
 
 const typescript: Language = {
-  name: 'TypeScript',
-  extensions: [...TS_FAMILY, ...JS_FAMILY],
+  extensions: CODE,
   specifiers: text => [...text.matchAll(TS_TOKENS)].flatMap(m => m[2] ?? m[4] ?? m[6] ?? []),
-  candidatesFor(spec, importer, _workingDir) {
+  candidatesFor(spec, importer, workingDir) {
     if (!/^\.\.?(\/|$)/.test(spec)) return [] // F06-R5: packages, `node:`, aliases
-    const path = join(dirOf(importer), spec)
-    if (path === null) return []
-    const own = TS_FAMILY.includes(extOf(importer)) ? TS_FAMILY : JS_FAMILY
-    const exts = [...own, ...(own === TS_FAMILY ? JS_FAMILY : TS_FAMILY)]
-    const written = extOf(path)
-    if (exts.includes(written)) {
-      // `./util.js` in a TypeScript file names `util.ts`: its twin comes first.
-      const twin = own === TS_FAMILY ? TS_FAMILY[JS_FAMILY.indexOf(written)] : undefined
-      return twin ? [path.slice(0, -written.length) + twin, path] : [path]
-    }
-    const index = exts.map(x => `${path && path !== '/' ? path + '/' : path}index${x}`)
-    return /(^|\/)\.\.?\/?$|\/$/.test(spec) ? index : [...exts.map(x => path + x), ...index] // `.`, `..` and `x/` name a folder
+    const at = (rel: string) => near(importer, rel, workingDir)
+    const ts = TS_FAMILY.includes(extOf(importer))
+    const exts = ts ? CODE : [...JS_FAMILY, ...TS_FAMILY]
+    const written = extOf(spec)
+    if (CODE.includes(written)) return [...(ts ? TWINS[written] ?? [] : []).map(t => at(spec.slice(0, -written.length) + t)), at(spec)]
+    const index = exts.map(x => at(`${spec}/index${x}`))
+    return /(^|\/)\.\.?\/?$|\/$/.test(spec) ? index : [...exts.map(x => at(spec + x)), ...index] // `.`, `..` and `x/` name a folder
   },
-}
-
-const dirOf = (path: string) => path.slice(0, path.lastIndexOf('/') + 1)
-
-/** `dir` (empty or ending in `/`) plus a relative `spec`, `.` and `..` resolved; null when it climbs out of a relative `dir`. */
-function join(dir: string, spec: string): string | null {
-  const root = dir.startsWith('/') ? '/' : ''
-  const out: string[] = []
-  for (const s of (dir + spec).split('/')) {
-    if (s === '..') { if (!out.pop() && !root) return null } else if (s !== '' && s !== '.') out.push(s)
-  }
-  return root + out.join('/')
+  // `./styles.css` is no module; `./user.service` may be `user.service.ts`. Without the disk, only an existing node tells them apart.
+  existingOnly: spec => extOf(spec) !== '' && !CODE.includes(extOf(spec)),
 }
 
 // ponytail: a statement after `;` or `:` (`if TYPE_CHECKING: import x`), a line continuation (`\`) or a `)` inside a string in a parenthesised list can still confuse this; a real tokenizer if a recording shows it.
@@ -74,14 +66,14 @@ const pyNames = (list: string) =>
   list.replace(/#[^\n]*/g, '').split(',').flatMap(i => /^\s*([A-Za-z_][\w.]*)/.exec(i)?.[1] ?? [])
 
 const python: Language = {
-  name: 'Python',
   extensions: ['.py'],
   specifiers: text => [...text.matchAll(PY_TOKENS)].flatMap(m =>
     m[1] === undefined ? pyNames(m[4] ?? '') : /^\.+$/.test(m[1]) ? pyNames(m[2] ?? m[3] ?? '').map(n => m[1] + n) : [m[1]]), // `from . import x` names the module `.x`
-  candidatesFor(spec, importer, _workingDir) {
+  candidatesFor(spec, importer, workingDir) {
     const dots = /^\.*/.exec(spec)![0].length
-    const base = dots ? join(dirOf(importer), '../'.repeat(dots - 1) + spec.slice(dots).replace(/\./g, '/')) : spec.replace(/\./g, '/')
-    return base ? [base + '.py', base + '/__init__.py'] : []
+    const module = spec.slice(dots).replace(/\./g, '/')
+    const base = dots ? near(importer, '../'.repeat(dots - 1) + module, workingDir) : module // absolute: already relative to the working directory
+    return [base + '.py', base + '/__init__.py']
   },
   existingOnly: spec => !spec.startsWith('.'),
 }
@@ -102,7 +94,8 @@ export const candidatesFor = (specifier: string, importer: string, workingDir: s
 /** The candidates of every linkable import in `text`, one per specifier. */
 export const importCandidates = (text: string, importer: string, workingDir: string): ImportTarget[] => {
   const lang = languageOf(importer)
-  return importsIn(text, importer)
-    .map(s => ({ candidates: candidatesFor(s, importer, workingDir), ...(lang?.existingOnly?.(s) && { existing: true }) }))
-    .filter(t => t.candidates.length > 0)
+  return !lang ? [] : importsIn(text, importer).flatMap(s => {
+    const candidates = lang.candidatesFor(s, importer, workingDir)
+    return candidates.length ? [{ candidates, ...(lang.existingOnly?.(s) && { existing: true }) }] : []
+  })
 }

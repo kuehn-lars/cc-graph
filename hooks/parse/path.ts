@@ -22,3 +22,4 @@ const split = (path: string, cwd: string) => {
 
 export const normalize = (path: string, cwd: string): string => split(path, cwd).path
 export const worktreeOf = (path: string, cwd: string): string | null => split(path, cwd).worktree
+export const isAbs = (p: string) => /^([a-z]:)?[\\/]/i.test(p)
