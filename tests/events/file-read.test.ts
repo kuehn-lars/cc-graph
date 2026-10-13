@@ -68,7 +68,7 @@ test('F01-AC10 /w/src/a.ts becomes src/a.ts, /etc/hosts stays absolute', async (
   await start($)
   await read($, '/w/src/a.ts')
   await read($, '/etc/hosts')
-  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['/etc/hosts', 'src/a.ts'])
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['/etc/hosts', 'src/a.ts', 'src/password.ts', 'src/sessions.ts']) // F06: the recorded text imports both, as ghosts
 })
 
 test('F01-AC17 a partial read over a read node keeps read, tokens, seen and readId of the whole read', async ($, on) => {

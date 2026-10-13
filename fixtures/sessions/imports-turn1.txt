@@ -1,0 +1,9 @@
+Work through these exact steps, in order, one tool call each. Do not open or search any other files and do not do anything extra.
+
+1. Read src/auth/password.js (whole file).
+2. Read src/auth/login.ts (whole file).
+3. Read src/a.ts (whole file).
+4. Read app/models.py (whole file).
+5. Read app/views.py (whole file).
+6. Read docs/usage.md (whole file).
+Then stop and say "done".

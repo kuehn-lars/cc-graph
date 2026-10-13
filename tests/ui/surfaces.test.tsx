@@ -13,7 +13,7 @@ for (const surface of SURFACES) {
     await $.tool.call({ tool: 'Read', file_path: '/w/src/auth/login.ts' })
     expect((await run($)).text).toBe('CC Graph opened.')
     const pane = await mount($, surface)
-    expect((await rowButtons(pane)).map(b => b.key)).toEqual(['src/auth/login.ts'])
+    expect((await rowButtons(pane)).map(b => b.key)).toEqual(['src/auth/login.ts', 'src/auth/password.ts', 'src/auth/sessions.ts']) // F06: its two imports are ghosts
     expect(toasts).toEqual([])
   })
 }

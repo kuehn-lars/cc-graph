@@ -2,6 +2,22 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
+## Unreleased
+
+F06 import edges are in the graph state; the terminal graph that draws them (F09) follows, and F06's manual check waits for it. Until then a ghost shows as a `⋯` row in the list view and edges are not drawn.
+
+- F06 import edges: a successful text `Read`, `Write` or `Edit` links the file to the files it imports, parsed from `file.content`, `content` and `newString`. The node, its edges and its ghosts land in one write of `graph`, under the same eviction cap (F06-AC1, AC8, R1, I5, I9). The mod reads no file to find them (F06-AC4, R8).
+- F06 import edges: an imported file with no node becomes a `ghost`, held by nobody (`mainLoop: false`, no agents). An existing node keeps its state (F06-R7).
+- F06 import edges: one edge per pair of files, none from a file to itself, and none removed; a second read of `login.ts` adds nothing (F06-AC10, R10).
+- F06 TypeScript, with JavaScript (`.ts`, `.tsx`, `.mts`, `.cts`, `.js`, `.jsx`, `.mjs`, `.cjs`): `import … from`, `import 'x'`, `export … from`, `require('x')` and `import('x')`. Comments and strings that look like imports are skipped. Only relative specifiers link: packages, `node:` built-ins and aliases such as `@/lib/x` add nothing (F06-AC2, AC9, R2, R5).
+- F06 TypeScript resolution: the path as written when it has a known extension, then each extension of the importer's own family, then the other family, then `/index`. A TypeScript file's `./util.js` tries `util.ts`, then `util.tsx`, before the path as written, and `.jsx`, `.mjs` and `.cjs` try `.tsx`, `.mts` and `.cts`. `.`, `..` and `x/` name a folder's index. An import whose extension belongs to no language (`./styles.css`, `./user.service`) links only to a node that already exists, so it makes no ghost such as `styles.css.ts`. A target outside the working directory keeps its absolute path (I4), so imports from a sibling package link too (F06-AC7, R3).
+- F06 Python (`.py`): `from .x import y`, `from . import x`, `from ..x import y`, `import a.b` and `from a.b import c`. Each extra dot goes one package up, and `x.py` is tried before `x/__init__.py`. An absolute module links only to a node that already exists (F06-AC3, R2, R4).
+- F06 picking a target: a candidate that is already a node, and not a ghost, wins, and the edge is not `guessed`. Otherwise the first candidate wins, the edge is `guessed`, and its target becomes a ghost. A ghost does not confirm anything, so a second importer of a guessed file still guesses (F06-AC6, R6; F06-Q3 open on clearing `guessed` later).
+- F06 limits: text over 200,000 characters adds nothing, whichever of the three tools it came from, and so does a file whose extension belongs to no language, such as an import shown in `docs/usage.md` (F06-AC5, AC11, R9, R11). AC5's 300,000-character `Read` and the R9 and self-import cases are derived from recorded results, because a `Read` over 256 KB errors.
+- F06 setting: `importEdges` ("Show file imports", on by default, F14-R1) in `/config`. When it is off, a `Read`, `Edit` or `Write` parses no imports, so a read of `login.ts` adds `login.ts` alone, with no edge and no ghost (F06-AC12, R12). Edges already in the graph stay until `/clear` (F06-Q2).
+- F06 recording: `fixtures/sessions/imports.ts` comes from a real `claude -p` run that reads `src/auth/password.js`, `src/auth/login.ts`, `src/a.ts`, `app/models.py`, `app/views.py` and `docs/usage.md`. It is written by `scripts/record-imports-session.mjs` with the `imports-probe` mod, and `fixtures/sessions/README.md` explains how to record it again.
+- Specs: F06 Approved. Each language is one entry (TypeScript with JavaScript, and Python), and R6 now says a ghost is a guess, not a confirmation. F14 gains the `importEdges` row, and ROADMAP v0.2 gains F14 (`importEdges`) and its exit gate.
+
 ## 0.1.0 (2026-10-13)
 
 What Claude knows: a list view of every file Claude read, searched or changed, what compaction took, how full the window is, and which memory files are in force (F01, F02, F03, F04, F08, F14 `maxNodes`, F15). Tested on Claude Code 2.1.296.

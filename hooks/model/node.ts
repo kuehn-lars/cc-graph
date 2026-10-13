@@ -27,6 +27,10 @@ export function touch(g: Graph, path: string, turn: number, patch: (old: FileNod
   return { ...g, seq, files: { ...g.files, [path]: node } }
 }
 
+/** F06-R7: a node for a file nobody has opened. Nobody holds it (`mainLoop` false, no agents), and it shares the event's `seq` rather than bumping it. */
+export const ghost = (g: Graph, path: string, turn: number): Graph =>
+  g.files[path] ? g : { ...g, files: { ...g.files, [path]: { ...fresh(path, turn), mainLoop: false, touched: g.seq } } }
+
 /** F15-R9: a change in a worktree says so, unless this tree already has a change of its own (`change` set, `reason` null). */
 export const worktreeReason = (old: FileNode | undefined, worktree?: string): string | null =>
   worktree && !(old?.change && old.reason === null) ? `in worktree ${worktree}` : null

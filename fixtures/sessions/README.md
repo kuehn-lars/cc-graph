@@ -106,6 +106,30 @@ How the runs differed from the ticket: the ticket asks for a throwaway config di
 3. `node scripts/record-wide-session.mjs fixtures/sessions/wide.ts 30 /tmp/cc-graph-wide/log-*.json` (the two logs in order of their timestamps), and `… fixtures/sessions/many-changes.ts 24 /tmp/cc-graph-wide/log-*.json`. The number is the tool calls expected.
 4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars\|/Users" fixtures/sessions/wide.ts fixtures/sessions/many-changes.ts` is 0).
 
+## `imports.ts`: reads of mixed and Python files (F06)
+
+One `claude -p` run (Haiku, Claude Code 2.1.296, 2026-10-13) in a copy of `fixtures/sample-app` (`/private/tmp/claude-501/rec-imports/sample-app/`) plus the files F06's cases need, with the throwaway probe `imports-probe/` (the `wide-probe`'s logger). `export default { claudeCode, events }`; each event is `{ process, event, input, result }` in the order the hooks ran: `session.start`, `turn.start` and six `tool.call` rows, all `Read`, all `type: "text"`, in this order, as `imports-turn1.txt` asks:
+
+| # | File | What it holds | Case |
+| --- | --- | --- | --- |
+| 1 | `src/auth/password.js` | a small module (the copy keeps the sample app's `password.ts` beside it) | F06-AC6 |
+| 2 | `src/auth/login.ts` | `./password` and `./sessions` imports | F06-AC1, AC6 |
+| 3 | `src/a.ts` | `import { double } from './util.js'`, no `src/util.ts` in the copy | F06-AC7 |
+| 4 | `app/models.py` | a class, no imports | F06-AC3 |
+| 5 | `app/views.py` | `from .models import User`, `from . import models`, `import app.models` | F06-AC3, R4 |
+| 6 | `docs/usage.md` | `import { login } from '../src/auth/login'` in a fenced code block | F06-AC11 |
+
+Nothing is edited. `scripts/record-imports-session.mjs` writes the extra files into the copy (`gen`) and, when joining, rewrites the home folder to `/home/user` and adds `process`. The files are not committed; the script writes them. `app/__init__.py` is empty and never read.
+
+How the run differed from the ticket: it used the real config directory (a throwaway one is not logged in, as for `memory.ts`); it has no user `CLAUDE.md` and no rules folder, the copy's path has no auto-memory, and `--setting-sources project` kept the settings out. No `--allowedTools` is needed, there is no `Bash` call. No other difference; the first run was the recording.
+
+### Record again
+
+1. `node scripts/record-imports-session.mjs gen /private/tmp/claude-501/rec-imports/sample-app`, then `git init` and commit there. Empty `/tmp/cc-graph-imports/`.
+2. From inside the copy: `claude -p --model haiku --setting-sources project --plugin-dir <repo>/fixtures/sessions/imports-probe --permission-mode acceptEdits --session-id <new uuid> < /dev/null -- "$(cat <repo>/fixtures/sessions/imports-turn1.txt)"`
+3. `node scripts/record-imports-session.mjs fixtures/sessions/imports.ts 6 /tmp/cc-graph-imports/log-*.json`
+4. Check no personal text got in (`grep -ci "icloud\|kuehn\|lars\|/Users" fixtures/sessions/imports.ts` is 0).
+
 ## `spike-s1/`
 
 The five `file` attachment texts and the compaction result captured in spike S1 (F03-Q1); see `specs/features/F03-context-layer/spike-s1.md`.

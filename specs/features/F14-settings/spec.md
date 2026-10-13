@@ -28,6 +28,7 @@ A handful of settings appear in `/config` with a title and a description, each w
   | Key | Type | Default | Range | Title | Ships in | Read by |
   | --- | --- | --- | --- | --- | --- | --- |
   | `maxNodes` | `number` | 60 | `min` 20, `max` 200 | Most files in the graph | v0.1 | I5, F09, F10 |
+  | `importEdges` | `boolean` | `true` | | Show file imports | v0.2 | F06, F07 |
   | `blindSpots` | `boolean` | `true` | | Look for blind spots with git | v0.3 | F07 |
   | `captureThinking` | `boolean` | `true` | | Keep thinking excerpts | v0.4 | F05 |
   | `editorCommand` | `string` | `code -g {path}:{line}` | | Editor command | v0.4 | F11 |
@@ -55,7 +56,7 @@ A criterion marked "(from vX.Y)" belongs to a field that ships in that milestone
 ## Implementation decisions
 
 - **One field per feature, shipped with it.** A field in `/config` that does nothing yet is a broken promise, so each lands in the milestone of the feature that reads it. This spec owns the contract and the shared rules.
-- **Hooks follow the values.** Because options are fixed per activation, "off" means "not registered": thinking capture off has no `turn.step` hook, blind spots off runs no `git`, decisions off adds no tool and no prompt section.
+- **Hooks follow the values.** Because options are fixed per activation, "off" means "not registered": import edges off parses no imports, thinking capture off has no `turn.step` hook, blind spots off runs no `git`, decisions off adds no tool and no prompt section.
 - **Clamp as well as declare.** The manifest's `min` and `max` guide the dialog, and the mod clamps anyway, so a value written into `settings.json` by hand can never make the graph unbounded.
 - **No `options` picker for the editor.** Editors and their flags vary too much for a fixed list; the substitution rule makes a free string safe.
 
@@ -101,3 +102,4 @@ None.
 - 2026-10-13 Implemented for v0.1: only `maxNodes` ships (AC1, AC3, AC5, AC8). Manual check steps 1 and 2 walked with the owner in a terminal and in the desktop app; step 3 waits for v0.4. A raised `maxNodes` takes effect at the next write to `graph` (R6), so the footer note stays until the next tool call. AC2, AC4, AC6 and AC7 follow with their fields.
 - 2026-10-13 AC2, AC4, AC6 and AC7 marked "(from vX.Y)" so an Implemented F14 does not need tests for fields that ship later (trace rule, specs/README.md). AC3 gets a kit test of the `userConfig` bound; `claude plugin validate` stays in the check command.
 - 2026-10-13 Verified for v0.1: CI green on PR #10.
+- 2026-10-13 Added `importEdges` (v0.2, read by F06 and F07's importer half). Its criteria live in F06 (F06-AC12).

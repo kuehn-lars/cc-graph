@@ -17,6 +17,12 @@
       "default": 60,
       "min": 20,
       "max": 200
+    },
+    "importEdges": {
+      "type": "boolean",
+      "title": "Show file imports",
+      "description": "Link a file to the files it imports. Off, the graph holds only the files Claude touched.",
+      "default": true
     }
   }
 }
