@@ -32,7 +32,7 @@ Files are linked by their imports, found only in text that Claude's own tool res
 - **F06-R3** The mod resolves a relative TypeScript specifier (`./`, `../`) against the importing file's folder, trying in order: the path as written, when it already ends in a known extension; the path with each extension of the importer's own family (`.ts`, `.tsx`, `.mts`, `.cts` for a TypeScript file; `.js`, `.jsx`, `.mjs`, `.cjs` for a JavaScript file), then of the other family; then `/index` with the same extensions. A TypeScript importer's specifier ending in `.js` tries the matching TypeScript file before the path as written.
 - **F06-R4** The mod resolves a relative Python module against the importing file's package (one level up per extra dot) as `x.py`, then `x/__init__.py`. An absolute Python module (`a.b`) resolves against the working directory as `a/b.py` or `a/b/__init__.py`, and only to a node that already exists.
 - **F06-R5** The mod ignores bare specifiers: packages, `node:` built-ins, and path aliases such as `@/lib/x`.
-- **F06-R6** When a candidate is already a node, the mod links to it. Otherwise it links to the first candidate and marks the edge `guessed`.
+- **F06-R6** When a candidate is already a node other than a ghost (a ghost is itself a guess), the mod links to it. Otherwise it links to the first candidate and marks the edge `guessed`.
 - **F06-R7** When a target has no node, the mod adds it as a `ghost` (I3).
 - **F06-R8** The mod never reads a file to find edges: the text comes only from Claude's own tool results (D6, NFR-S1).
 - **F06-R9** If the text is longer than 200,000 characters, then the mod parses nothing from it.
@@ -102,6 +102,7 @@ Adds `Edge` with `kind: 'import'` and `guessed`, and the `ghost` state for impor
 
 - [x] **F06-Q1** Is a `guessed` edge worth drawing differently? Decided: no. It draws like any edge and the card says "(path guessed)" (see Implementation decisions).
 - [ ] **F06-Q2** When `importEdges` is switched off mid-session, should the reload also drop the import edges and import-only ghosts already in the graph? Proposed: no, they stay until `/clear`. Dropping them needs a way to tell an import ghost from a mention or decision ghost. Not blocking.
+- [ ] **F06-Q3** When a guessed edge's target is later read, should a re-read of the importer clear `guessed`? Today the edge is kept as it was (R10: one edge per pair). Proposed: yes. Not blocking.
 
 ## Changelog
 
@@ -109,3 +110,4 @@ Adds `Edge` with `kind: 'import'` and `guessed`, and the `ghost` state for impor
 - 2026-10-11 Review. Added `Edit.newString` as a source, importer-family ordering and the TypeScript `.js` convention, Python absolute imports limited to existing nodes, path aliases ignored, deduplication, and a decision on guessed edges.
 - 2026-10-13 Languages as one entry each, TypeScript (with JavaScript) and Python first (R2 reworded, R11, AC11). The `importEdges` setting (R12, AC12, F14 row). F06-AC5's result is derived: a `Read` cannot return 300,000 characters. Manual check covers Python and the setting.
 - 2026-10-13 Approved by the owner. F06-Q2 stays open, not blocking.
+- 2026-10-13 R6 clarified during F06-04: "already a node" means a node other than a ghost, so a repeat import of a guess stays `guessed` (user story 5). F06-Q3 opened.
