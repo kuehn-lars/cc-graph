@@ -8,10 +8,10 @@ Requirements: F09-R6.
 
 **Touches:** `render` (the raster renderer).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC6 two labels that would overlap: only the higher-priority one is drawn (selected, then changed, then largest)
-- [ ] F09-AC11 the selected node `src/日本.ts`: the `Raster` is drawn and its label reads `??.ts` (derived: no recording has such a path)
-- [ ] A label running past the right edge is dropped
-- [ ] An unchanged node outside the 5 largest gets no label
-- [ ] The check command passes
+- [x] F09-AC6 a changed node whose label would cover the selected node's cell: only the selected label is drawn (spec amended)
+- [x] F09-AC11 the selected node `src/日本.ts`: the `Raster` is drawn and its label reads `??.ts` (derived: no recording has such a path)
+- [x] A label running past the right edge is dropped
+- [x] An unchanged node outside the 5 largest gets no label
+- [x] The check command passes

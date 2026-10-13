@@ -72,11 +72,11 @@ export function decode(raster: any): { char: string; fg: number; bg: number }[] 
 }
 
 /** The test's own `state.get` hook beneath the mod: `view` is `graph`, and `graph`, `layout` and (when given) `memory` hold these. */
-export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][], layout: Record<string, { x: number; y: number }>, memory: MemoryNote[] = []) {
+export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][], layout: Record<string, { x: number; y: number }>, memory: MemoryNote[] = [], selected: string | null = null) {
   const graph: Graph = {
     seq: Math.max(...nodes.map(n => n.touched)), files: Object.fromEntries(nodes.map(n => [n.path, n])),
     edges: edges.map(([from, to]) => ({ from, to, kind: 'import', blind: false, guessed: false })), decisions: [], compactions: [],
   }
-  const values: Record<string, unknown> = { view: 'graph', graph, layout, ...(memory.length ? { memory } : {}) }
+  const values: Record<string, unknown> = { view: 'graph', graph, layout, ...(memory.length ? { memory } : {}), ...(selected ? { selected } : {}) }
   on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
 }

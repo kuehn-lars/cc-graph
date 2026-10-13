@@ -2,6 +2,7 @@
 import type { Change, Graph, Layout, MemoryNote, NodeState } from '../../types'
 import { CANVAS, folderOf, seedPoint } from '../layout/seed'
 import { GLYPH } from './list'
+import { cols } from './width'
 
 export type Cell = [char: string, fg: number, bg: number]
 
@@ -28,6 +29,9 @@ const MEMORY = 0xc9d1d9
 // Import edges: a grey quieter than any state's glyph.
 const EDGE = 0x768390
 
+// F09-R6
+const LARGEST = 5
+
 /** The cells a straight line of half-block pixels covers from pixel `a` to pixel `b` (F09-R5). Bresenham, in pixels: `rows × 2` of them tall. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
   const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1
@@ -42,9 +46,10 @@ function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
 
 /**
  * `columns × rows` cells: import edges as half-block pixels, every file node its list glyph on top (in its ring, if changed) at its position in `layout`, else at its folder's seed point (F09-R5, R9), and the memory files as `■` along the bottom-left.
+ * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest.
  * ponytail: a node whose cell is taken moves to the next free one, row-major; the layout keeps nodes apart in units, not in cells.
  */
-export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number): Cell[] {
+export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number, selected: string | null = null): Cell[] {
   const cells: Cell[] = Array.from({ length: columns * rows }, () => [' ', DEFAULT, DEFAULT])
   const taken = new Map<string, number>(), used = new Set<number>()
   const paths = memory.map(n => n.path).sort().slice(0, columns) // path order; a row wider than the raster is cut
@@ -71,5 +76,19 @@ export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], column
     cells[at] = [GLYPH[n.state], STATE_COLOR[n.state], n.change ? RING[n.change].color : DEFAULT]
   }
   paths.forEach((_, i) => { cells[memoryAt(i)] = ['■', MEMORY, DEFAULT] })
+  // Labels last. A label that would cover a node or memory cell, a drawn label, or run off the raster is dropped, so no glyph is ever erased (NFR-A3).
+  const files = Object.values(graph.files)
+  const largest = new Set([...files].sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0)).slice(0, LARGEST))
+  const busy = new Set<number>([...used])
+  for (const { path } of files.filter(n => n.path === selected || n.change || largest.has(n))) {
+    const at = taken.get(path)
+    if (at === undefined) continue
+    const label = [...path.slice(path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
+    if (at % columns + label.length >= columns) continue
+    const span = Array.from({ length: label.length }, (_, i) => at + 1 + i)
+    if (span.some(i => busy.has(i))) continue
+    span.forEach(i => busy.add(i))
+    label.forEach((c, i) => { cells[at + 1 + i] = [c, DEFAULT, DEFAULT] })
+  }
   return cells
 }
