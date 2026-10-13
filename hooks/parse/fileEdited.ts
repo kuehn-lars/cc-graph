@@ -6,9 +6,9 @@ import { count, countLines, type Hunk } from './measure'
 type EditResult = { newString: string; structuredPatch: Hunk[]; staged?: boolean }
 type NotebookResult = { new_source: string; old_source?: string; error?: string }
 
-export function editAction(path: string, r: EditResult, cwd: string, edges = true): FileEdited | null {
+export function editAction(path: string, r: EditResult, cwd: string, importEdges: boolean): FileEdited | null {
   if (r.staged) return null
-  return { type: 'fileEdited', path, added: count(r.structuredPatch, '+'), removed: count(r.structuredPatch, '-'), line: r.structuredPatch[0]?.newStart ?? null, imports: edges ? importCandidates(r.newString, path, cwd) : undefined }
+  return { type: 'fileEdited', path, added: count(r.structuredPatch, '+'), removed: count(r.structuredPatch, '-'), line: r.structuredPatch[0]?.newStart ?? null, imports: importEdges ? importCandidates(r.newString, path, cwd) : undefined }
 }
 
 // A notebook has no patch, so `line` stays as it was.

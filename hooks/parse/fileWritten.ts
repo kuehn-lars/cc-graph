@@ -5,7 +5,7 @@ import { count, countLines, estimateTokens, type Hunk } from './measure'
 
 type WriteResult = { type: 'create' | 'update'; content: string; structuredPatch: Hunk[]; staged?: boolean }
 
-export function writeAction(path: string, r: WriteResult, cwd: string, edges = true): FileWritten | null {
+export function writeAction(path: string, r: WriteResult, cwd: string, importEdges: boolean): FileWritten | null {
   if (r.staged) return null
   const created = r.type === 'create'
   // F01-R6: an empty patch counts the content's lines for a create only.
@@ -14,6 +14,6 @@ export function writeAction(path: string, r: WriteResult, cwd: string, edges = t
     type: 'fileWritten', path, created, tokens: estimateTokens(r.content),
     added: whole ? countLines(r.content) : count(r.structuredPatch, '+'),
     removed: count(r.structuredPatch, '-'), line: r.structuredPatch[0]?.newStart ?? 1,
-    imports: edges ? importCandidates(r.content, path, cwd) : undefined,
+    imports: importEdges ? importCandidates(r.content, path, cwd) : undefined,
   }
 }
