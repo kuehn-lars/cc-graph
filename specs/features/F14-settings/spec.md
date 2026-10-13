@@ -29,7 +29,7 @@ A handful of settings appear in `/config` with a title and a description, each w
   | --- | --- | --- | --- | --- | --- | --- |
   | `maxNodes` | `number` | 60 | `min` 20, `max` 200 | Most files in the graph | v0.1 | I5, F09, F10 |
   | `importEdges` | `boolean` | `true` | | Show file imports | v0.2 | F06, F07 |
-| `blindSpots` | `boolean` | `true` | | Look for blind spots with git | v0.3 | F07 |
+  | `blindSpots` | `boolean` | `true` | | Look for blind spots with git | v0.3 | F07 |
   | `captureThinking` | `boolean` | `true` | | Keep thinking excerpts | v0.4 | F05 |
   | `editorCommand` | `string` | `code -g {path}:{line}` | | Editor command | v0.4 | F11 |
   | `decisions` | `boolean` | `false` | | Let Claude log decisions | v0.6 | F12 |
