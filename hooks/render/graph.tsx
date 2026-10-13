@@ -26,9 +26,9 @@ export const graphRows = (bodyRows: number, notes: string[]) => Math.min(bodyRow
 /** The columns the raster gets of `bodyColumns`. */
 export const graphColumns = (bodyColumns: number) => Math.min(bodyColumns, MAX_COLUMNS)
 
-/** The frame the pane draws, with a ring around each node in `pulse` (F09-R19). */
-export const frame = (graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null, pulse: string[] = []) =>
-  encode(paint(graph, layout, columns, rows, selected, pulse))
+/** The frame the pane draws, with the ripple's ring `step` around each node in `pulse` (F09-R19). */
+export const frame = (graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null, pulse: string[] = [], step = 0) =>
+  encode(paint(graph, layout, columns, rows, selected, pulse, step))
 
 /** F09-R18: `◉ now  src/auth/login.ts  +2 −0  · imports 3`, the folder dimmed and the file name bold; the path gives way first, cut from its start. */
 function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {

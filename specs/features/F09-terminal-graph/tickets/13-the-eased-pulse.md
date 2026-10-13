@@ -8,9 +8,9 @@ Requirements: F09-R19.
 
 **Touches:** the wiring (pulse timing), `render` (a frame with a ring at a given distance).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC24 a `Read` while the graph is mounted: four blits for key `graph` at 0, 120, 240 and 400 ms, the first with `#f0f3f6` dots 4 dots outside the node, the last with none outside its halo, no render pass added (replaces the AC9 test)
-- [ ] With `view: list` a `Read` blits nothing and nothing throws
-- [ ] A blit answered `{ deny }` changes nothing; the hook still returns `next(e)`'s result
-- [ ] The check command passes
+- [x] F09-AC24 a `Read` while the graph is mounted: four blits for key `graph` at 0, 120, 240 and 400 ms, the first with `#f0f3f6` dots 4 dots outside the node, the last with none outside its halo, no render pass added (replaces the AC9 test)
+- [x] With `view: list` a `Read` blits nothing and nothing throws
+- [x] A blit answered `{ deny }` changes nothing; the hook still returns `next(e)`'s result
+- [x] The check command passes

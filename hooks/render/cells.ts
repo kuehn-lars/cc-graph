@@ -11,7 +11,7 @@ export const DEFAULT = 0x01000000
 
 // F09-R22: the card is dark in every theme, so the colours are fixed.
 export const GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, TEXT = 0xeef1f5
-const CARD = 0x14161b, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, LIT_EDGE = 0x8a94a3, HALO = 0x9aa4b1, SELECTED = 0xf0f3f6, DIMMED = 0x9aa3ae
+const CARD = 0x14161b, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, LIT_EDGE = 0x8a94a3, HALO = 0x9aa4b1, FAINT = 0x6b7380, SELECTED = 0xf0f3f6, DIMMED = 0x9aa3ae
 
 export const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
 
@@ -54,6 +54,9 @@ function stamp(c: Canvas, cx: number, cy: number, r: number, color: number, prio
   for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (pick(dx, dy)) c.set(cx + dx, cy + dy, color, priority)
 }
 
+/** F09-R19: the ripple's rings, by step: dots outside the outermost ring, colour, dotted. */
+const RIPPLE: ([number, number, boolean] | undefined)[] = [[4, SELECTED, false], [6, HALO, false], [8, FAINT, true]]
+
 /** F09-R15: the dots of each state's shape. */
 const SHAPE: Record<FileNode['state'], (dx: number, dy: number, r: number) => boolean> = {
   read: inside,
@@ -79,9 +82,9 @@ const place = (t: number, size: number) => (t > 0 ? size / 2 + Math.ceil(t) - 1 
 
 /**
  * `columns × rows` cells: the card (F09-R12), the file nodes as shapes at their positions in `layout`, else at their folder's seed point (F09-R9), fitted to the dot area (R14), joined by dotted import edges (R16).
- * The focus, the selected node or else the now node, wears a halo and lights its edges (R16). Every node is labelled (R17). A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
+ * The focus, the selected node or else the now node, wears a halo and lights its edges (R16). Every node is labelled (R17). A node in `pulse` wears the ripple's ring for `step` (R19): white 4 dots outside its outermost ring, then 6 in the halo colour, then a dotted one 8 out in the faint colour.
  */
-export function paint(graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
+export function paint(graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null = null, pulse: string[] = [], step = 0): Cell[] {
   const files = Object.values(graph.files)
   const W = (columns - 2) * 2, H = (rows - 2) * 4
   const dots = canvas(Math.max(W, 0), Math.max(H, 0))
@@ -121,9 +124,12 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
       const lit = e.from === focus || e.to === focus
       for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) dots.set(x, y, lit ? LIT_EDGE : EDGE, lit ? PRIORITY.litEdge : PRIORITY.edge)
     }
-    for (const path of pulse) {
+    for (const path of RIPPLE[step] ? pulse : []) {
       const p = placed.get(path)
-      if (p) stamp(dots, p.x, p.y, p.outer + 4, SELECTED, PRIORITY.selected, (dx, dy) => onRing(dx, dy, p.outer + 4))
+      if (!p) continue
+      const [out, color, sparse] = RIPPLE[step]!, r = p.outer + out
+      if (sparse) dotted(dots, p.x, p.y, r, color, PRIORITY.selected)
+      else stamp(dots, p.x, p.y, r, color, PRIORITY.selected, (dx, dy) => onRing(dx, dy, r))
     }
   }
   // The card: half-block corners on the terminal's background, the card colour behind every other cell, a sparse grid where no dot is lit.

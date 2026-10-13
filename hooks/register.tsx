@@ -69,25 +69,28 @@ const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
   })
 }
 
-// F09-R7: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each ring take a new `pulses` number, so a render ends the pulse running, and a newer ring keeps an older pulse from clearing it.
+// F09-R19: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each ripple take a new `pulses` number, so a render ends the ripple running, and a newer ripple keeps an older one from going on.
 // ponytail: one pane, one raster: a render on another surface (no Raster) nulls `drawn`, which only cancels pulses; give each surface its own size if two panes ever show at once.
 let drawn: { columns: number; rows: number } | null = null
 let pulses = 0
-const PULSE_MS = 1000
+const RIPPLE_MS = [0, 120, 120, 160] // the gaps before the white ring, the wide ring, the faint ring and the plain frame
 
-// The ring goes on after the queue has placed the nodes, and comes off 1000 ms later. A denied blit is ignored. The redraw a layout write asks for lands after the job returns, not in it, so the ring waits one more delay, or the redraw wipes it.
+// The ripple starts after the queue has placed the nodes; a denied blit is ignored. The redraw a layout write asks for lands after the job returns, not in it, so the ripple waits one more delay, or the redraw wipes it.
 function queuePulse($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, paths: string[]) {
   enqueue($, async () => {
     $.clock.after(QUEUE_DELAY_MS, async () => {
       const size = drawn
       if (!size) return
-      const blit = async (ring: string[]) => $.ui.blit({
-        requestId: PANE, key: 'graph', ...size,
-        cells: frame(await readGraph($), await readLayout($), size.columns, size.rows, (await read($, SELECTED)) ?? null, ring),
-      }).catch(() => ({}))
       const mine = ++pulses
-      await blit(paths)
-      $.clock.after(PULSE_MS, async () => { if (pulses === mine) await blit([]) })
+      const step = async (i: number): Promise<void> => {
+        if (pulses !== mine) return
+        await $.ui.blit({
+          requestId: PANE, key: 'graph', ...size,
+          cells: frame(await readGraph($), await readLayout($), size.columns, size.rows, (await read($, SELECTED)) ?? null, paths, i),
+        }).catch(() => ({}))
+        if (i < RIPPLE_MS.length - 1) $.clock.after(RIPPLE_MS[i + 1]!, () => step(i + 1))
+      }
+      await step(0)
     })
   })
 }
