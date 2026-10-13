@@ -12,7 +12,7 @@ Requirements: F06-R1 (the `Read` part), R2 (TypeScript), R3 (first candidate onl
 
 **Touches:** `parse` (new import module), the `Read` action and its reducer, the `tool.call` wiring. Tickets 03 to 06 build on it, so merge it first.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F06-AC1 the recorded read of `login.ts`: edge to `src/auth/password.ts`, `guessed`, the target a `ghost`
 - [x] F06-AC2 `import React from 'react'`: no edge, no node (parse table)

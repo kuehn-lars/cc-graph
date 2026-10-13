@@ -8,10 +8,10 @@ Requirements: F06-R1 (`Write` `content`, `Edit` `newString`), R9.
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F06-AC8 the recorded `Edit` of `login.ts`: an edge to `src/middleware/rateLimit.ts`
-- [ ] F06-AC2 the recorded `Write` of `rateLimit.ts`: no edge and no node for `rate-limiter-flexible`
-- [ ] F06-AC5 (derived) a 300,000-character `Read` result: no edge
-- [ ] A `Write` or `Edit` over 200,000 characters: no edge
-- [ ] The check command passes
+- [x] F06-AC8 the recorded `Edit` of `login.ts`: an edge to `src/middleware/rateLimit.ts`
+- [x] F06-AC2 the recorded `Write` of `rateLimit.ts`: no edge and no node for `rate-limiter-flexible`
+- [x] F06-AC5 (derived) a 300,000-character `Read` result: no edge
+- [x] A `Write` or `Edit` over 200,000 characters: no edge
+- [x] The check command passes

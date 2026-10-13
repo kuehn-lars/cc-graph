@@ -15,7 +15,7 @@ One `claude -p` run whose prompt spells out the reads in order: `src/auth/passwo
 
 **Touches:** `fixtures/sessions/`, `scripts/`. No hook code, so it runs in parallel with 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] The fixture recorded from a real run, nothing edited
 - [x] README section: how to record again, how the run differed
