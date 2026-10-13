@@ -32,6 +32,9 @@ const EDGE = 0x768390
 // F09-R6
 const LARGEST = 5
 
+// F09-R7: the background of a pulse's ring, lighter than any change's.
+const PULSE = 0xf0f6fc
+
 /** The cells a straight line of half-block pixels covers from pixel `a` to pixel `b` (F09-R5). Bresenham, in pixels: `rows × 2` of them tall. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
   const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1
@@ -46,10 +49,10 @@ function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
 
 /**
  * `columns × rows` cells: import edges as half-block pixels, every file node its list glyph on top (in its ring, if changed) at its position in `layout`, else at its folder's seed point (F09-R5, R9), and the memory files as `■` along the bottom-left.
- * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest.
+ * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest. The cells around each node in `pulse` take the pulse background (F09-R7).
  * ponytail: a node whose cell is taken moves to the next free one, row-major; the layout keeps nodes apart in units, not in cells.
  */
-export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number, selected: string | null = null): Cell[] {
+export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
   const cells: Cell[] = Array.from({ length: columns * rows }, () => [' ', DEFAULT, DEFAULT])
   const taken = new Map<string, number>(), used = new Set<number>()
   const paths = memory.map(n => n.path).sort().slice(0, columns) // path order; a row wider than the raster is cut
@@ -89,6 +92,16 @@ export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], column
     if (span.some(i => busy.has(i))) continue
     span.forEach(i => busy.add(i))
     label.forEach((c, i) => { cells[at + 1 + i] = [c, DEFAULT, DEFAULT] })
+  }
+  for (const path of pulse) {
+    const at = taken.get(path)
+    if (at === undefined) continue
+    const x = at % columns
+    for (const dy of [-1, 0, 1]) for (const dx of [-1, 0, 1]) {
+      const ring = at + dy * columns + dx
+      const cell = cells[ring]
+      if ((dx || dy) && x + dx >= 0 && x + dx < columns && cell && cell[2] === DEFAULT && ' ▀▄'.includes(cell[0])) cells[ring] = [cell[0], cell[1], PULSE] // only where nothing else is: a glyph, a label, a change ring or a lit edge pixel keeps its cell
+    }
   }
   return cells
 }

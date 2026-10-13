@@ -21,12 +21,19 @@ const MAX_ROWS = 256
 /** The rows the raster gets of `bodyRows`, less the header and the footer notes; below `MIN_ROWS` the list is drawn. */
 export const graphRows = (bodyRows: number, notes: string[]) => Math.min(bodyRows - HEADER_ROWS - LEGEND_ROWS - Math.min(notes.length, FOOTER_NOTES), MAX_ROWS)
 
+/** The columns the raster gets of `bodyColumns`. */
+export const graphColumns = (bodyColumns: number) => Math.min(bodyColumns, MAX_COLUMNS)
+
+/** The frame the pane draws, with a ring around each node in `pulse` (F09-R7). */
+export const frame = (graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number, selected: string | null, pulse: string[] = []) =>
+  encode(paint(graph, layout, memory, columns, rows, selected, pulse))
+
 export function renderGraph({ Box, Text, Raster }: Table, graph: Graph, layout: Layout, memory: MemoryNote[], fill: Fill | null, notes: string[], columns: number, rows: number, selected: string | null) {
-  const width = Math.min(columns, MAX_COLUMNS)
+  const width = graphColumns(columns)
   return (
     <Box flexDirection="column">
       <Text>{fit(meterLine(graph, fill), columns)}</Text>
-      <Raster key="graph" columns={width} rows={rows} cells={encode(paint(graph, layout, memory, width, rows, selected))} />
+      <Raster key="graph" columns={width} rows={rows} cells={frame(graph, layout, memory, width, rows, selected)} />
       <Text dimColor>{fit(legendLine(graph, memory), columns) || ' '}</Text>
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>

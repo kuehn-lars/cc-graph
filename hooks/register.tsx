@@ -12,7 +12,7 @@ import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
-import { MIN_ROWS, TOO_SHORT, graphRows, renderGraph } from './render/graph'
+import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
 
@@ -69,6 +69,29 @@ const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
   })
 }
 
+// F09-R7: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each ring take a new `pulses` number, so a render ends the pulse running, and a newer ring keeps an older pulse from clearing it.
+// ponytail: one pane, one raster: a render on another surface (no Raster) nulls `drawn`, which only cancels pulses; give each surface its own size if two panes ever show at once.
+let drawn: { columns: number; rows: number } | null = null
+let pulses = 0
+const PULSE_MS = 1000
+
+// The ring goes on after the queue has placed the nodes, and comes off 1000 ms later. A denied blit is ignored. The redraw a layout write asks for lands after the job returns, not in it, so the ring waits one more delay, or the redraw wipes it.
+function queuePulse($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, paths: string[]) {
+  enqueue($, async () => {
+    $.clock.after(QUEUE_DELAY_MS, async () => {
+      const size = drawn
+      if (!size) return
+      const blit = async (ring: string[]) => $.ui.blit({
+        requestId: PANE, key: 'graph', ...size,
+        cells: frame(await readGraph($), await readLayout($), await readMemory($), size.columns, size.rows, (await read($, SELECTED)) ?? null, ring),
+      }).catch(() => ({}))
+      const mine = ++pulses
+      await blit(paths)
+      $.clock.after(PULSE_MS, async () => { if (pulses === mine) await blit([]) })
+    })
+  })
+}
+
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
 // F04-R1, R2: the memory files the summary breakdown lists (never 'full', which costs a request per file). No breakdown, or no answer, no change; a throw here would run the handlers beneath twice (the hook's .catch).
 async function refreshMemory($: Pick<CoreEngineInterface, 'state' | 'session'>) {
@@ -94,17 +117,19 @@ async function nameAgent($: Pick<CoreEngineInterface, 'state' | 'agent'>, id: st
 }
 
 // F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
-async function record($: Pick<CoreEngineInterface, 'state' | 'agent' | 'clock'>, action: FileAction, agentId?: string) {
+async function record($: Pick<CoreEngineInterface, 'state' | 'agent' | 'clock' | 'ui'>, action: FileAction, agentId?: string) {
   await apply($, agentId ? { ...action, agentId } : action)
   if (agentId) await nameAgent($, agentId)
 }
 
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
-async function apply($: StateDollar & Pick<CoreEngineInterface, 'clock'>, action: Action) {
+async function apply($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, action: Action) {
   const turn = (await read($, TURN)) ?? 0
   let before = emptyGraph
   const graph = await update($, GRAPH, g => ((before = g ?? emptyGraph), evict(reduce(g, action, turn), maxNodes))) // I5: the cap is held in the same write
   if (reshaped(before, graph)) queueLayout($)
+  const touched = Object.values(graph.files).filter(n => n.touched > before.seq && n.state !== 'ghost').map(n => n.path)
+  if (touched.length) queuePulse($, touched)
   // I5: what could not be evicted is said in the footer. A write of `notes` only when the note changes.
   const files = Object.keys(graph.files).length
   const notes = (await read($, NOTES)) ?? []
@@ -229,6 +254,7 @@ export const register: Register = (on, options) => {
 
   // NFR-R4: only this plugin's pane. Reads state, never writes.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    pulses++
     const table = $.ui.resolve(e)
     const { Box, Button } = table
     const notes = (await read($, NOTES)) ?? []
@@ -236,6 +262,7 @@ export const register: Register = (on, options) => {
     const rows = graphRows(e.props.scroll.bodyRows, notes)
     const selected = (await read($, SELECTED)) ?? null
     const wantsGraph = e.surface === 'terminal' && 'Raster' in table && (await read($, VIEW)) === 'graph'
+    drawn = wantsGraph && rows >= MIN_ROWS ? { columns: graphColumns(e.props.bodyColumns), rows } : null
     return (
       <Box flexDirection="column">
         <Box gap={2}>

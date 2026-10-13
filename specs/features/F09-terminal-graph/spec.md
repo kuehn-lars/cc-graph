@@ -56,7 +56,7 @@ In the terminal the pane draws the graph itself: a grid of coloured cells, each 
 - **Layout lives in `layout`, positions in their own key.** The layout is pure and seeded; the queue runs it after writes that add nodes or edges and stores the result in `layout`. Rendering only reads, so a redraw never pays for layout (NFR-P4), and the timeline (F13) replays with live positions.
 - **Bounded movement.** Capping each pass at 2 units per existing node trades a perfect layout for stability: people track positions, not energy minima.
 - **Half blocks.** `▀` with two colours doubles the vertical resolution, so circles look round in a terminal's tall cells.
-- **Pulse by blit.** `$.ui.blit` repaints the mounted raster at the frame rate without a render pass, so the pulse costs no tree build. A blit must carry the whole frame at the mounted size, so the wiring keeps the size of the raster it last drew. The pulse waits for the queue, because the layout write that places a new node redraws the pane and would wipe an earlier ring. It runs only while the raster is mounted.
+- **Pulse by blit.** `$.ui.blit` repaints the mounted raster at the frame rate without a render pass, so the pulse costs no tree build. A blit must carry the whole frame at the mounted size, so the wiring keeps the size of the raster it last drew. The pulse waits for the queue, because the layout write that places a new node redraws the pane and would wipe an earlier ring. That redraw lands after the layout job returns, so the ring is drawn one queue delay (20 ms) after the job. It runs only while the raster is mounted.
 
 ## Testing decisions
 
