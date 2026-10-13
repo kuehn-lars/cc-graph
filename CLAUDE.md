@@ -16,7 +16,7 @@ When the code shows the spec is wrong, stop and propose the spec change. Then up
 ## Rules
 
 - Every `$` call lives in `hooks/register.tsx`. `hooks/model`, `parse`, `layout` and `render` are pure: data in, data out. `validate` rejects `$` passed across files.
-- Renderers take the element table from `$.ui.resolve(e)` as an argument, and pick the renderer by what the table holds (`Raster`, else `Svg`, else the list).
+- Renderers take the element table from `$.ui.resolve(e)` as an argument, and pick the renderer by what the table holds (`Raster` on `terminal`, else `Svg`, else the list). The test kit's table carries `Raster` on every surface, so `Raster` counts only where `e.surface` is `terminal`.
 - Observation only: every hook returns `next(e)`'s result unchanged, and updates state after `await next(e)`. Gating hooks end with `.catch(($, e, next) => next(e))`.
 - State writes go through `update` (never `get` then `set`), one event to one write of `graph`. `ui.render` only reads.
 - Hooks do constant work. Layout and `git` are enqueued and run off the hook's return path (architecture D5).

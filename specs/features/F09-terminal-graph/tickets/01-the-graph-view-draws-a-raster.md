@@ -1,6 +1,6 @@
 # 01: The graph view draws a raster
 
-**What to build:** With `view: graph` in a terminal, the pane stops drawing the list and draws the graph: the header (view keys and meter line, as the list draws them), one `Raster` keyed `graph`, and the footer notes. Every file node is one cell holding its list glyph in its state's colour, placed at its folder's seed point (no layout yet, R9's fallback). On `desktop` (no `Raster` in the table) and on `vscode` and `mobile`, the list stays. A pane too short for 8 graph rows draws the list and says "Graph needs a taller pane" in the footer.
+**What to build:** With `view: graph` in a terminal, the pane stops drawing the list and draws the graph: the header (view keys and meter line, as the list draws them), one `Raster` keyed `graph`, and the footer notes. Every file node is one cell holding its list glyph in its state's colour, placed at its folder's seed point (no layout yet, R9's fallback). On `desktop`, `vscode` and `mobile` the list stays: the test kit's table holds `Raster` on every surface, so the renderer choice also asks for `e.surface === 'terminal'`. A pane too short for 8 graph rows draws the list and says "Graph needs a taller pane" in the footer.
 
 This ticket lays down the renderer choice of F08-R10 (by the element table, then `view`), the cell encoder in `render`, and the folder seed point (a hash of the folder name) that ticket 02's layout reuses. The seed function lives in `layout`, so both tickets share one definition; it is pure.
 

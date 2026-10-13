@@ -34,7 +34,7 @@ The facts the other features gather need one place to live that works on every s
 - **F08-R7** Each section has an empty-state line: "Nothing read yet.", "No memory files in context.", "No thinking captured yet.", "No blind spots."
 - **F08-R8** Each file row is one `Button` (`plain`, `key` = the path) whose press sets `selected` to that path. The first nine rows also carry the hotkeys `1` to `9`.
 - **F08-R9** The pane offers the keys of the key map below, each as a `Button` hotkey. A key appears only once the feature behind it has shipped.
-- **F08-R10** The mod picks the renderer by the element table `$.ui.resolve(e)` returned (D4): while `view` is `graph`, a table with `Raster` gets the terminal graph (F09), else one with `Svg` gets the vector graph (F10), else the list.
+- **F08-R10** The mod picks the renderer by the element table `$.ui.resolve(e)` returned (D4): while `view` is `graph`, a table with `Raster` on the `terminal` surface gets the terminal graph (F09), else one with `Svg` gets the vector graph (F10), else the list.
 - **F08-R11** The mod keeps `view` in `$.state`, so it survives a hot reload and `/clear`.
 - **F08-R12** The mod's `ui.render` hook matches only `{ component: 'Pane', requestId: 'cc-graph' }` (NFR-R4).
 - **F08-R13** The file row whose path is `selected` begins with the marker "▸ "; every other row begins with two spaces, so rows stay aligned and the selection is not told by color alone (NFR-A1). The marker takes 2 columns of the row's width (F08-R6). Until the card of F11 draws the selection, this marker is the only sign of it.
@@ -129,3 +129,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 - 2026-10-12 Ticketing. `g` ships in v0.1 and sets `view`, drawn as the list until F09 or F10 ships (F08-AC4 presses it). The meter line of the text summary moves to F03 (F03-AC13), which ships after F08; F08-AC8 checks the counts. F08-AC2 seeds its `search` node until F02 ships. Approved by the owner.
 - 2026-10-12 Manual check. Selecting a row drew nothing until F11's card, so the check could not be seen. Added F08-R13 and F08-AC11: the selected row carries a "▸ " marker. Approved by the owner.
 - 2026-10-12 F02 shipped: F08-AC2 and AC8 replay the reference session instead of seeding; AC2 is checked at `bodyColumns` 80. Approved by the owner.
+- 2026-10-13 R10 asks for `Raster` on the `terminal` surface: the test kit's table holds `Raster` on every surface.
