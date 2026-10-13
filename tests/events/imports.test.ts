@@ -1,7 +1,9 @@
 import readWhole from '../../fixtures/tool-results/read-whole'
 import reference from '../../fixtures/sessions/reference'
+import mixed from '../../fixtures/sessions/imports'
 import { expect, test } from 'claude-code/testing'
-import { engine, graphOf, start, writes } from './kit'
+import type { Graph } from '../../types'
+import { engine, graphOf, replayAll, seedGraph, start, writes } from './kit'
 
 const read = ($: any, file_path: string) => $.tool.call({ tool: 'Read', file_path })
 const login = '/w/src/auth/login.ts'
@@ -124,4 +126,46 @@ test('F06-R9 a Write of exactly 200,000 characters is still parsed', async ($, o
   await start($)
   await $.tool.call({ ...write.input, file_path: login })
   expect(await edgesOf()).toHaveLength(1)
+})
+
+// Ticket 01's recording (src/auth/password.js, login.ts, src/a.ts, app/*.py, docs/usage.md), cut down to the reads a test needs.
+// DERIVED: seeded state, not tool output; the node a Read of `path` leaves.
+const seeded = (path: string, state: 'read' | 'ghost' = 'read'): Graph => ({
+  seq: 1, edges: [], decisions: [], compactions: [],
+  files: { [path]: { path, state, change: null, reason: null, tokens: 100, seen: '', hits: 0, added: 0, removed: 0, line: null, readId: 'toolu_01', agents: [], mainLoop: true, firstTurn: 0, lastTurn: 0, touched: 1 } },
+})
+const only = (...files: string[]) => ({ events: mixed.events.filter(r => r.event !== 'tool.call' || files.some(f => r.input.file_path?.endsWith(f))) })
+
+test('F06-AC6 password.js already a node: the edge from login.ts points to it, not guessed', async ($, on) => {
+  await replayAll($, on, only('src/auth/password.js', 'src/auth/login.ts'))
+  const g = (await graphOf())!
+  const pw = g.edges.filter(e => e.to.startsWith('src/auth/password'))
+  expect(pw).toEqual([{ from: 'src/auth/login.ts', to: 'src/auth/password.js', kind: 'import', blind: false, guessed: false }])
+  expect(g.files['src/auth/password.ts']).toBeUndefined()
+  expect(g.files['src/auth/password.js']).toMatchObject({ state: 'read' })
+})
+
+test('F06-AC7 no nodes: src/a.ts importing ./util.js points to src/util.ts, guessed', async ($, on) => {
+  await replayAll($, on, only('src/a.ts'))
+  expect(await edgesOf()).toEqual([{ from: 'src/a.ts', to: 'src/util.ts', kind: 'import', blind: false, guessed: true }])
+  expect((await graphOf())!.files['src/util.ts']).toMatchObject({ state: 'ghost' })
+})
+
+test('F06-R6 a node for a later candidate beats the first guess (util.js exists, a.ts imports ./util.js)', async ($, on) => {
+  seedGraph(on, seeded('src/util.js'))
+  await replayAll($, on, only('src/a.ts'))
+  expect(await edgesOf()).toEqual([{ from: 'src/a.ts', to: 'src/util.js', kind: 'import', blind: false, guessed: false }])
+  expect((await graphOf())!.files['src/util.ts']).toBeUndefined()
+})
+
+test('F06-R6 a ghost is a guess, not a confirmation: a second importer of the ghost still guesses', async ($, on) => {
+  seedGraph(on, seeded('src/util.ts', 'ghost'))
+  await replayAll($, on, only('src/a.ts'))
+  expect(await edgesOf()).toEqual([{ from: 'src/a.ts', to: 'src/util.ts', kind: 'import', blind: false, guessed: true }])
+})
+
+test('F06-R6 a ghost of another family does not pull a TypeScript importer off its first guess', async ($, on) => {
+  seedGraph(on, seeded('src/util.js', 'ghost'))
+  await replayAll($, on, only('src/a.ts'))
+  expect(await edgesOf()).toEqual([{ from: 'src/a.ts', to: 'src/util.ts', kind: 'import', blind: false, guessed: true }])
 })
