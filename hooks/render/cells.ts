@@ -1,7 +1,7 @@
-// Pure: the cells of a `Raster` (F09-R1) and their packed form.
-import type { Change, Graph, Layout, MemoryNote, NodeState } from '../../types'
-import { CANVAS, folderOf, seedPoint } from '../layout/seed'
-import { GLYPH } from './list'
+// Pure: the cells of the card, a `Raster` of braille dots (F09-R12) and their packed form.
+import type { Change, FileNode, Graph, Layout } from '../../types'
+import { PRIORITY, canvas, type Canvas } from './canvas'
+import { folderOf, seedPoint } from '../layout/seed'
 import { cols } from './width'
 
 export type Cell = [char: string, fg: number, bg: number]
@@ -9,33 +9,24 @@ export type Cell = [char: string, fg: number, bg: number]
 /** `0x01000000`: the terminal's own color. */
 export const DEFAULT = 0x01000000
 
-// The colour of each state's glyph. No state is told by colour alone: the glyph says it too (NFR-A1).
-const STATE_COLOR: Record<NodeState, number> = {
-  read: 0x58a6ff, partial: 0x58a6ff, search: 0x56d4dd, compacted: 0x6e7681, unread: 0xf85149, ghost: 0x8b949e,
-}
+// F09-R22: the card is dark in every theme, so the colours are fixed.
+const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5
+
+const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
 
 /** `[codePoint, foreground, background]` per cell, little-endian u32, as standard padded base64. */
 export const encode = (cells: Cell[]) =>
   (new Uint8Array(Uint32Array.from(cells.flatMap(([c, fg, bg]) => [c.codePointAt(0)!, fg, bg])).buffer) as Uint8Array & { toBase64(): string }).toBase64() // the engine has it, the es2023 lib does not
 
-/** The ring of each change: the cell's background, named in the legend by its colour word (F09-R5, R8). */
+/** The ring of each change (F09-R15), named in the legend by its colour word. */
 export const RING: Record<Change, { color: number; name: string }> = {
-  edited: { color: 0xd29922, name: 'amber' }, created: { color: 0x3fb950, name: 'green' }, external: { color: 0x8b949e, name: 'grey' }, blind: { color: 0xf85149, name: 'red' },
+  edited: { color: 0xf0b45a, name: 'amber' }, created: { color: 0x63d494, name: 'green' }, external: { color: 0x9aa3ae, name: 'grey' }, blind: { color: 0xff6b72, name: 'red' },
 }
-
-// Memory files: lighter than any state's glyph, so the row reads as apart.
-const MEMORY = 0xc9d1d9
-
-// Import edges: a grey quieter than any state's glyph.
-const EDGE = 0x768390
 
 // F09-R6
 const LARGEST = 5
 
-// F09-R7: the background of a pulse's ring, lighter than any change's.
-const PULSE = 0xf0f6fc
-
-/** The cells a straight line of half-block pixels covers from pixel `a` to pixel `b` (F09-R5). Bresenham, in pixels: `rows × 2` of them tall. */
+/** The dots of a straight line between two dots, Bresenham. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
   const dx = Math.abs(x1 - x0), dy = -Math.abs(y1 - y0), sx = x0 < x1 ? 1 : -1, sy = y0 < y1 ? 1 : -1
   for (let err = dx + dy; ; ) {
@@ -47,61 +38,102 @@ function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
   }
 }
 
+/** Whether the dot `(dx, dy)` from a centre lies on the circle of radius `r`, and within it. */
+const onRing = (dx: number, dy: number, r: number) => Math.round(Math.hypot(dx, dy)) === r
+const inside = (dx: number, dy: number, r: number) => Math.round(Math.hypot(dx, dy)) <= r
+
+/** Every dot in the square of radius `r` around `(cx, cy)` that `pick` keeps. */
+function stamp(c: Canvas, cx: number, cy: number, r: number, color: number, priority: number, pick: (dx: number, dy: number) => boolean) {
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (pick(dx, dy)) c.set(cx + dx, cy + dy, color, priority)
+}
+
+/** F09-R15: the dots of each state's shape. */
+const SHAPE: Record<FileNode['state'], (dx: number, dy: number, r: number) => boolean> = {
+  read: inside,
+  partial: (dx, dy, r) => onRing(dx, dy, r) || (inside(dx, dy, r) && dx <= 0),
+  search: () => false, // a dotted circle, drawn by `dotted`
+  compacted: onRing,
+  unread: (dx, dy, r) => dx === 0 && (dy <= r - 2 || dy === r),
+  ghost: (dx, dy) => Math.abs(dx) === Math.abs(dy),
+}
+
+/** F09-R15: a circle of every other dot, counted round the ring so the gaps are even. */
+function dotted(c: Canvas, cx: number, cy: number, r: number, color: number, priority: number) {
+  const ring: [number, number][] = []
+  for (let dy = -r; dy <= r; dy++) for (let dx = -r; dx <= r; dx++) if (onRing(dx, dy, r)) ring.push([dx, dy])
+  ring.sort(([ax, ay], [bx, by]) => Math.atan2(ay, ax) - Math.atan2(by, bx))
+  ring.forEach(([dx, dy], i) => { if (i % 2 === 0) c.set(cx + dx, cy + dy, color, priority) })
+}
+
+type Placed = { node: FileNode; x: number; y: number; outer: number }
+
+/** F09-R14: a dot of the area, from `t` dots off its centre; a node and its mirror image land on mirrored dots. */
+const place = (t: number, size: number) => (t > 0 ? size / 2 + Math.ceil(t) - 1 : size / 2 + Math.floor(t))
+
 /**
- * `columns × rows` cells: import edges as half-block pixels, every file node its list glyph on top (in its ring, if changed) at its position in `layout`, else at its folder's seed point (F09-R5, R9), and the memory files as `■` along the bottom-left.
- * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest. The cells around each node in `pulse` take the pulse background (F09-R7).
- * ponytail: a node whose cell is taken moves to the next free one, row-major; the layout keeps nodes apart in units, not in cells.
+ * `columns × rows` cells: the card (F09-R12), the file nodes as shapes at their positions in `layout`, else at their folder's seed point (F09-R9), fitted to the dot area (R14), joined by dotted import edges (R16).
+ * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest. A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
  */
-export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
-  const cells: Cell[] = Array.from({ length: columns * rows }, () => [' ', DEFAULT, DEFAULT])
-  const taken = new Map<string, number>(), used = new Set<number>()
-  const paths = memory.map(n => n.path).sort().slice(0, columns) // path order; a row wider than the raster is cut
-  const memoryAt = (i: number) => (rows - 1) * columns + i
-  paths.forEach((_, i) => used.add(memoryAt(i))) // nodes keep off them
-  for (const n of Object.values(graph.files)) {
-    const { x, y } = layout[n.path] ?? seedPoint(folderOf(n.path))
-    if (used.size === cells.length) break // more files than cells: the rest are not drawn
-    let at = Math.min(rows - 1, Math.floor((y / CANVAS.height) * rows)) * columns + Math.min(columns - 1, Math.floor((x / CANVAS.width) * columns))
-    while (used.has(at)) at = (at + 1) % cells.length
-    used.add(at)
-    taken.set(n.path, at)
-  }
-  // Pixels first, so the glyphs stay on top. A cell's top pixel is its foreground and its bottom pixel its background; a lone bottom pixel is `▄`, since `▀` would paint the unlit top in the terminal's foreground.
-  const top = new Set<number>(), bottom = new Set<number>()
-  const pixel = (path: string): [number, number] => [taken.get(path)! % columns, Math.floor(taken.get(path)! / columns) * 2]
-  for (const e of graph.edges)
-    if (e.kind === 'import' && taken.has(e.from) && taken.has(e.to))
-      for (const [x, y] of line(pixel(e.from), pixel(e.to))) (y % 2 ? bottom : top).add(Math.floor(y / 2) * columns + x)
-  for (const at of new Set([...top, ...bottom]))
-    cells[at] = top.has(at) ? ['▀', EDGE, bottom.has(at) ? EDGE : DEFAULT] : ['▄', EDGE, DEFAULT]
-  for (const [path, at] of taken) {
-    const n = graph.files[path]!
-    cells[at] = [GLYPH[n.state], STATE_COLOR[n.state], n.change ? RING[n.change].color : DEFAULT]
-  }
-  paths.forEach((_, i) => { cells[memoryAt(i)] = ['■', MEMORY, DEFAULT] })
-  // Labels last. A label that would cover a node or memory cell, a drawn label, or run off the raster is dropped, so no glyph is ever erased (NFR-A3).
+export function paint(graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
   const files = Object.values(graph.files)
-  const largest = new Set([...files].sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0)).slice(0, LARGEST))
-  const busy = new Set<number>([...used])
-  for (const { path } of files.filter(n => n.path === selected || n.change || largest.has(n))) {
-    const at = taken.get(path)
-    if (at === undefined) continue
-    const label = [...path.slice(path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
-    if (at % columns + label.length >= columns) continue
-    const span = Array.from({ length: label.length }, (_, i) => at + 1 + i)
-    if (span.some(i => busy.has(i))) continue
-    span.forEach(i => busy.add(i))
-    label.forEach((c, i) => { cells[at + 1 + i] = [c, DEFAULT, DEFAULT] })
-  }
-  for (const path of pulse) {
-    const at = taken.get(path)
-    if (at === undefined) continue
-    const x = at % columns
-    for (const dy of [-1, 0, 1]) for (const dx of [-1, 0, 1]) {
-      const ring = at + dy * columns + dx
-      const cell = cells[ring]
-      if ((dx || dy) && x + dx >= 0 && x + dx < columns && cell && cell[2] === DEFAULT && ' ▀▄'.includes(cell[0])) cells[ring] = [cell[0], cell[1], PULSE] // only where nothing else is: a glyph, a label, a change ring or a lit edge pixel keeps its cell
+  const W = (columns - 2) * 2, H = (rows - 2) * 4
+  const dots = canvas(Math.max(W, 0), Math.max(H, 0))
+  const placed = new Map<string, Placed>()
+  if (W > 0 && H > 0 && files.length) {
+    const at = files.map(n => layout[n.path] ?? seedPoint(folderOf(n.path)))
+    const xs = at.map(p => p.x), ys = at.map(p => p.y)
+    const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+    const scale = Math.min(W / Math.max(maxX - minX + 16, 40), H / Math.max(maxY - minY + 16, 26)) // F09-R14: one scale on both axes, centred
+    const biggest = Math.max(1, ...files.map(n => n.tokens ?? 0))
+    files.forEach((node, i) => {
+      const base = node.state === 'ghost' ? 2 : node.tokens === null ? 3 : 2 + Math.round(7 * Math.sqrt(node.tokens / biggest))
+      const r = columns < 84 ? Math.max(2, Math.round(base * columns / 84)) : base
+      const changeAt = r + 3, outer = node.path !== selected ? (node.change ? changeAt : r) : node.change ? changeAt + 2 : changeAt // F09-R15: the change ring 3 dots out, the selected ring 2 further out (or 3 without a change)
+      const fit = (v: number, size: number) => (size - 1 - outer < outer ? v : Math.min(Math.max(v, outer), size - 1 - outer)) // the outermost ring stays inside
+      const x = fit(place((at[i]!.x - (minX + maxX) / 2) * scale, W), W), y = fit(place((at[i]!.y - (minY + maxY) / 2) * scale, H), H)
+      placed.set(node.path, { node, x, y, outer })
+      if (node.state === 'search') dotted(dots, x, y, r, SEARCH, PRIORITY.body)
+      else stamp(dots, x, y, r, COLOR[node.state], PRIORITY.body, (dx, dy) => SHAPE[node.state](dx, dy, r))
+      const ring = (radius: number, color: number, priority: number) => stamp(dots, x, y, radius, color, priority, (dx, dy) => onRing(dx, dy, radius))
+      if (node.change) ring(changeAt, RING[node.change].color, PRIORITY.change)
+      if (node.path === selected) ring(outer, SELECTED, PRIORITY.selected)
+    })
+    for (const e of graph.edges) {
+      const a = placed.get(e.from), b = placed.get(e.to)
+      if (e.kind !== 'import' || !a || !b) continue
+      const d = Math.hypot(b.x - a.x, b.y - a.y), [ua, ub] = [a.outer + 3, b.outer + 3]
+      if (d <= ua + ub) continue // the rings meet: no room for a line
+      const [ux, uy] = [(b.x - a.x) / d, (b.y - a.y) / d]
+      let i = 0
+      for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) dots.set(x, y, EDGE, PRIORITY.edge)
     }
+    for (const path of pulse) {
+      const p = placed.get(path)
+      if (p) stamp(dots, p.x, p.y, p.outer + 4, SELECTED, PRIORITY.selected, (dx, dy) => onRing(dx, dy, p.outer + 4))
+    }
+  }
+  // The card: half-block corners on the terminal's background, the card colour behind every other cell, a sparse grid where no dot is lit.
+  const cells: Cell[] = Array.from({ length: columns * rows }, (_, i) => {
+    const col = i % columns, row = Math.floor(i / columns)
+    if (row === 0) return [col === 0 ? '▗' : col === columns - 1 ? '▖' : '▄', CARD, DEFAULT]
+    if (row === rows - 1) return [col === 0 ? '▝' : col === columns - 1 ? '▘' : '▀', CARD, DEFAULT]
+    if (col === 0 || col === columns - 1) return [' ', DEFAULT, CARD]
+    const { char, color } = dots.cell(col - 1, row - 1)
+    if (char) return [char, color, CARD]
+    return (col - 1) % 4 === 0 && (row - 1) % 2 === 0 ? ['·', GRID, CARD] : [' ', DEFAULT, CARD]
+  })
+  // Labels last. A label that would cover a node's dots or a drawn label, or leave the dot area, is dropped, so no shape is ever erased (NFR-A3).
+  const largest = new Set([...files].sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0)).slice(0, LARGEST))
+  const busy = new Set<number>()
+  for (const { node, x, y, outer } of placed.values()) {
+    if (!(node.path === selected || node.change || largest.has(node))) continue
+    const label = [...node.path.slice(node.path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
+    const row = Math.floor(y / 4), start = Math.floor((x + outer) / 2) + 2
+    if (start + label.length > columns - 2) continue
+    const span = label.map((_, i) => row * columns + start + i)
+    if (span.some((at, i) => busy.has(at) || dots.cell(start + i, row).priority >= PRIORITY.halo)) continue
+    span.forEach(at => busy.add(at))
+    label.forEach((c, i) => { cells[(row + 1) * columns + start + i + 1] = [c, TEXT, CARD] })
   }
   return cells
 }

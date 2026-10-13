@@ -1,6 +1,6 @@
 import reference from '../../fixtures/sessions/reference'
 import { expect, mock, test } from 'claude-code/testing'
-import { decode, mount, start, ui } from '../ui/kit'
+import { decode, dots, mount, start, ui } from '../ui/kit'
 import { observe } from './kit'
 
 const COLUMNS = 64
@@ -41,11 +41,10 @@ test('F09-AC9 a Read while the graph is mounted: one blit for graph, a second 10
   expect(b.seen).toHaveLength(2)
   const [ring, clear] = b.seen.map(s => decode({ props: { cells: s.args.cells } }))
   expect(ring).toHaveLength(COLUMNS * ROWS)
-  const lit = ring!.flatMap((c, i) => (c.bg !== clear![i]!.bg ? [i] : []))
-  const node = ring!.findIndex(c => c.char === '◐') // the recorded Read is a partial one: its glyph
-  expect(lit.length).toBeGreaterThan(2) // the ring around the node's cell, not the cell itself
-  expect(lit.every(i => i !== node && Math.abs(i % COLUMNS - (node % COLUMNS)) <= 1 && Math.abs(Math.floor(i / COLUMNS) - Math.floor(node / COLUMNS)) <= 1)).toBe(true)
-  expect(lit.every(i => ring![i]!.char === clear![i]!.char)).toBe(true)
+  const lit = dots(ring!, COLUMNS), after = dots(clear!, COLUMNS)
+  const added = [...lit].filter(([k]) => !after.has(k))
+  expect(added.length).toBeGreaterThan(8) // the white ring around the node
+  expect(added.every(([, color]) => color === 0xf0f3f6)).toBe(true)
   expect(b.seen[0]!.renders).toBe(b.seen[1]!.renders)
   expect(b.renders()).toBe(b.seen[1]!.renders)
 })

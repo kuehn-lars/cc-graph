@@ -10,13 +10,13 @@ Requirements: F09-R12, R14, R15, R16 (dotted import edges only), R22.
 
 **Touches:** `render` (dot canvas, braille encoder, card, shapes, edges, fit to view).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC13 an 84 × 24 `Raster`: corner rows `▗▄…▖` and `▝▀…▘` in `#14161b` on the default background, card background everywhere else, no half block outside those rows
-- [ ] F09-AC14 `src/a.ts` `read`, 400 tokens, alone: its centre cell is `⣿` in `#7aa7ff`, its dots a disc of radius 9
-- [ ] F09-AC15 a `compacted` node is an outline in `#5f6672` with an empty centre; a `ghost` is a cross in `#7d8590`
-- [ ] F09-AC27 one node is drawn at the centre of the dot area; two nodes 10 units apart on one row sit symmetric about it
-- [ ] A test helper decodes a braille cell back into its lit dots
-- [ ] The step-3 test of AC4 checks shapes, not the glyphs `◐`, `●`, `◌`
-- [ ] F09-AC4, AC5, AC7, AC6 and AC11 still pass; NFR-P3 still holds for 60 nodes and 120 edges
-- [ ] The check command passes
+- [x] F09-AC13 an 84 × 24 `Raster`: corner rows `▗▄…▖` and `▝▀…▘` in `#14161b` on the default background, card background everywhere else, no half block outside those rows
+- [x] F09-AC14 `src/a.ts` `read`, 400 tokens, alone: its centre cell is `⣿` in `#7aa7ff`, its dots a disc of radius 9
+- [x] F09-AC15 a `compacted` node is an outline in `#5f6672` with an empty centre; a `ghost` is a cross in `#7d8590`
+- [x] F09-AC27 one node is drawn at the centre of the dot area; two nodes 10 units apart on one row sit symmetric about it
+- [x] A test helper decodes a braille cell back into its lit dots
+- [x] The step-3 test of AC4 checks shapes, not the glyphs `◐`, `●`, `◌`
+- [x] F09-AC4, AC5, AC7, AC6 and AC11 still pass; NFR-P3 still holds for 60 nodes and 120 edges
+- [x] The check command passes

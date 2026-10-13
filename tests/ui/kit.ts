@@ -80,3 +80,25 @@ export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][]
   const values: Record<string, unknown> = { view: 'graph', graph, layout, ...(memory.length ? { memory } : {}), ...(selected ? { selected } : {}) }
   on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
 }
+
+// A braille cell is U+2800 plus the bits of its lit dots, `BITS[dotRow][dotColumn]`.
+const BITS = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]]
+
+/** The lit dots of a decoded `Raster` `columns` wide: `"x,y"` in raster dots (2 per column, 4 per row), each with the foreground of its cell. */
+export function dots(cells: { char: string; fg: number }[], columns: number): Map<string, number> {
+  const lit = new Map<string, number>()
+  cells.forEach((c, i) => {
+    const bits = c.char.codePointAt(0)! - 0x2800
+    if (bits < 0 || bits > 0xff) return
+    BITS.forEach((row, dr) => row.forEach((bit, dc) => { if (bits & bit) lit.set(`${(i % columns) * 2 + dc},${Math.floor(i / columns) * 4 + dr}`, c.fg) }))
+  })
+  return lit
+}
+
+/** The dots of one colour as `[x, y]`, and the centre of their bounding box. */
+export function ofColor(lit: Map<string, number>, color: number) {
+  const points = [...lit].filter(([, c]) => c === color).map(([k]) => k.split(',').map(Number) as [number, number])
+  const xs = points.map(p => p[0]), ys = points.map(p => p[1])
+  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
+  return { points, minX, maxX, minY, maxY, x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+}

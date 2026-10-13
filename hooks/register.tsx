@@ -83,7 +83,7 @@ function queuePulse($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, 
       if (!size) return
       const blit = async (ring: string[]) => $.ui.blit({
         requestId: PANE, key: 'graph', ...size,
-        cells: frame(await readGraph($), await readLayout($), await readMemory($), size.columns, size.rows, (await read($, SELECTED)) ?? null, ring),
+        cells: frame(await readGraph($), await readLayout($), size.columns, size.rows, (await read($, SELECTED)) ?? null, ring),
       }).catch(() => ({}))
       const mine = ++pulses
       await blit(paths)
