@@ -22,14 +22,16 @@ const badge = (n: FileNode) =>
 /** F09-R10 (NFR-A3): per path, "imports 2" for a file that imports, "imported by login.ts +1" for a ghost: its most recently touched importer and the count of the others. */
 function edgeWords(graph: Graph) {
   const words = new Map<string, string>()
-  const importers = new Map<string, string[]>()
+  const importers = new Map<string, string[]>(), imports = new Map<string, number>()
   for (const e of graph.edges)
-    if (e.kind === 'import' && graph.files[e.from]) importers.set(e.to, [...(importers.get(e.to) ?? []), e.from])
+    if (e.kind === 'import' && graph.files[e.from]) {
+      importers.set(e.to, [...(importers.get(e.to) ?? []), e.from])
+      imports.set(e.from, (imports.get(e.from) ?? 0) + 1)
+    }
   for (const n of Object.values(graph.files)) {
-    const imports = graph.edges.filter(e => e.kind === 'import' && e.from === n.path).length
     const by = (importers.get(n.path) ?? []).sort((a, b) => graph.files[b]!.touched - graph.files[a]!.touched)
     if (n.state === 'ghost' && by.length) words.set(n.path, `imported by ${by[0]!.slice(by[0]!.lastIndexOf('/') + 1)}${by.length > 1 ? ` +${by.length - 1}` : ''}`)
-    else if (imports) words.set(n.path, `imports ${imports}`)
+    else if (imports.has(n.path)) words.set(n.path, `imports ${imports.get(n.path)}`)
   }
   return words
 }

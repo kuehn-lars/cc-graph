@@ -48,7 +48,8 @@ export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], column
   const cells: Cell[] = Array.from({ length: columns * rows }, () => [' ', DEFAULT, DEFAULT])
   const taken = new Map<string, number>(), used = new Set<number>()
   const paths = memory.map(n => n.path).sort().slice(0, columns) // path order; a row wider than the raster is cut
-  paths.forEach((_, i) => { used.add((rows - 1) * columns + i) }) // nodes keep off them
+  const memoryAt = (i: number) => (rows - 1) * columns + i
+  paths.forEach((_, i) => used.add(memoryAt(i))) // nodes keep off them
   for (const n of Object.values(graph.files)) {
     const { x, y } = layout[n.path] ?? seedPoint(folderOf(n.path))
     if (used.size === cells.length) break // more files than cells: the rest are not drawn
@@ -69,6 +70,6 @@ export function paint(graph: Graph, layout: Layout, memory: MemoryNote[], column
     const n = graph.files[path]!
     cells[at] = [GLYPH[n.state], STATE_COLOR[n.state], n.change ? RING[n.change].color : DEFAULT]
   }
-  paths.forEach((_, i) => { cells[(rows - 1) * columns + i] = ['■', MEMORY, DEFAULT] })
+  paths.forEach((_, i) => { cells[memoryAt(i)] = ['■', MEMORY, DEFAULT] })
   return cells
 }
