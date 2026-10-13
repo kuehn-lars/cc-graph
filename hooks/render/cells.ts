@@ -1,5 +1,5 @@
 // Pure: the cells of a `Raster` (F09-R1) and their packed form.
-import type { Graph, NodeState, Point } from '../../types'
+import type { Graph, Layout, NodeState } from '../../types'
 import { CANVAS, folderOf, seedPoint } from '../layout/seed'
 import { GLYPH } from './list'
 
@@ -18,7 +18,7 @@ export const encode = (cells: Cell[]) =>
   (new Uint8Array(Uint32Array.from(cells.flatMap(([c, fg, bg]) => [c.codePointAt(0)!, fg, bg])).buffer) as Uint8Array & { toBase64(): string }).toBase64() // the engine has it, the es2023 lib does not
 
 // Import edges: a grey quieter than any state's glyph.
-const EDGE = 0x484f58
+const EDGE = 0x768390
 
 /** The cells a straight line of half-block pixels covers from pixel `a` to pixel `b` (F09-R5). Bresenham, in pixels: `rows × 2` of them tall. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
@@ -36,7 +36,7 @@ function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
  * `columns × rows` cells: import edges as half-block pixels, every file node its list glyph on top at its position in `layout`, else at its folder's seed point (F09-R5, R9).
  * ponytail: a node whose cell is taken moves to the next free one, row-major; the layout keeps nodes apart in units, not in cells.
  */
-export function paint(graph: Graph, layout: Record<string, Point>, columns: number, rows: number): Cell[] {
+export function paint(graph: Graph, layout: Layout, columns: number, rows: number): Cell[] {
   const cells: Cell[] = Array.from({ length: columns * rows }, () => [' ', DEFAULT, DEFAULT])
   const taken = new Map<string, number>(), used = new Set<number>()
   for (const n of Object.values(graph.files)) {

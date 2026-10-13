@@ -1,6 +1,6 @@
 // Pure: the terminal graph view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
-import type { Fill, Graph, Point } from '../../types'
+import type { Fill, Graph, Layout } from '../../types'
 import { encode, paint } from './cells'
 import { FOOTER_NOTES, fit } from './list'
 import { meterLine } from './meter'
@@ -19,7 +19,7 @@ const MAX_ROWS = 256
 /** The rows the raster gets of `bodyRows`, less the header and the footer notes; below `MIN_ROWS` the list is drawn. */
 export const graphRows = (bodyRows: number, notes: string[]) => Math.min(bodyRows - HEADER_ROWS - Math.min(notes.length, FOOTER_NOTES), MAX_ROWS)
 
-export function renderGraph({ Box, Text, Raster }: Table, graph: Graph, layout: Record<string, Point>, fill: Fill | null, notes: string[], columns: number, rows: number) {
+export function renderGraph({ Box, Text, Raster }: Table, graph: Graph, layout: Layout, fill: Fill | null, notes: string[], columns: number, rows: number) {
   const width = Math.min(columns, MAX_COLUMNS)
   return (
     <Box flexDirection="column">

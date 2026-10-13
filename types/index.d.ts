@@ -62,6 +62,7 @@ export type MemoryNote = { path: string; type: string; tokens: number | null; re
 export type Fill = { tokens: number | null; window: number; percent: number | null }
 export type Agent = { id: string; type: string; description: string }
 export type Point = { x: number; y: number }   // layout units on a 100 × 64 canvas
+export type Layout = Record<string, Point>     // by node id: a file path or a decision id
 export type Why = { path: string; pending: boolean; text: string | null; failure: string | null }
 
 declare module 'claude-code' {
@@ -69,7 +70,7 @@ declare module 'claude-code' {
     'cc-graph': {
       graph: Graph
       turn: number                     // main-loop turns started in this conversation
-      layout: Record<string, Point>    // by node id: a file path or a decision id
+      layout: Layout
       fill: Fill | null
       memory: MemoryNote[]
       thinking: ThinkingNote[]         // newest 20

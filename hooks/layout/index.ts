@@ -1,5 +1,5 @@
 // Pure: F09-R3, R4. (previous positions, graph) -> positions. A small force layout: nodes repel, import edges pull, a node is drawn to its folder's seed point.
-import type { Graph, Point } from '../../types'
+import type { Graph, Layout, Point } from '../../types'
 import { CANVAS, folderOf, seedPoint, startPoint } from './seed'
 
 const ITERATIONS = 200 // F09-R4
@@ -11,7 +11,7 @@ const STEP = 0.05
 
 const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v))
 
-export function layout(previous: Record<string, Point>, graph: Graph): Record<string, Point> {
+export function layout(previous: Layout, graph: Graph): Layout {
   const paths = Object.keys(graph.files).sort() // sorted, so the order of insertion never changes the result
   const start = paths.map(p => previous[p] ?? startPoint(p))
   const pos = start.map(p => ({ ...p }))

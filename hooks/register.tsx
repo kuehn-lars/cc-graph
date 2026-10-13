@@ -77,6 +77,7 @@ async function refreshMemory($: Pick<CoreEngineInterface, 'state' | 'session'>) 
 }
 
 const readMemory = async ($: StateDollar) => (await read($, MEMORY)) ?? []
+const readLayout = async ($: StateDollar) => (await read($, LAYOUT)) ?? {}
 const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
@@ -241,7 +242,7 @@ export const register: Register = (on, options) => {
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
         {wantsGraph && rows >= MIN_ROWS
-          ? renderGraph(table, await readGraph($), (await read($, LAYOUT)) ?? {}, await readFill($), notes, e.props.bodyColumns, rows)
+          ? renderGraph(table, await readGraph($), await readLayout($), await readFill($), notes, e.props.bodyColumns, rows)
           : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
