@@ -2,6 +2,10 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
+## Unreleased
+
+- F06 import edges: the `importEdges` setting ("Show file imports", on by default, F14-R1) in `/config`. Off, a `Read`, `Edit` or `Write` parses no imports, so a read of `login.ts` adds `login.ts` alone: no edge, no ghost (F06-AC12, R12). Edges already in the graph stay until `/clear` (F06-Q2).
+
 ## 0.1.0 (2026-10-13)
 
 What Claude knows: a list view of every file Claude read, searched or changed, what compaction took, how full the window is, and which memory files are in force (F01, F02, F03, F04, F08, F14 `maxNodes`, F15). Tested on Claude Code 2.1.296.

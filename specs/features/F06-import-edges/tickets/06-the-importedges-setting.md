@@ -8,9 +8,9 @@ Requirements: F06-R12, F14-R1 (the `importEdges` row).
 
 **Blocked by:** 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F06-AC12 `test(…, { options: { importEdges: false } }, …)`: the recorded read of `login.ts` leaves no edge, and no node for `password.ts` or `sessions.ts`
-- [ ] With the default, the same read still makes the edges of F06-AC1
-- [ ] `claude plugin validate --json .` reports nothing new (F14-AC3)
-- [ ] The check command passes
+- [x] F06-AC12 `test(…, { options: { importEdges: false } }, …)`: the recorded read of `login.ts` leaves no edge, and no node for `password.ts` or `sessions.ts`
+- [x] With the default, the same read still makes the edges of F06-AC1
+- [x] `claude plugin validate --json .` reports nothing new (F14-AC3)
+- [x] The check command passes

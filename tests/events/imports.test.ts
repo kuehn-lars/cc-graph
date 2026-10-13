@@ -221,3 +221,18 @@ test('F06-R4 a package node app/models/__init__.py is found when it already exis
   await read($, '/w/app/views.py')
   expect(await edgesOf()).toEqual([{ from: 'app/views.py', to: 'app/models/__init__.py', kind: 'import', blind: false, guessed: false }])
 })
+
+test('F06-AC12 importEdges false: reading login.ts leaves no edge and no ghost', { options: { importEdges: false } }, async ($, on) => {
+  engine(on, readWhole)
+  await start($)
+  await read($, login)
+  expect(await edgesOf()).toEqual([])
+  expect(Object.keys((await graphOf())!.files)).toEqual(['src/auth/login.ts'])
+})
+
+test('F06-AC12 the default still makes the edges of F06-AC1', async ($, on) => {
+  engine(on, readWhole)
+  await start($)
+  await read($, login)
+  expect(await edgesOf()).toHaveLength(2)
+})

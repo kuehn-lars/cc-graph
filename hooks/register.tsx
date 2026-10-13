@@ -85,18 +85,21 @@ const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
 
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
 const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
-  Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r, cwd),
-  Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd), e.file_path),
-  Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd), e.file_path),
+  Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r, cwd, importEdges),
+  Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
+  Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
 let maxNodes = 60
+// F06-R12, F14-R2: read once; off means no import is parsed.
+let importEdges = true
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
+  importEdges = options.importEdges !== false
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
