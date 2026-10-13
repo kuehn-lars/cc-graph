@@ -64,3 +64,23 @@ test('F09-AC12 a position of a node no longer in the graph is dropped', () => {
   const { [Object.keys(g.files)[0]!]: _, ...files } = g.files
   expect(Object.keys(layout(p, { ...g, files })).sort()).toEqual(Object.keys(files).sort())
 })
+
+const chain = ['src/routes/index.ts', 'src/auth/login.ts', 'src/auth/sessions.ts']
+const graphFrom = (paths: string[], edges: Edge[]): Graph => ({
+  seq: paths.length, files: Object.fromEntries(paths.map((p, i) => [p, node(p, i + 1)])), edges, decisions: [], compactions: [],
+})
+
+test('F09-AC25 in a new chain each importer ends at least 10 units above the file it imports', () => {
+  const g = graphFrom(chain, [importEdge(chain[0]!, chain[1]!), importEdge(chain[1]!, chain[2]!)])
+  const p = layout({}, g)
+  expect(p[chain[1]!]!.y - p[chain[0]!]!.y).toBeGreaterThanOrEqual(10)
+  expect(p[chain[2]!]!.y - p[chain[1]!]!.y).toBeGreaterThanOrEqual(10)
+})
+
+test('F09-AC26 a new ghost importing a placed file ends within 16 units of it', () => {
+  const login = 'src/auth/login.ts', users = 'src/api/users.ts'
+  const g = graphFrom([login, users], [importEdge(users, login)])
+  const p = layout({ [login]: { x: 50, y: 30 } }, g)
+  expect(dist(p[users]!, p[login]!)).toBeLessThanOrEqual(16)
+  expect(p[users]!.y).toBeLessThan(p[login]!.y)
+})

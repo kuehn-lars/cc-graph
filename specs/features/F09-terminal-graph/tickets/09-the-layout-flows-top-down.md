@@ -10,9 +10,9 @@ Requirements: F09-R4 (the cap applies to existing nodes only), R13.
 
 **Touches:** `layout` (forces, start point, the cap).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC25 a new chain `index.ts` → `login.ts` → `sessions.ts`: after one pass each importer is at least 10 units above what it imports
-- [ ] F09-AC26 `login.ts` at (50, 30) and a new ghost `users.ts` importing it: after one pass `users.ts` is within 16 units of it
-- [ ] F09-AC1, AC2, AC3 and AC12 still pass
-- [ ] The check command passes
+- [x] F09-AC25 a new chain `index.ts` → `login.ts` → `sessions.ts`: after one pass each importer is at least 10 units above what it imports
+- [x] F09-AC26 `login.ts` at (50, 30) and a new ghost `users.ts` importing it: after one pass `users.ts` is within 16 units of it
+- [x] F09-AC1, AC2, AC3 and AC12 still pass
+- [x] The check command passes
