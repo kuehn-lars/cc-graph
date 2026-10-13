@@ -2,7 +2,9 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
-## Unreleased
+## 0.1.0 (2026-10-13)
+
+What Claude knows: a list view of every file Claude read, searched or changed, what compaction took, how full the window is, and which memory files are in force (F01, F02, F03, F04, F08, F14 `maxNodes`, F15). Tested on Claude Code 2.1.296.
 
 - Plugin skeleton: `plugin.json`, `marketplace.json`, an empty hooks module, the `$.state` contract (02 Data model) and the Claude Code 2.1.296 types.
 - `fixtures/sample-app` (04 Reference session) and real `rg`, `grep` and `git` output in `fixtures/output/`, with `capture.sh` to record it again.
@@ -46,3 +48,7 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 - F14 over-cap note: when changed files alone exceed `maxNodes`, the graph keeps them all and the list view footer says "N files over the cap of M"; the note goes once the graph is back under the cap. The footer draws the newest five notes, one line each, and nothing without a note (F14-AC8, F08-R5, I5).
 - F14 settings: `maxNodes` ("Most files in the graph", default 60, 20 to 200) is declared in `userConfig` and read once by `register`; I5 evicts oldest unchanged files inside the write that exceeds it and never a changed file. A changed value applies at the next write. The other settings ship with their features (F14-AC1, AC3, AC5, AC8, R1..R3, R6).
 - `trace.mjs`: a criterion marked `(from vX.Y)` after its ID is required only once `plugin.json` reaches that milestone, so a spec whose fields ship over several milestones can be Implemented (F14-AC2, AC4, AC6, AC7).
+- v0.1 NFR tests: a `tool.call` benchmark (NFR-P1, best of three runs of 200 calls), the state size after a 500-call fixture (NFR-P5), fault injection in non-gating hooks (NFR-R2), ten parallel reads (NFR-R5), a second `session.start` (NFR-R6), every surface (NFR-C2) and paths as macOS, Linux and Windows spell them (NFR-C4).
+- `trace.mjs`: an NFR that `check-calls.mjs` or the CI matrix checks is traced by the check naming its ID (NFR-S1, S3, S6, R1, C1; specs/README.md, Traceability).
+- Test kit: `replayAll` answers each call with its own recorded result; a field of an earlier answer (`isError`) no longer leaks into later calls.
+- F03 Verified; REL-Q1 checked again; `plugin.json` gets `homepage`, `repository` and `license`; the README has the install line.
