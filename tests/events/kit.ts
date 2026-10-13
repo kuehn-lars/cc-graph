@@ -44,16 +44,16 @@ export function seedGraph(on: On, graph: Graph) {
 
 /** Replays every row of a recording made with a probe that logs `session.start`, `turn.start` and `tool.call` (wide.ts, many-changes.ts), each answered beneath the mod as recorded. */
 export async function replayAll($: any, on: On, recording: { events: readonly { event: string; input: any; result: any }[] }) {
-  const answer = { ref: 0, result: null as any, text: '' }
+  let answer: any
   on('session.start', (_$, e) => ({ cwd: e.cwd }))
   on('command.register', (_$, e) => ({ value: { command: e.name } }))
   on('turn.start', (_$, e) => ({ turnId: e.turnId }))
-  on('tool.call', () => answer)
+  on('tool.call', () => answer) // each call answers its own recorded result, nothing left over from the one before
   observe(on)
   for (const row of recording.events) {
     if (row.event === 'session.start') await $.session.start(row.input)
     else if (row.event === 'turn.start') await $.turn.start(row.input)
-    else (Object.assign(answer, row.result), await $.tool.call(row.input))
+    else ((answer = row.result), await $.tool.call(row.input))
   }
 }
 
