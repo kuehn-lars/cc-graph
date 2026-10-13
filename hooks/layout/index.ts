@@ -18,11 +18,9 @@ const clamp = (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v
 function startOf(path: string, previous: Layout, graph: Graph): Point {
   const offset = startPoint(path)
   const newest = (paths: string[]) => paths.filter(p => previous[p]).sort((a, b) => (graph.files[b]?.touched ?? 0) - (graph.files[a]?.touched ?? 0) || (a < b ? -1 : 1))[0]
-  const importer = newest(graph.edges.filter(e => e.kind === 'import' && e.to === path).map(e => e.from))
-  if (importer) return { x: clamp(previous[importer]!.x + offset.x - seedPoint(folderOf(path)).x, 0, CANVAS.width), y: clamp(previous[importer]!.y + BELOW, 0, CANVAS.height) }
-  const imported = newest(graph.edges.filter(e => e.kind === 'import' && e.from === path).map(e => e.to))
-  if (imported) return { x: clamp(previous[imported]!.x + offset.x - seedPoint(folderOf(path)).x, 0, CANVAS.width), y: clamp(previous[imported]!.y - BELOW, 0, CANVAS.height) }
-  return offset
+  const by = (p: string | undefined, dy: number) => p && { x: clamp(previous[p]!.x + offset.x - seedPoint(folderOf(path)).x, 0, CANVAS.width), y: clamp(previous[p]!.y + dy, 0, CANVAS.height) }
+  const imports = graph.edges.filter(e => e.kind === 'import')
+  return by(newest(imports.filter(e => e.to === path).map(e => e.from)), BELOW) || by(newest(imports.filter(e => e.from === path).map(e => e.to)), -BELOW) || offset
 }
 
 export function layout(previous: Layout, graph: Graph): Layout {

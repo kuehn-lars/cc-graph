@@ -1,10 +1,12 @@
 // Pure: the terminal graph view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
 import type { Fill, Graph, Layout, MemoryNote } from '../../types'
-import { TONE, changeParts, encode, nowNode, paint } from './cells'
+import { fileName } from '../layout/seed'
+import { encode, paint } from './cells'
 import { legendLines } from './legend'
 import { FOOTER_NOTES, edgeWords, fit } from './list'
 import { meterSegs } from './meter'
+import { TONE, changeParts, nowNode } from './palette'
 import { cols, cutSegs, tail, type Seg } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Raster'>
@@ -34,11 +36,12 @@ export const frame = (graph: Graph, layout: Layout, columns: number, rows: numbe
 function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {
   const n = nowNode(graph)
   if (!n) return <Text dimColor>Nothing read yet.</Text>
-  const parts = changeParts(n), change = parts.length ? `  ${parts.map(([t]) => t).join('')}` : '', edge = edgeWords(graph).get(n.path)
-  const rest = [change, edge ? `  · ${edge}` : ''].filter(Boolean)
-  const head = '⏺ now  '
-  while (rest.length && cols(head + n.path + rest.join('')) > columns && cols(head + n.path.slice(n.path.lastIndexOf('/') + 1) + rest.join('')) > columns) rest.pop()
-  const room = columns - cols(head + rest.join(''))
+  const head = '⏺ now  ', parts = changeParts(n), edge = edgeWords(graph).get(n.path)
+  // The list words go first, then the change word, while not even the file name fits beside them.
+  let change = parts.length ? `  ${parts.map(([t]) => t).join('')}` : '', words = edge ? `  · ${edge}` : ''
+  if (cols(head + fileName(n.path) + change + words) > columns) words = ''
+  if (cols(head + fileName(n.path) + change) > columns) change = ''
+  const room = columns - cols(head + change + words)
   const path = cols(n.path) <= room ? n.path : `…${tail(n.path, room - 1)}` // ponytail: a file name wider than the pane loses its start too
   const slash = path.lastIndexOf('/') + 1
   return (
@@ -47,8 +50,8 @@ function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {
       <Text dimColor>{head.slice(1)}</Text>
       <Text dimColor>{path.slice(0, slash)}</Text>
       <Text bold>{path.slice(slash)}</Text>
-      {rest[0] === change && change && <Text>{'  '}{parts.map(([t, tone], i) => <Text key={`c${i}`} color={tone.key}>{t}</Text>)}</Text>}
-      {rest.length > (change ? 1 : 0) && <Text dimColor>{rest[rest.length - 1]}</Text>}
+      {change && <Text>{'  '}{parts.map(([t, tone], i) => <Text key={`c${i}`} color={tone.key}>{t}</Text>)}</Text>}
+      {words && <Text dimColor>{words}</Text>}
     </Text>
   )
 }

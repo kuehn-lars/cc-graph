@@ -2,7 +2,7 @@
 import type { Fill, Graph } from '../../types'
 import { inContext } from '../model/compacted'
 import { plural } from '../parse/measure'
-import { RING, TONE } from './cells'
+import { CHANGE_TONE, TONE } from './palette'
 import type { Seg } from './width'
 
 /** F03-R5a: "850", "12.4k", "200k"; a million or more as "1M" (F09-R21). */
@@ -36,6 +36,6 @@ export function meterSegs(graph: Graph, fill: Fill | null): Seg[] {
       : [word('window –')]),
     word('  '), num(`≈${count(tokens)}`), word(' tokens'),
     ...stat(known.length, 'files'), ...stat(files.filter(n => n.state === 'compacted').length, 'compacted'),
-    ...(unseen ? [word(' · '), { text: `${unseen} changed unseen`, color: RING.blind.key }] : []),
+    ...(unseen ? [word(' · '), { text: `${unseen} changed unseen`, color: CHANGE_TONE.blind.key }] : []),
   ]
 }

@@ -1,12 +1,12 @@
 // Pure: the list view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
 import type { FileNode, Fill, Graph, MemoryNote } from '../../types'
-import { GLYPH } from './cells'
+import { fileName } from '../layout/seed'
+import { GLYPH } from './palette'
 import { count, meterLine } from './meter'
 import { cols, tail } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
-
 
 // F08-R8: the first nine rows carry a hotkey 1 to 9, and a plain Button draws "N: " (3 columns) before its text.
 const HOTKEY_ROWS = 9
@@ -29,7 +29,7 @@ export function edgeWords(graph: Graph) {
     }
   for (const n of Object.values(graph.files)) {
     const by = (importers.get(n.path) ?? []).sort((a, b) => graph.files[b]!.touched - graph.files[a]!.touched)
-    if (n.state === 'ghost' && by.length) words.set(n.path, `imported by ${by[0]!.slice(by[0]!.lastIndexOf('/') + 1)}${by.length > 1 ? ` +${by.length - 1}` : ''}`)
+    if (n.state === 'ghost' && by.length) words.set(n.path, `imported by ${fileName(by[0]!)}${by.length > 1 ? ` +${by.length - 1}` : ''}`)
     else if (imports.has(n.path)) words.set(n.path, `imports ${imports.get(n.path)}`)
   }
   return words
@@ -41,7 +41,7 @@ export function edgeWords(graph: Graph) {
  */
 function row(n: FileNode, columns: number, edge = '') {
   const head = `${GLYPH[n.state]} `
-  const name = n.path.slice(n.path.lastIndexOf('/') + 1)
+  const name = fileName(n.path)
   const parts = [badge(n), n.mainLoop ? '' : 'agent', n.reason?.startsWith('in worktree') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen}`, edge].filter(Boolean)
   const suffix = () => parts.map(p => `  ${p}`).join('')
   const room = () => columns - cols(head + suffix())
