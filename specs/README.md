@@ -30,7 +30,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 | [F06](features/F06-import-edges/spec.md) | Import edges | v0.2 | Approved |
 | [F07](features/F07-blind-spots/spec.md) | Blind spots | v0.3 | Review |
 | [F08](features/F08-pane-list-view/spec.md) | Pane, list view and key map | v0.1 | Verified |
-| [F09](features/F09-terminal-graph/spec.md) | Terminal graph and layout | v0.2 | Approved |
+| [F09](features/F09-terminal-graph/spec.md) | Terminal graph and layout | v0.2 | Review |
 | [F10](features/F10-desktop-graph/spec.md) | Desktop graph and pointer selection | v0.5 | Review |
 | [F11](features/F11-detail-card/spec.md) | Detail card and actions | v0.4 | Review |
 | [F12](features/F12-decisions/spec.md) | Decisions (opt-in) | v0.6 | Review |
