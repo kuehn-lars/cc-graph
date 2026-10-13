@@ -59,6 +59,7 @@ function join(dir: string, spec: string): string | null {
   return root + out.join('/')
 }
 
+// ponytail: a statement after `;` or `:` (`if TYPE_CHECKING: import x`), a line continuation (`\`) or a `)` inside a string in a parenthesised list can still confuse this; a real tokenizer if a recording shows it.
 // Left to right like TS_TOKENS; statements start a line. Groups: 1 `from` module, 2|3 its names, 4 `import` list.
 const PY_TOKENS = new RegExp([
   String.raw`#[^\n]*`,

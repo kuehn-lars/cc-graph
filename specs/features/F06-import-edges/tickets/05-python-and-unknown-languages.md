@@ -8,10 +8,10 @@ Requirements: F06-R2 (Python), R4, R11.
 
 **Blocked by:** 01, 02
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F06-AC3 the recorded read of `app/views.py`: an edge to `app/models.py`
-- [ ] F06-AC11 the recorded read of `docs/usage.md`: no edge, no node
-- [ ] `import app.models` links only when `app/models.py` is already a node (R4)
-- [ ] Python parse table: every R2 form, one level up per extra dot, `x.py` before `x/__init__.py`, imports inside comments and strings
-- [ ] The check command passes
+- [x] F06-AC3 the recorded read of `app/views.py`: an edge to `app/models.py`
+- [x] F06-AC11 the recorded read of `docs/usage.md`: no edge, no node
+- [x] `import app.models` links only when `app/models.py` is already a node (R4)
+- [x] Python parse table: every R2 form, one level up per extra dot, `x.py` before `x/__init__.py`, imports inside comments and strings
+- [x] The check command passes

@@ -199,3 +199,25 @@ test('F06-AC11 the recorded read of docs/usage.md adds no edge and no node', asy
   expect(await edgesOf()).toEqual([])
   expect(Object.keys((await graphOf())!.files)).toEqual(['docs/usage.md'])
 })
+
+// DERIVED: the recorded app/views.py Read with other content.
+const viewsWith = (content: string) => {
+  const row = mixed.events.find(r => r.event === 'tool.call' && r.input.file_path?.endsWith('app/views.py'))! as any
+  return { tool: 'Read', tool_use_id: row.input.tool_use_id, input: row.input, result: { ...row.result.result, file: { ...row.result.result.file, content } } }
+}
+
+test('F06-R10 a Python file importing itself adds no edge', async ($, on) => {
+  engine(on, viewsWith('from .views import x\nfrom . import views\n'))
+  await start($)
+  await read($, '/w/app/views.py')
+  expect(await edgesOf()).toEqual([])
+  expect(Object.keys((await graphOf())!.files)).toEqual(['app/views.py'])
+})
+
+test('F06-R4 a package node app/models/__init__.py is found when it already exists', async ($, on) => {
+  seedGraph(on, seeded('app/models/__init__.py'))
+  engine(on, viewsWith('import app.models\n'))
+  await start($)
+  await read($, '/w/app/views.py')
+  expect(await edgesOf()).toEqual([{ from: 'app/views.py', to: 'app/models/__init__.py', kind: 'import', blind: false, guessed: false }])
+})
