@@ -1,6 +1,6 @@
 import reference from '../../fixtures/sessions/reference'
 import { expect, test } from 'claude-code/testing'
-import { seedGraph, turn } from '../events/kit'
+import { beneath, seedGraph, turn } from '../events/kit'
 import { node } from '../ui/kit'
 
 // NFR-P1: 200 calls cycled from the reference session's recorded tool calls, each answered at once beneath the mod,
@@ -12,11 +12,7 @@ const recorded = reference.events.filter(e => e.event === 'tool.call')
 const quantile = (xs: number[], q: number) => [...xs].sort((a, b) => a - b)[Math.min(xs.length - 1, Math.floor(xs.length * q))]!
 
 test('NFR-P1 a tool.call hook takes under 5 ms median and 50 ms at p99 with 60 nodes', { timeoutMs: 60_000 }, async ($, on) => {
-  let answer: any
-  on('session.start', (_$, e) => ({ cwd: e.cwd }))
-  on('command.register', (_$, e) => ({ value: { command: e.name } }))
-  on('turn.start', (_$, e) => ({ turnId: e.turnId }))
-  on('tool.call', () => answer)
+  const answer = beneath(on)
   seedGraph(on, {
     seq: 60, files: Object.fromEntries(Array.from({ length: 60 }, (_, i) => [`seed/f${i}.ts`, node(`seed/f${i}.ts`, i + 1)])),
     edges: [], decisions: [], compactions: [],
@@ -33,7 +29,7 @@ test('NFR-P1 a tool.call hook takes under 5 ms median and 50 ms at p99 with 60 n
     const own: number[] = []
     for (let i = 0; i < 200; i++) {
       const c = recorded[i % recorded.length]!
-      answer = c.result
+      answer(c.result)
       const base = await timed({ ...(c.input as any), tool: 'Glob' })
       own.push((await timed(c.input)) - base)
     }
