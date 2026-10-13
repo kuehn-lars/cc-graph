@@ -10,7 +10,7 @@ export type Cell = [char: string, fg: number, bg: number]
 export const DEFAULT = 0x01000000
 
 // F09-R22: the card is dark in every theme, so the colours are fixed.
-const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5
+const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5, DIMMED = 0x9aa3ae
 
 const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
 
@@ -23,8 +23,8 @@ export const RING: Record<Change, { color: number; name: string }> = {
   edited: { color: 0xf0b45a, name: 'amber' }, created: { color: 0x63d494, name: 'green' }, external: { color: 0x9aa3ae, name: 'grey' }, blind: { color: 0xff6b72, name: 'red' },
 }
 
-// F09-R6
-const LARGEST = 5
+/** F09-R17: what a change says on its node's label. */
+const changeWord = (n: FileNode) => (n.change === 'edited' ? `+${n.added} −${n.removed}` : n.change === 'created' ? `+${n.added} new` : n.change === 'external' ? 'changed' : 'changed unseen')
 
 /** The dots of a straight line between two dots, Bresenham. */
 function* line([x0, y0]: [number, number], [x1, y1]: [number, number]) {
@@ -72,7 +72,7 @@ const place = (t: number, size: number) => (t > 0 ? size / 2 + Math.ceil(t) - 1 
 
 /**
  * `columns × rows` cells: the card (F09-R12), the file nodes as shapes at their positions in `layout`, else at their folder's seed point (F09-R9), fitted to the dot area (R14), joined by dotted import edges (R16).
- * Labels (F09-R6) go to the right of the selected node, changed nodes and the 5 largest. A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
+ * Every node is labelled (R17). A node in `pulse` wears a white ring 4 dots outside its outermost ring (R19).
  */
 export function paint(graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null = null, pulse: string[] = []): Cell[] {
   const files = Object.values(graph.files)
@@ -122,18 +122,25 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
     if (char) return [char, color, CARD]
     return (col - 1) % 4 === 0 && (row - 1) % 2 === 0 ? ['·', GRID, CARD] : [' ', DEFAULT, CARD]
   })
-  // Labels last. A label that would cover a node's dots or a drawn label, or leave the dot area, is dropped, so no shape is ever erased (NFR-A3).
-  const largest = new Set([...files].sort((a, b) => (b.tokens ?? 0) - (a.tokens ?? 0)).slice(0, LARGEST))
+  // Labels last (F09-R17): a label covers edge dots and the grid, never a node's dots or another label (NFR-A3).
+  const now = files.filter(n => n.state !== 'ghost').reduce<FileNode | null>((top, n) => (!top || n.touched > top.touched ? n : top), null)
+  const rank = (n: FileNode) => (n.path === selected ? 0 : n === now ? 1 : n.change ? 2 : 3)
+  const order = [...placed.values()].sort((a, b) => rank(a.node) - rank(b.node) || (rank(a.node) === 2 ? b.node.touched - a.node.touched : (b.node.tokens ?? 0) - (a.node.tokens ?? 0)) || (a.node.path < b.node.path ? -1 : 1))
   const busy = new Set<number>()
-  for (const { node, x, y, outer } of placed.values()) {
-    if (!(node.path === selected || node.change || largest.has(node))) continue
-    const label = [...node.path.slice(node.path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
-    const row = Math.floor(y / 4), start = Math.floor((x + outer) / 2) + 2
-    if (start + label.length > columns - 2) continue
-    const span = label.map((_, i) => row * columns + start + i)
-    if (span.some((at, i) => busy.has(at) || dots.cell(start + i, row).priority >= PRIORITY.halo)) continue
-    span.forEach(at => busy.add(at))
-    label.forEach((c, i) => { cells[(row + 1) * columns + start + i + 1] = [c, TEXT, CARD] })
+  for (const { node, x, y, outer } of order) {
+    const name = [...node.path.slice(node.path.lastIndexOf('/') + 1)].map(c => (cols(c) === 1 && c.codePointAt(0)! <= 0xffff ? c : '?'))
+    const label: [string, number][] = name.map(c => [c, node.state === 'read' || node.state === 'partial' || node.state === 'search' ? TEXT : DIMMED])
+    if (node.change) label.push(...[...`  ${changeWord(node)}`].map(c => [c, RING[node.change!].color] as [string, number]))
+    const row = Math.floor(y / 4)
+    // the right side first, then the left
+    for (const start of [Math.floor((x + outer) / 2) + 2, Math.floor((x - outer) / 2) - 2 - label.length + 1]) {
+      if (start < 0 || start + label.length > columns - 2) continue
+      const span = label.map((_, i) => row * columns + start + i)
+      if (span.some((at, i) => busy.has(at) || dots.cell(start + i, row).priority >= PRIORITY.halo)) continue
+      span.forEach(at => busy.add(at))
+      label.forEach(([c, fg], i) => { cells[(row + 1) * columns + start + i + 1] = [c, fg, CARD] })
+      break
+    }
   }
   return cells
 }

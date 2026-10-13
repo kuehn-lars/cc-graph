@@ -10,11 +10,11 @@ Requirements: F09-R17.
 
 **Touches:** `render` (labels).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC16 `login.ts` `edited +2 −0`: amber ring 3 dots outside, label `login.ts  +2 −0` with the change in `#f0b45a`; `rateLimit.ts` `created +12`: `rateLimit.ts  +12 new` in `#63d494`
-- [ ] F09-AC17 5 nodes placed apart on an 84 × 24 card: all 5 file names in the decoded rows
-- [ ] F09-AC18 a node within 6 columns of the right edge: its label ends two columns left of its ring
-- [ ] F09-AC19 a changed node whose label would cover the selected node's dots, no room on its left: only the selected node's label is drawn (replaces the AC6 test)
-- [ ] F09-AC11 still passes
-- [ ] The check command passes
+- [x] F09-AC16 `login.ts` `edited +2 −0`: amber ring 3 dots outside, label `login.ts  +2 −0` with the change in `#f0b45a`; `rateLimit.ts` `created +12`: `rateLimit.ts  +12 new` in `#63d494`
+- [x] F09-AC17 5 nodes placed apart on an 84 × 24 card: all 5 file names in the decoded rows
+- [x] F09-AC18 a node within 6 columns of the right edge: its label ends two columns left of its ring
+- [x] F09-AC19 a changed node whose label would cover the selected node's dots, no room on its left: only the selected node's label is drawn (replaces the AC6 test)
+- [x] F09-AC11 still passes
+- [x] The check command passes
