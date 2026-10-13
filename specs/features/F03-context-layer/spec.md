@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
+| Verified | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F08 |
 
 ## Problem
 
@@ -103,3 +103,4 @@ Adds the `compacted` state, `FileNode.readId`, `CompactMark`, `Graph.compactions
 - 2026-10-12 F02 ticketing: a search node's `readId` is its latest search call, so F03-R1 keeps it when the compaction keeps that call. No requirement changes. Approved by the owner.
 - 2026-10-12 Meter wording settled with the owner: number format (F03-R5a) and a fill without `percent` (F03-R6). No criteria change.
 - 2026-10-12 Implemented. Manual check walked with the owner in a terminal; every criterion has a passing test. Re-attached files reach the pane on the next request, not at the compaction (spike S1).
+- 2026-10-13 Manual check walked with the owner in the desktop app too. Verified for v0.1: CI green on `main`.
