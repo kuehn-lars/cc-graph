@@ -47,6 +47,12 @@ test('F09-AC20 a selected node is the focus instead: its edges are lit, the halo
   expect([...lit.values()]).toContain(EDGE) // login.test.ts's edges now recede
 })
 
+test('F09-R16 a selection that is no longer in the graph leaves the focus on the node touched last', async ($, on) => {
+  const lit = dots(await card($, on, 'gone.ts'), COLUMNS)
+  const halo = ofColor(lit, HALO), body = ofColor(lit, 0x7aa7ff)
+  expect([halo.x, halo.y]).toEqual([body.x, body.y])
+})
+
 test('F09-R17 a focused node\'s label starts two columns right of its halo', async ($, on) => {
   const cells = await card($, on)
   const lit = dots(cells, COLUMNS), halo = ofColor(lit, HALO)

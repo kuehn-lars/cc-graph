@@ -86,7 +86,7 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
   const dots = canvas(Math.max(W, 0), Math.max(H, 0))
   const placed = new Map<string, Placed>()
   const now = nowNode(graph)
-  const focus = selected ?? now?.path ?? null
+  const focus = selected !== null && graph.files[selected] ? selected : now?.path ?? null // a selection that left the graph falls back to the now node
   if (W > 0 && H > 0 && files.length) {
     const at = files.map(n => layout[n.path] ?? seedPoint(folderOf(n.path)))
     const xs = at.map(p => p.x), ys = at.map(p => p.y)
@@ -118,7 +118,7 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
       const [ux, uy] = [(b.x - a.x) / d, (b.y - a.y) / d]
       let i = 0
       const lit = e.from === focus || e.to === focus
-      for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) lit ? dots.set(x, y, LIT_EDGE, PRIORITY.litEdge) : dots.set(x, y, EDGE, PRIORITY.edge)
+      for (const [x, y] of line([Math.round(a.x + ux * ua), Math.round(a.y + uy * ua)], [Math.round(b.x - ux * ub), Math.round(b.y - uy * ub)])) if (i++ % 2 === 0) dots.set(x, y, lit ? LIT_EDGE : EDGE, lit ? PRIORITY.litEdge : PRIORITY.edge)
     }
     for (const path of pulse) {
       const p = placed.get(path)
