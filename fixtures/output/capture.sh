@@ -35,6 +35,7 @@ run git-grep-n-verify . 'git grep -n verify'
 # log.txt exists in this capture copy only; the sample app stays as it is.
 printf 'start\nerror: token expired\nlogin ok\nerror: store down\n' > log.txt
 run cat-log-rg-n-error . 'cat log.txt | rg -n error'
+run grep-rn-verify-then-ls . "grep -rn verify src ; echo '---'; ls src src/*"
 
 # Blind spots (F07): root, clean baseline, importers of login.ts
 git_ro='GIT_OPTIONAL_LOCKS=0 git'

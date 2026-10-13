@@ -94,5 +94,10 @@
     "command": "cat log.txt | rg -n error",
     "cwd": ".",
     "exitCode": 0
+  },
+  "grep-rn-verify-then-ls": {
+    "command": "grep -rn verify src ; echo '---'; ls src src/*",
+    "cwd": ".",
+    "exitCode": 0
   }
 }

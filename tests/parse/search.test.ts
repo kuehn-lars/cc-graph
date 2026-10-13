@@ -68,6 +68,12 @@ test('F02-R2 hitsIn: lines with no path, or a path with a space, or no / and no 
   expect(hitsIn(stdout, search)).toEqual({ 'dir/file.ts': { hits: 1, chars: 'dir/file.ts:3:ok'.length } })
 })
 
+test('F02-AC18 hitsIn: the folder headers of an ls run after the search are no hits', () => {
+  const run = out['grep-rn-verify-then-ls']
+  const hits = hitsIn(run.stdout, searchesIn(run.command)[0]!)
+  expect(Object.keys(hits).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
+})
+
 test('F02-R9 hitsIn: at most 1,000 lines', () => {
   const stdout = Array.from({ length: 1200 }, (_, i) => `src/f${i % 2}.ts:${i}:x`).join('\n')
   const hits = hitsIn(stdout, search)

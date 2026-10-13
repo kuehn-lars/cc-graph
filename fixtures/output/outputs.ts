@@ -114,5 +114,11 @@ export default {
     "cwd": ".",
     "exitCode": 0,
     "stdout": "2:error: token expired\n4:error: store down\n"
+  },
+  "grep-rn-verify-then-ls": {
+    "command": "grep -rn verify src ; echo '---'; ls src src/*",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "src/auth/password.ts:21:// verify compares in constant time, so a wrong guess takes as long as a right one.\nsrc/auth/password.ts:22:export async function verifyPassword(password: string, stored: string): Promise<boolean> {\nsrc/auth/login.ts:2:import { hashPassword, verifyPassword } from './password'\nsrc/auth/login.ts:23:  if (!(await verifyPassword(password, user.passwordHash))) {\n---\nsrc/config.ts\n\nsrc:\napi\nauth\nconfig.ts\ndb\nroutes\n\nsrc/api:\nusers.ts\n\nsrc/auth:\nCLAUDE.md\nlogin.ts\npassword.ts\nsessions.ts\n\nsrc/db:\nredis.ts\n\nsrc/routes:\nindex.ts\n"
   }
 }
