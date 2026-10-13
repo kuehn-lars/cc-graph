@@ -57,7 +57,7 @@ test('NFR-R5 ten concurrent Read calls give ten nodes', async ($, on) => {
   await start($)
   await turn($)
   await Promise.all(Array.from({ length: 10 }, (_, i) => read($, `/w/src/f${i}.ts`)))
-  expect(Object.keys((await graphOf())!.files).sort()).toEqual(Array.from({ length: 10 }, (_, i) => `src/f${i}.ts`).sort())
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual([...Array.from({ length: 10 }, (_, i) => `src/f${i}.ts`), 'src/password.ts', 'src/sessions.ts'].sort()) // F06: ghosts of the recorded imports
   expect((await graphOf())!.seq).toBe(10)
 })
 
@@ -72,5 +72,5 @@ test('NFR-R6 a second session.start keeps the graph and rebuilds the cwd from wh
   await $.session.start({ cwd: '/v', surface: null, isInteractive: false })
   expect(await graphOf()).toEqual(before)
   await read($, '/v/src/auth/sessions.ts')
-  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['src/auth/login.ts', 'src/auth/sessions.ts'])
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts', 'src/auth/sessions.ts']) // F06: password.ts is login.ts's ghost
 })

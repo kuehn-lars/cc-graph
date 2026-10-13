@@ -49,5 +49,5 @@ test('NFR-C3 with no surface every F01 hook and /graph run without error', async
   await $.prompt.mention({ mention: 'src/b.ts', path: '/w/src/b.ts' })
   const out = await run($)
   expect(opened).toEqual([])
-  expect(out.text).toMatch(/\n2 read\n1 edited$/)
+  expect(out.text).toMatch(/\n2 read, 2 ghost\n1 edited$/)
 })

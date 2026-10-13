@@ -1,15 +1,17 @@
 // Pure: a Read's result becomes a `fileRead` action, or null for a kind not tracked.
 import type { FileRead, FileUnchanged } from '../model/fileRead'
+import { importCandidates } from './imports'
 import { estimateTokens, plural } from './measure'
 
 type TextFile = { content: string; numLines: number; startLine: number; totalLines: number; truncatedByTokenCap?: boolean }
 type ReadResult = { type: 'text'; file: TextFile } | { type: string }
 
-function text(path: string, readId: string, f: TextFile): FileRead {
+function text(path: string, readId: string, f: TextFile, cwd: string): FileRead {
   const isWhole = f.startLine === 1 && f.numLines >= f.totalLines && !f.truncatedByTokenCap
   return {
     type: 'fileRead', path, readId, state: isWhole ? 'read' : 'partial', tokens: estimateTokens(f.content),
     seen: isWhole ? plural(f.numLines, 'line') : `lines ${f.startLine} to ${f.startLine + f.numLines - 1} of ${f.totalLines}`,
+    imports: importCandidates(f.content, path, cwd),
   }
 }
 
@@ -17,9 +19,9 @@ function text(path: string, readId: string, f: TextFile): FileRead {
 const opaque = (path: string, readId: string, seen: string): FileRead =>
   ({ type: 'fileRead', path, readId, state: 'read', tokens: null, seen })
 
-export function readAction(path: string, readId: string, result: ReadResult): FileRead | FileUnchanged | null {
+export function readAction(path: string, readId: string, result: ReadResult, cwd: string): FileRead | FileUnchanged | null {
   switch (result.type) {
-    case 'text': return text(path, readId, (result as { file: TextFile }).file)
+    case 'text': return text(path, readId, (result as { file: TextFile }).file, cwd)
     case 'file_unchanged': return { type: 'fileUnchanged', path }
     case 'image': return opaque(path, readId, 'image')
     case 'pdf': return opaque(path, readId, 'PDF')

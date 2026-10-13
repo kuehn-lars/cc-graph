@@ -1,7 +1,7 @@
 // Pure: the one way a reducer touches a node (F01-R9). Every file action goes through here.
 import type { FileNode, Graph } from '../../types'
 
-const fresh = (path: string, turn: number): FileNode => ({
+export const fresh = (path: string, turn: number): FileNode => ({
   path, state: 'ghost', change: null, reason: null, tokens: null, seen: '', hits: 0, added: 0, removed: 0,
   line: null, readId: null, agents: [], mainLoop: true, firstTurn: turn, lastTurn: turn, touched: 0,
 })

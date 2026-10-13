@@ -14,11 +14,11 @@ Requirements: F06-R1 (the `Read` part), R2 (TypeScript), R3 (first candidate onl
 
 **Status:** ready-for-agent
 
-- [ ] F06-AC1 the recorded read of `login.ts`: edge to `src/auth/password.ts`, `guessed`, the target a `ghost`
-- [ ] F06-AC2 `import React from 'react'`: no edge, no node (parse table)
-- [ ] F06-AC4 no `$.fs` call (the existing `check-calls.mjs` step; a test named for it)
-- [ ] F06-AC9 `import x from '@/lib/x'`: no edge, no node (parse table)
-- [ ] F06-AC10 `login.ts` read twice: still one edge to `password.ts`
-- [ ] TypeScript parse table: every R2 form, `node:` built-ins, imports inside comments and strings, a file importing itself
-- [ ] Every case returns what the handler beneath returned, with one `update` of `graph` per call
-- [ ] The check command passes
+- [x] F06-AC1 the recorded read of `login.ts`: edge to `src/auth/password.ts`, `guessed`, the target a `ghost`
+- [x] F06-AC2 `import React from 'react'`: no edge, no node (parse table)
+- [x] F06-AC4 no `$.fs` call (the existing `check-calls.mjs` step; a test named for it)
+- [x] F06-AC9 `import x from '@/lib/x'`: no edge, no node (parse table)
+- [x] F06-AC10 `login.ts` read twice: still one edge to `password.ts`
+- [x] TypeScript parse table: every R2 form, `node:` built-ins, imports inside comments and strings, a file importing itself
+- [x] Every case returns what the handler beneath returned, with one `update` of `graph` per call
+- [x] The check command passes
