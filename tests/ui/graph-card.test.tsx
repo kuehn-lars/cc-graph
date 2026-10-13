@@ -31,7 +31,7 @@ test('F09-AC29 an edited login.ts is a box holding its glyph, name and change wo
   const rate = boxOf(cells, 84, 'rateLimit.ts')!
   expect(rate.rows[1]).toBe('│ ● rateLimit.ts  +12 new │')
   expect([...'+12 new'].map((_, k) => rate.cell(18 + k, 1).fg)).toEqual(Array(7).fill(CREATED))
-  expect([rate.cell(0, 0).fg, rate.cell(0, 1).fg]).toEqual([CREATED, CREATED])
+  expect([[0, 0], [25, 0], [0, 2], [25, 2], [0, 1]].map(([x, y]) => rate.cell(x!, y!).fg)).toEqual(Array(5).fill(CREATED))
 })
 
 test('F09-AC30 a compacted node is a dashed box in the subtle colour, its name inactive; a ghost is a tag with no box', async ($, on) => {
@@ -104,7 +104,7 @@ test('F09-AC32 twelve nodes on one point of a 64 × 8 Raster: some become tags, 
   }
 })
 
-test('F09-R25 a name too long for the Raster is left out; the list still has the file', async ($, on) => {
+test('F09-R30 a name too long for the Raster is left out; the list still has the file', async ($, on) => {
   ui(on)
   viewLaidOut(on, [node('a-very-long-file-name-that-fits-nowhere-on-this-raster.ts', 1)], [], { 'a-very-long-file-name-that-fits-nowhere-on-this-raster.ts': { x: 0, y: 10 } })
   expect(lines(await draw($, 40, 24), 40).join('')).not.toContain('a-very-long')

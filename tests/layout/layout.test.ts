@@ -48,7 +48,7 @@ test('F09-AC3 a pass over 60 nodes and 120 edges finishes in under 50 ms', () =>
   expect(Math.min(...times)).toBeLessThan(50)
 })
 
-test('F09-R3 files of one folder start closer to each other than to another folder, and stay on the canvas', () => {
+test('F09-R13 files of one folder start closer to each other than to another folder, and stay on the canvas', () => {
   const g = graphOf(10)
   const p = layout({}, g)
   for (const q of Object.values(p)) {
@@ -80,6 +80,7 @@ test('F09-AC25 in a new chain each importer ends at least 10 units above the fil
 test('F09-AC26 a new ghost importing a placed file ends within 16 units of it', () => {
   const login = 'src/auth/login.ts', users = 'src/api/users.ts'
   const g = graphFrom([login, users], [importEdge(users, login)])
+  g.files[users] = { ...g.files[users]!, state: 'ghost', tokens: null }
   const p = layout({ [login]: { x: 50, y: 30 } }, g)
   expect(dist(p[users]!, p[login]!)).toBeLessThanOrEqual(16)
   expect(p[users]!.y).toBeLessThan(p[login]!.y)

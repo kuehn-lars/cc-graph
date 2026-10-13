@@ -43,7 +43,7 @@ test('F09-AC7 with 6 rows left for the graph, the list is drawn and the footer s
   ui(on)
   viewGraph(on)
   await start($)
-  const pane = await mount($, 'terminal', 64, 8)
+  const pane = await mount($, 'terminal', 64, 11) // 11 body rows less the meter, the now line and two legend lines: 6
   expect(await pane.find({ type: 'Raster' })).toBeUndefined()
   expect((await pane.find({ type: 'Text', text: 'Files' }))?.type).toBe('Text')
   expect(await texts(pane, /taller pane/)).toEqual(['Graph needs a taller pane'])

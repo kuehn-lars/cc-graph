@@ -56,7 +56,8 @@ test('F09-AC41 a deleted file is a box with its border and change word in the de
   viewLaidOut(on, [node('src/a.ts', 2), node('src/db/redis.ts', 1, { change: 'deleted' })], [], {})
   const box = boxOf(await draw($, 84, 24), 84, 'redis.ts')!
   expect(box.rows[1]).toBe('│ ● redis.ts  deleted │')
-  expect([box.cell(0, 0).fg, box.cell(14, 1).fg, box.cell(4, 1).fg]).toEqual([DELETED, DELETED, INACTIVE])
+  expect([box.cell(0, 0).fg, box.cell(4, 1).fg]).toEqual([DELETED, INACTIVE])
+  expect([...'deleted'].map((_, k) => box.cell(14 + k, 1).fg)).toEqual(Array(7).fill(DELETED))
 })
 
 test('F09-AC42 the now node drawn as a tag has its name in Claude\'s colour', async ($, on) => {

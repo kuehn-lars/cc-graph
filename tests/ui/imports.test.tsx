@@ -36,7 +36,7 @@ test('NFR-A3 after step 8 every node, memory file and edge the graph draws has i
   await run($, 'list')
   const pane = await mount($, 'terminal', 100, 40)
   const list = await rows(pane)
-  // Every node the graph draws is a list row, and every file the list names is drawn (nodes without a layout start on one point and are moved apart, F09-R25).
+  // Every node the graph draws is a list row, and every file the list names is drawn (nodes without a layout start on one point and are moved apart, F09-R30).
   expect(list.length).toBeGreaterThan(0)
   for (const r of list) expect(boxOf(cells, 100, r.split(' ')[1]!.split('/').pop()!), r).toBeDefined()
   expect((await pane.findAll({ type: 'Text', text: /^■ / })).length).toBe(1) // the memory file stays in the list

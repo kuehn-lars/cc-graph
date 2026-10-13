@@ -33,7 +33,7 @@ test('F09-AC17 5 nodes placed apart on an 84 × 24 Raster: all 5 file names are 
   for (const n of nodes) expect(t).toContain(n.path)
 })
 
-test('F09-R25 six nodes in a column are all drawn, none over another', async ($, on) => {
+test('F09-R30 six nodes in a column are all drawn, none over another', async ($, on) => {
   ui(on)
   const nodes = Array.from({ length: 6 }, (_, i) => node(`f${i}.ts`, i + 1, { tokens: 100 + i }))
   viewLaidOut(on, nodes, [], Object.fromEntries(nodes.map((n, i) => [n.path, { x: 5, y: 4 + i * 8 }])))

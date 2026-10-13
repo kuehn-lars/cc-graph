@@ -46,7 +46,7 @@ test('F09-AC34 a selected node is the focus instead: its border is Claude\'s col
   expect(entry(cells, password!)).toBe(CLAUDE)
 })
 
-test('F09-R16 a selection that is no longer in the graph leaves the focus on the node touched last', async ($, on) => {
+test('F09-R24 a selection that is no longer in the graph leaves the focus on the node touched last', async ($, on) => {
   const cells = await draw($, on, 'gone.ts')
   expect(boxOf(cells, COLUMNS, 'login.test.ts')!.cell(0, 0).fg).toBe(CLAUDE)
 })
