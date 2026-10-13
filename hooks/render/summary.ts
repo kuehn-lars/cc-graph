@@ -1,10 +1,10 @@
 // Pure: the text `/graph` answers where nothing draws (F08-R4). Blind spots (F07) join it when they ship.
 import type { Fill, Graph, NodeState } from '../../types'
-import { GLYPH } from './list'
+import { GLYPH } from './palette'
 import { meterLine } from './meter'
 
 const STATES = Object.keys(GLYPH) as NodeState[] // GLYPH's key order is the state order of the summary
-const CHANGES = ['edited', 'created', 'external', 'blind'] as const
+const CHANGES = ['edited', 'created', 'deleted', 'external', 'blind'] as const
 
 /** The meter line (F03-R9), then `1 read, 1 partial`, then `2 edited` on a line of its own; zero counts are left out. */
 export function summarize(graph: Graph, fill: Fill | null): string {

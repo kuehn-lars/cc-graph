@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F06, F08, F14 |
+| Approved | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F06, F08, F14 |
 
 ## Problem
 
@@ -24,12 +24,12 @@ Soon after Claude changes a file, while the turn is still running, the pane name
 
 ## Requirements
 
-- **F07-R1** When `session.start` fires, the mod enqueues `git rev-parse --show-toplevel`. If `git` cannot start or exits non-zero, then F07 is off for the conversation and the footer says "Blind spots need git" once.
+- **F07-R1** When `session.start` fires, the mod enqueues `git rev-parse --show-toplevel`. If `git` cannot start or exits non-zero, then F07 is off for the conversation and the footer says "Shell changes need git" once.
 - **F07-R2** When a file gets `change` `edited` or `created` (F01), the mod enqueues, at most once per path per main-loop turn, `git grep -n -I --untracked -E -e <pattern> -- <pathspecs>` in the repository root with a 5 second timeout, where the pattern matches an import line (F06-R2 forms) whose quoted specifier ends in the file's name without extension, and the pathspecs cover the JavaScript, TypeScript and Python extensions.
 - **F07-R3** The mod confirms each hit by resolving its specifier from the hit's file with F06's rules. Only hits that resolve to the changed path count.
 - **F07-R4** When a confirmed importer has no node, the mod adds it as a `ghost` with an import edge to the changed file. An edge from a `ghost` to a changed file is `blind`. When the ghost leaves the `ghost` state, the mod clears `blind` on its edges.
 - **F07-R5** The mod keeps a baseline: the paths `git status --porcelain=v1 -z --untracked-files=all` reports as changed or untracked, taken at `session.start`, at each main-loop `turn.start`, and after each `Bash` call.
-- **F07-R6** When the status after a `Bash` call holds a path the baseline did not, and no Claude tool changed that path in this conversation, the mod sets `change: blind` with `reason` "changed by `<command>`" (or "deleted by"), the command cut to 60 characters. A new node or a `ghost` becomes `unread`; any other node keeps its state.
+- **F07-R6** When the status after a `Bash` call (one that ran, failed or not) differs from the baseline, the mod writes, in one update of `graph`, each path it names that the baseline did not, or with other status letters: untracked (`??`), added, or the new path of a rename, `change: created` with `reason` "created by `<command>`"; with a `D`, or the old path of a rename, `change: deleted`, "deleted by `<command>`"; any other, `change: blind`, "changed by `<command>`". An untracked path of the baseline that is gone is `deleted` too. The command is its first line, cut to 60 characters. `deleted` replaces any change; `created` replaces none but `deleted`; `blind` leaves `edited` and `created` alone, so what a Claude tool changed is never blamed on a command. A new node or a `ghost` becomes `unread`; any other node keeps its state.
 - **F07-R7** When a main-loop `prompt.attachment` of `type: 'edited_text_file'` names a file, the mod sets `change: external` with `reason` "changed outside Claude; Claude was shown it" if the node has no change, and otherwise keeps the change and sets that reason. An `external` change is not a blind spot. How the path is read from the text is F07-Q1.
 - **F07-R8** Every `git` job runs off the hook's return path, one at a time (D5): a tool result never waits for `git` (NFR-P4, NFR-P6).
 - **F07-R9** If a `git` job times out or fails, then the mod drops it, writes the reason to the debug log, and the footer says "Blind-spot search timed out" once per conversation.
@@ -49,6 +49,10 @@ Soon after Claude changes a file, while the turn is still running, the pane name
 - **F07-AC8** Given an `Edit` of `login.ts`, then the `tool.call` hook has returned before the first `process.run` is raised.
 - **F07-AC9** Given `git grep` reports `src/admin/panel.ts` with `import { x } from './login'`, then no edge to `src/auth/login.ts` is added, because the specifier resolves to `src/admin/login.ts`.
 - **F07-AC10** Given `README.md` became modified between two turns, when the second turn runs `npm test`, then `README.md` gets no blind mark.
+- **F07-AC12** Given `git status` shows `?? src/middleware/rateLimit.ts` after a `Bash` call and not before, then `src/middleware/rateLimit.ts` has `change: created`, state `unread`, and a reason naming the command.
+- **F07-AC13** Given the status before a `Bash` call is the one after `npm install`, and after it shows ` D test/helpers.ts` and the rename `R  src/db/store.ts` from `src/db/redis.ts`, then `test/helpers.ts` and `src/db/redis.ts` have `change: deleted` with the reason "deleted by `<command>`", and `src/db/store.ts` has `change: created`; a `read` node keeps its state.
+- **F07-AC14** Given `docs-1.md` untracked in the baseline, when a `Bash` call leaves it out of the status, then it has `change: deleted`.
+- **F07-AC15** Given `git rev-parse` exits non-zero, then a `Bash` call runs no `git status`, and the footer says "Shell changes need git" once.
 - **F07-AC11** Given `users.ts` is a blind-spot ghost, when Claude reads it, then its edge is no longer `blind` and the footer no longer names it.
 
 ## Implementation decisions
@@ -99,11 +103,14 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 
 ## Open questions
 
-- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's. Not observed in spike S1 ([spike-s1.md](../F03-context-layer/spike-s1.md)): a file read whole and then changed outside Claude raised no `edited_text_file` in 2.1.296, headless or interactive, and the transcript held none either. F07-R7 is unconfirmed until a run shows the attachment. Untried: a connected IDE, a change other than an append, a file read with a range.
-- [ ] **F07-Q2** Can the `Bash` result's per-command change list (`bashEditDiff.changedFiles`, typed `@internal` in 2.1.296, "for rendering and for PostToolUse Bash hooks") replace the `git status` baseline? It would catch re-changed files and need no `git`. Spike S4: record it for `npm install`, a formatter and `rm` in `fixtures/sample-app`, then decide; an internal field is only used behind a fallback.
+- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's. Not observed in spike S1 ([spike-s1.md](../F03-context-layer/spike-s1.md)): a file read whole and then changed outside Claude raised no `edited_text_file` in 2.1.296, headless or interactive, and the transcript held none either. F07-R7 is unconfirmed until a run shows the attachment. Untried: a connected IDE, a change other than an append, a file read with a range. Not blocking: R7 alone waits on it, and it ships with v0.3.
+- [ ] **F07-Q2** Can the `Bash` result's per-command change list (`bashEditDiff.changedFiles`, typed `@internal` in 2.1.296, "for rendering and for PostToolUse Bash hooks") replace the `git status` baseline? It would catch re-changed files and need no `git`. Spike S4: record it for `npm install`, a formatter and `rm` in `fixtures/sample-app`, then decide; an internal field is only used behind a fallback. Not blocking: the `git status` baseline (R5, R6) stands either way; it is decided during v0.3 (spike S4).
 
 ## Changelog
 
 - 2026-10-11 Draft. Adds `edited_text_file`, verified as a `prompt.attachment` type in 2.1.296.
 - 2026-10-11 Review. Added the repository-root step, hit confirmation, clearing blind edges, baseline refresh at `turn.start`, change precedence, the off-path queue, the timeout note, the `blindSpots` switch, and the known re-change limit with spike S4.
 - 2026-10-12 F07-Q1 stays open: spike S1 saw no `edited_text_file`, so F07-R7 is unconfirmed in 2.1.296.
+- 2026-10-13 Shell changes pulled into v0.2 at the owner's request, after the F09 manual check showed files Claude created and deleted with `rm` and `printf >` missing from the graph: R1 says "Shell changes need git"; R6 tells a command's creations and deletions from other changes (`created`, `deleted`, `blind`), counts an untracked file gone as deleted, and leaves Claude's own changes alone; AC12 to AC15 added. R1, R5, R6 and R8 ship with v0.2 as ticket 01; the import search (R2 to R4), the attachment (R7), the timeout note (R9), the footer list (R10) and the `blindSpots` switch (R12) stay with v0.3. Back to Review.
+- 2026-10-13 Approved by the owner. F07-Q1 and Q2 marked not blocking: R7 waits on Q1 and ships with v0.3, and Q2 would only replace the baseline R5 and R6 already define. Shell changes (R1, R5, R6, R8, R11; AC2, AC12 to AC15) ship with v0.2; the rest with v0.3.
+- 2026-10-13 Ticket 01 (shell changes): manual check walked by the owner and approved; ticket deleted. The spec stays Approved until the rest ships with v0.3.

@@ -27,11 +27,11 @@ test('F03-AC8 a graph with nodes and view graph, then source clear: the graph is
 })
 
 for (const source of ['resume', 'fork'] as const) {
-  test(`F03-AC8 source ${source} empties graph, turn, selected, fill, agents, memory and notes, and leaves view`, async ($, on) => {
+  test(`F03-AC8 source ${source} empties graph, turn, selected, fill, agents, memory, notes and layout, and leaves view`, async ($, on) => {
     setup(on)
     await $.classic.SessionStart({ source })
-    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null, agents: {}, memory: [], notes: [] })
-    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill', 'agents', 'memory', 'notes'])
+    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null, agents: {}, memory: [], notes: [], layout: {} })
+    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill', 'agents', 'memory', 'notes', 'layout'])
   })
 }
 

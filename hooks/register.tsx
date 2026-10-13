@@ -1,4 +1,5 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
+import { layout, reshaped } from './layout'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
@@ -11,6 +12,8 @@ import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
+import { shellChanges, statusOf } from './parse/status'
+import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
 
@@ -23,6 +26,7 @@ const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
 const NOTES = { plugin: 'cc-graph', key: 'notes' } as const
+const LAYOUT = { plugin: 'cc-graph', key: 'layout' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -33,10 +37,64 @@ const resetState = async ($: StateDollar) => {
   await update($, AGENTS, () => ({}))
   await update($, MEMORY, () => [])
   await update($, NOTES, () => [])
+  await update($, LAYOUT, () => ({}))
   named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
+
+// D5: slow work runs off the hook's return path. Hooks enqueue; one coalesced `$.clock.after` callback drains the queue, one job at a time, and a failing job is dropped. F07 adds its jobs here.
+const QUEUE_DELAY_MS = 20
+const jobs: (() => Promise<void>)[] = []
+let draining = false // true from the first enqueue until the queue is empty: a job enqueued meanwhile joins the drain, so jobs never overlap
+function enqueue($: Pick<CoreEngineInterface, 'clock'>, job: () => Promise<void>) {
+  jobs.push(job)
+  if (draining) return
+  draining = true
+  $.clock.after(QUEUE_DELAY_MS, async () => {
+    for (let next = jobs.shift(); next; next = jobs.shift()) await next().catch(() => {})
+    draining = false
+  })
+}
+
+// F09-R4: at most one layout pass waits in the queue; it reads the graph when it runs, so it lays out the latest. A graph that changed shape while the pass ran (a Read, or /clear) queues the next.
+let layoutQueued = false
+const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
+  if (layoutQueued) return
+  layoutQueued = true
+  enqueue($, async () => {
+    layoutQueued = false
+    const graph = await readGraph($)
+    await update($, LAYOUT, previous => layout(previous ?? {}, graph))
+    if (reshaped(graph, await readGraph($))) queueLayout($)
+  })
+}
+
+// F09-R27: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each pulse take a new `pulses` number, so a render ends the pulse running, and a newer pulse keeps an older one from going on.
+// ponytail: one pane, one raster: a render on another surface (no Raster) nulls `drawn`, which only cancels pulses; give each surface its own size if two panes ever show at once.
+let drawn: { columns: number; rows: number } | null = null
+let pulses = 0
+const PULSE_MS = [0, 120, 120, 160] // the gaps before the white border, the shimmer, Claude's colour and the plain frame
+
+// The pulse starts after the queue has placed the nodes; a denied blit is ignored. The redraw a layout write asks for lands after the job returns, not in it, so the pulse waits one more delay, or the redraw wipes it.
+function queuePulse($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, paths: string[]) {
+  enqueue($, async () => {
+    $.clock.after(QUEUE_DELAY_MS, async () => {
+      const size = drawn
+      if (!size) return
+      const mine = ++pulses
+      const step = async (i: number): Promise<void> => {
+        if (pulses !== mine) return
+        await $.ui.blit({
+          requestId: PANE, key: 'graph', ...size,
+          cells: frame(await readGraph($), await readLayout($), size.columns, size.rows, (await read($, SELECTED)) ?? null, paths, i),
+        }).catch(() => ({}))
+        if (i < PULSE_MS.length - 1) $.clock.after(PULSE_MS[i + 1]!, () => step(i + 1))
+      }
+      await step(0)
+    })
+  })
+}
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
 // F04-R1, R2: the memory files the summary breakdown lists (never 'full', which costs a request per file). No breakdown, or no answer, no change; a throw here would run the handlers beneath twice (the hook's .catch).
@@ -46,6 +104,7 @@ async function refreshMemory($: Pick<CoreEngineInterface, 'state' | 'session'>) 
 }
 
 const readMemory = async ($: StateDollar) => (await read($, MEMORY)) ?? []
+const readLayout = async ($: StateDollar) => (await read($, LAYOUT)) ?? {}
 const readFill = async ($: StateDollar) => (await read($, FILL)) ?? null
 
 // I4: the working directory is kept here; the state contract has no key for it. A reload refills it (session.start fires again).
@@ -62,15 +121,19 @@ async function nameAgent($: Pick<CoreEngineInterface, 'state' | 'agent'>, id: st
 }
 
 // F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
-async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: FileAction, agentId?: string) {
+async function record($: Pick<CoreEngineInterface, 'state' | 'agent' | 'clock' | 'ui'>, action: FileAction, agentId?: string) {
   await apply($, agentId ? { ...action, agentId } : action)
   if (agentId) await nameAgent($, agentId)
 }
 
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
-async function apply($: StateDollar, action: Action) {
+async function apply($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, action: Action) {
   const turn = (await read($, TURN)) ?? 0
-  const graph = await update($, GRAPH, g => evict(reduce(g, action, turn), maxNodes)) // I5: the cap is held in the same write
+  let before = emptyGraph
+  const graph = await update($, GRAPH, g => ((before = g ?? emptyGraph), evict(reduce(g, action, turn), maxNodes))) // I5: the cap is held in the same write
+  if (reshaped(before, graph)) queueLayout($)
+  const touched = Object.values(graph.files).filter(n => n.touched > before.seq && n.state !== 'ghost').map(n => n.path)
+  if (touched.length) queuePulse($, touched)
   // I5: what could not be evicted is said in the footer. A write of `notes` only when the note changes.
   const files = Object.keys(graph.files).length
   const notes = (await read($, NOTES)) ?? []
@@ -92,6 +155,22 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
+// F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
+let root: string | null = null
+let baseline: Map<string, string> | null = null
+const NO_GIT = 'Shell changes need git'
+const GIT = { timeoutMs: 5000, env: { GIT_OPTIONAL_LOCKS: '0' } } // NFR-S5: never the index lock
+async function status($: Pick<CoreEngineInterface, 'process'>) {
+  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd, ...GIT })
+  return r.exitCode === 0 ? statusOf(r.stdout) : null
+}
+async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
+  const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
+  root = r?.exitCode === 0 ? r.stdout.trim() : null
+  if (root) baseline = await status($)
+  else await update($, NOTES, ns => (ns ?? []).includes(NO_GIT) ? ns ?? [] : [...(ns ?? []), NO_GIT])
+}
+
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
 let maxNodes = 60
 // F06-R12, F14-R2: read once; off means no import is parsed.
@@ -107,6 +186,7 @@ export const register: Register = (on, options) => {
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
     await refreshMemory($)
+    enqueue($, () => findRoot($))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -119,6 +199,7 @@ export const register: Register = (on, options) => {
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
+    if (root) enqueue($, async () => { baseline = (await status($)) ?? baseline }) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
 
@@ -128,6 +209,14 @@ export const register: Register = (on, options) => {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
       if (action) await record($, action, e.agentId)
     }
+    // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
+    if (e.tool === 'Bash' && !out.deny && root) enqueue($, async () => {
+      const now = await status($)
+      if (!now || !baseline) return
+      const changes = shellChanges(baseline, now, root!, cwd)
+      baseline = now
+      if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
+    })
     return out
   }).catch(($, e, next) => next(e))
 
@@ -195,16 +284,27 @@ export const register: Register = (on, options) => {
 
   // NFR-R4: only this plugin's pane. Reads state, never writes.
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
+    pulses++
     const table = $.ui.resolve(e)
-    const { Box, Button } = table
-    // F08-R10: the renderer follows the table (Raster: F09, Svg: F10, else the list). Neither graph has shipped, so `view` changes nothing drawn yet.
+    const { Box, Button, Text } = table
+    const notes = (await read($, NOTES)) ?? []
+    // F08-R10: the renderer follows the table (Raster on terminal: F09, Svg: F10, else the list), then `view`.
+    const rows = graphRows(e.props.scroll.bodyRows, notes)
+    const selected = (await read($, SELECTED)) ?? null
+    const wantsGraph = e.surface === 'terminal' && 'Raster' in table && (await read($, VIEW)) === 'graph'
+    const graphShown = wantsGraph && rows >= MIN_ROWS
+    drawn = graphShown ? { columns: graphColumns(e.props.bodyColumns), rows } : null
     return (
       <Box flexDirection="column">
         <Box gap={2}>
+          {graphShown && <Text bold><Text color="claude">✻</Text> CC Graph</Text>}
+          {graphShown && <Text dimColor>what Claude knows</Text>}
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {renderList(table, await readGraph($), await readFill($), await readMemory($), (await read($, NOTES)) ?? [], e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+        {graphShown
+          ? renderGraph(table, await readGraph($), await readLayout($), await readMemory($), await readFill($), notes, e.props.bodyColumns, rows, selected)
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

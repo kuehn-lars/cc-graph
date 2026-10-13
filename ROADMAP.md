@@ -49,7 +49,7 @@ A list view that says, for every file, what Claude saw of it, what is in context
 
 ## v0.2 The graph
 
-Import edges from text Claude already saw, in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder and stable as it grows.
+Import edges from text Claude already saw, in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder and stable as it grows. Files a shell command created, deleted or changed show too (F07 ticket 01, pulled forward at the owner's request; the rest of F07 stays in v0.3).
 
 **Exit gate:** every criterion of F06, F09 and F14 (`importEdges`); NFR-P3, P4 and A3; the reference session's first turn draws in the terminal with its import edges and ghosts.
 
@@ -93,7 +93,7 @@ A spike is a throwaway probe mod that answers one question. Its notes go next to
 | S1 | What do `file` and `edited_text_file` attachments say, and do they name paths in a stable form? | F03-Q1, F07-Q1 | M0 | F03 approval |
 | S2 | Which models and settings stream thinking text to a mod? | F05-Q1 | Before v0.4 | F05 approval |
 | S3 | Does a transparent `Client` over the graph receive pointer events? | F10-Q1 | Start of v0.5 | F10-R5 |
-| S4 | Can the `Bash` result's per-command change list replace the `git status` baseline? | F07-Q2 | During v0.3 | F07 approval |
+| S4 | Can the `Bash` result's per-command change list replace the `git status` baseline? | F07-Q2 | During v0.3 | v0.3 exit gate |
 | S5 | Does a plugin's own tool raise a permission prompt? | F12-Q1 | Start of v0.6 | F12 approval |
 
 F14-Q1 (out-of-range numbers) needs no spike: F14-AC5 answers it in the red phase of v0.1.

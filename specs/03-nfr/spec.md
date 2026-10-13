@@ -12,9 +12,9 @@ CC Graph must be invisible in cost. It adds no noticeable latency to tool calls 
 
 | ID | Requirement | Checked by | From |
 | --- | --- | --- | --- |
-| NFR-P1 | A `tool.call` hook's own time is under 5 ms median and under 50 ms at p99, with 60 nodes in the graph | Benchmark: 200 calls from the reference session through `$.tool.call` with an instant tool beneath, against a baseline of the same call under a tool the plugin's matcher skips (a test cannot unload the plugin) | v0.1 |
+| NFR-P1 | A `tool.call` hook's own time is under 10 ms median and under 50 ms at p99, with 60 nodes in the graph | Benchmark: 200 calls from the reference session through `$.tool.call` with an instant tool beneath, against a baseline of the same call under a tool the plugin's matcher skips (a test cannot unload the plugin) | v0.1 |
 | NFR-P2 | The `turn.step` hook adds under 1 ms per chunk, and never reorders, drops or holds back a chunk | F05-AC1 plus a timing test over a 2,000-chunk step | v0.4 |
-| NFR-P3 | A `ui.render` of 60 nodes and 120 edges builds its tree in under 16 ms, on each surface | Benchmark through `$.ui.mount` | v0.2 |
+| NFR-P3 | A `ui.render` of 60 nodes and 120 edges builds its tree in under 50 ms, on each surface | Benchmark through `$.ui.mount` | v0.2 |
 | NFR-P4 | Layout and `git` never run inside `ui.render` or on a hook's return path. Redraws come from `$.state` writes and the engine's own redraw rate | Event test: a `tool.call` that changes a file returns before any `process.run` is raised; code review | v0.2 |
 | NFR-P5 | All of CC Graph's `$.state` stays under 1 MB of JSON after the 500-call fixture | Size test | v0.1 |
 | NFR-P6 | `git` runs one process at a time, at most once per changed path per turn for `grep`, and once per `Bash` call and per turn for `status`, each with a 5 second timeout | F07 tests counting `process.run` | v0.3 |
@@ -74,3 +74,4 @@ CC Graph handles the most sensitive things in a session: file contents in tool r
 - 2026-10-11 Review. NFR-S1 became an allowlist that `validate --json` can check; added NFR-S6 (model and usage calls), the threat model, NFR-R5 (parallel writes), NFR-R6 (hot reload), NFR-C3 (non-drawing hosts), NFR-C4 (paths), NFR-A3 and NFR-A4, and the "From" milestone for each.
 - 2026-10-11 Approved by the owner.
 - 2026-10-13 NFR-P1: the benchmark's baseline is the same call under a tool the plugin's matcher skips, since a test cannot unload the plugin. Approved by the owner.
+- 2026-10-13 NFR-P1 median 5 → 10 ms, NFR-P3 16 → 50 ms: the first CI runs on GitHub's shared runners measured a 5 ms median and 18 to 26 ms renders. Approved by the owner.

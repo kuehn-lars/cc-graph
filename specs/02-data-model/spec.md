@@ -26,7 +26,7 @@ The graph is a handful of small records held in `$.state` for the conversation. 
 
 ```ts
 export type NodeState = 'ghost' | 'search' | 'partial' | 'read' | 'compacted' | 'unread'
-export type Change = 'edited' | 'created' | 'external' | 'blind'
+export type Change = 'edited' | 'created' | 'deleted' | 'external' | 'blind'
 
 export type FileNode = {
   path: string               // I4
@@ -123,7 +123,7 @@ declare module 'claude-code' {
 | `compacted` | Was in context before a compaction and was not kept | summary only | Hollow, dimmed | `○` |
 | `unread` | Changed outside Claude's tools and never read | no | Outline with a red ring | `!` |
 
-`read`, `partial` and `search` form the in-context group. A node no main-loop event touched is drawn with a second, dotted outline and the word "agent" ("subagent only", F15). Decisions are violet diamonds `◆` (F12); memory files are squares `■` in their own cluster (F04).
+`read`, `partial` and `search` form the in-context group. The Graph column is the vector graph's (F10); the terminal graph draws each state as a box holding its list glyph, solid in context and dashed otherwise, with its size as a bar along the bottom and its change as the border's colour and a word in the box (F09); a ghost is a tag without a box. A node no main-loop event touched is drawn in the vector graph with a second, dotted outline, and its list row says "agent" ("subagent only", F15). Decisions are violet diamonds `◆` (F12); memory files are squares `■` in their own cluster (F04).
 
 ## Changes
 
@@ -132,7 +132,8 @@ declare module 'claude-code' {
 | Change | Meaning | Ring | Badge |
 | --- | --- | --- | --- |
 | `edited` | Changed by `Edit`, `NotebookEdit`, or a `Write` over an existing file | amber | `edited +3 −1` |
-| `created` | Created by a `Write` whose result was `type: 'create'` | green | `created +12` |
+| `created` | Created by a `Write` whose result was `type: 'create'`, or by a shell command (`git` shows it new) | green | `created +12` |
+| `deleted` | Deleted by a shell command (`git` shows it deleted, or an untracked file gone) | red | `deleted` |
 | `external` | Changed outside Claude's tools, and Claude Code showed Claude the change | grey | `external` |
 | `blind` | Changed outside Claude's tools, and Claude was not shown it | red | `blind` |
 
@@ -148,7 +149,7 @@ declare module 'claude-code' {
 | Search hit | `read`, `partial`, `search` | unchanged, hits added (a `search` node's tokens too) | F02 |
 | Main-loop compaction that stands | `read`, `partial`, `search` touched by the main loop, whose read was not kept | `compacted` | F03, F15 |
 | Shell change seen by `git` | new, `ghost` | `unread` | F07 |
-| Shell change seen by `git` | any other | unchanged, `change: blind` | F07 |
+| Shell change seen by `git` | any other | unchanged; `change` `created`, `deleted` or `blind` (F07-R6) | F07 |
 | Import found; decision names a file; `@` mention of a PDF by reference | new | `ghost` | F06, F07, F12, F01 |
 | `/clear`, `/resume`, `/branch` | any | removed (the graph starts empty) | F03 |
 
@@ -157,7 +158,7 @@ declare module 'claude-code' {
 Every reducer keeps these true. Each has a test, named by its ID, in the event tests.
 
 1. **I1** The meter sums `tokens` over main-loop nodes in the in-context group. Nodes with `tokens: null` are counted ("+3 unknown"), never summed as zero. Memory files are shown beside it, not in it.
-2. **I2** `change` is `created` only after a `Write` whose result was `type: 'create'`. Later edits keep `created`.
+2. **I2** `change` is `created` only after a `Write` whose result was `type: 'create'`, or a shell command that created the file (F07-R6). Later edits keep `created`.
 3. **I3** Every edge's endpoints exist: a file node or a decision. A missing file endpoint is added as a `ghost`.
 4. **I4** One node per normalized path. Paths inside the conversation's working directory (from `session.start`) are stored relative to it; others stay absolute. Normalization is lexical: `\` becomes `/`, `.` and `..` segments are resolved, repeated separators collapse, a Windows drive letter is lower-cased. Symbolic links are not resolved, because the mod reads no file system (D6). A path under `.claude/worktrees/‹name›/` inside the working directory names the file after that prefix (F15-R9).
 5. **I5** The graph holds at most `maxNodes` file nodes (F14, default 60). When a write would exceed it, nodes are evicted oldest `lastTurn` first, in this order: `ghost`, `search`, `compacted`, `partial`, `read`. A node with a change, and any node with an edge to or from one, is never evicted. If nothing can be evicted, the cap is exceeded and the footer says by how much.
@@ -193,3 +194,7 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 F02 ticketing: `readId` also holds a search node's latest search call; search hits and tokens add up per call and restart from `compacted`; tool-result clearing named as a known limit under Estimates. Approved by the owner.
 - 2026-10-12 F15 ticketing: I4 maps an agent's worktree copy onto the repository's path.
+- 2026-10-13 F09 ticketing: the Graph column and the subagent outline are the vector graph's; the terminal graph draws the list glyph. Approved by the owner.
+- 2026-10-13 F09 redesign: the terminal graph draws braille shapes, not the list glyph in one cell. Approved by the owner.
+- 2026-10-13 F09 second redesign: the terminal graph draws boxes holding the list glyph, not braille shapes.
+- 2026-10-13 F07 shell changes pulled into v0.2: `deleted` joins the changes, and a file a shell command created is `created` (F07-R6, I2).
