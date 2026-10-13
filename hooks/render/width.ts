@@ -16,14 +16,16 @@ export function tail(s: string, max: number) {
 /** A run of a line in one colour (a theme key, `undefined` for the text colour) or dimmed. */
 export type Seg = { text: string; color?: string; dim?: boolean }
 
-/** F09-R21: the segments of a line cut from its end to `columns` and closed by a dimmed "…". ponytail: one column a character, as `fit` counts; the lines are ASCII plus marks. */
+/** F09-R21: the segments of a line cut from its end to `columns` and closed by a dimmed "…"; a memory path may hold wide characters, so each counts its columns. */
 export function cutSegs(segs: Seg[], columns: number): Seg[] {
   if (segs.reduce((w, s) => w + cols(s.text), 0) <= columns) return segs
   const out: Seg[] = []
-  for (let room = columns - 1; room > 0 && segs.length > out.length; ) {
-    const s = segs[out.length]!, text = [...s.text].slice(0, room).join('')
-    out.push({ ...s, text })
-    room -= [...text].length
+  let room = columns - 1
+  for (const s of segs) {
+    let text = ''
+    for (const c of s.text) if ((room -= cols(c)) >= 0) text += c; else break
+    if (text) out.push({ ...s, text })
+    if (room <= 0) break
   }
   return [...out, { text: '…', dim: true }]
 }
