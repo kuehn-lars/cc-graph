@@ -2,9 +2,11 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
-## Unreleased
+## 0.2.0 (2026-10-14)
 
-F06 import edges are in the graph state, and the terminal graph (F09) now draws them. On other surfaces a ghost is a `⋯` row in the list, and its row names its importer.
+The graph: import edges in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder; files a shell command created, deleted or changed show too (F06, F09, F14 `importEdges`, F07 ticket 01). On other surfaces a ghost is a `⋯` row in the list, and its row names its importer. Tested on Claude Code 2.1.296.
+
+- Release: F06 and F09 Verified, ROADMAP v0.2 Done. The README gets an animated header, badges, an annotated screenshot of the terminal graph and a timeline of every milestone.
 
 - F09 layout: when a write adds or removes nodes or edges, one pass runs after the hook has returned and stores every node's position in `layout`. Files of a folder start around the folder's seed point, offset by a hash of their path; a pass is deterministic, takes at most 200 iterations and moves no node more than 2 units; positions of evicted nodes are dropped, and `/clear` empties `layout` (F09-AC1..AC3, AC12, R4, R13, F03-R7, NFR-P4).
 - F09 queue: slow work is enqueued and drained by one coalesced `$.clock.after` callback, one job at a time, a failing job dropped (D5). At most one layout pass waits at a time; F07's `git` jobs use the same queue.
