@@ -20,7 +20,7 @@ for (const surface of SURFACES) {
   })
 }
 
-test('NFR-A1 each of the six states shows its glyph and each of the four changes its badge word', async ($, on) => {
+test('NFR-A1 each of the six states shows its glyph and each of the five changes its badge word', async ($, on) => {
   ui(on)
   seed(on,
     node('a/ghost', 1, { state: 'ghost' }),
@@ -33,6 +33,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the four changes
     node('b/created', 8, { change: 'created', added: 12 }),
     node('b/external', 9, { change: 'external' }),
     node('b/blind', 10, { change: 'blind' }),
+    node('b/deleted', 11, { change: 'deleted' }),
   )
   await start($)
   const got = await rows(await mount($, 'terminal'))
@@ -43,6 +44,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the four changes
   expect(row('b/created')).toContain('created +12')
   expect(row('b/external')).toContain('external')
   expect(row('b/blind')).toContain('blind')
+  expect(row('b/deleted')).toContain('deleted')
 })
 
 test('F08-R5 a row reads "≈tokens · seen", and "≈?" when tokens is null', async ($, on) => {

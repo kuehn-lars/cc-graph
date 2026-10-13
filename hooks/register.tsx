@@ -12,6 +12,7 @@ import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
+import { shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -154,6 +155,22 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
 
+// F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
+let root: string | null = null
+let baseline: Map<string, string> | null = null
+const NO_GIT = 'Shell changes need git'
+const GIT = { timeoutMs: 5000, env: { GIT_OPTIONAL_LOCKS: '0' } } // NFR-S5: never the index lock
+async function status($: Pick<CoreEngineInterface, 'process'>) {
+  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd, ...GIT })
+  return r.exitCode === 0 ? statusOf(r.stdout) : null
+}
+async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
+  const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
+  root = r?.exitCode === 0 ? r.stdout.trim() : null
+  if (root) baseline = await status($)
+  else await update($, NOTES, ns => (ns ?? []).includes(NO_GIT) ? ns ?? [] : [...(ns ?? []), NO_GIT])
+}
+
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
 let maxNodes = 60
 // F06-R12, F14-R2: read once; off means no import is parsed.
@@ -169,6 +186,7 @@ export const register: Register = (on, options) => {
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
     await refreshMemory($)
+    enqueue($, () => findRoot($))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -181,6 +199,7 @@ export const register: Register = (on, options) => {
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
+    if (root) enqueue($, async () => { baseline = (await status($)) ?? baseline }) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
 
@@ -190,6 +209,14 @@ export const register: Register = (on, options) => {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
       if (action) await record($, action, e.agentId)
     }
+    // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
+    if (e.tool === 'Bash' && !out.deny && root) enqueue($, async () => {
+      const now = await status($)
+      if (!now || !baseline) return
+      const changes = shellChanges(baseline, now, root!, cwd)
+      baseline = now
+      if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
+    })
     return out
   }).catch(($, e, next) => next(e))
 

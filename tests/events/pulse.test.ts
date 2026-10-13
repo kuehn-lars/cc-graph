@@ -22,6 +22,7 @@ function setup(on: any, view: 'list' | 'graph', deny?: string) {
     return e.key === 'view' ? ({ value: { value: view, version: 0 } } as any) : next(e)
   })
   on('ui.blit', (_$: any, e: any) => (seen.push({ args: e, renders }), { value: deny ? { deny } : {} }))
+  on('process.run', (_$: any, e: any) => ({ value: { exitCode: 0, stdout: e.argv[1] === 'rev-parse' ? '/w\n' : '', stderr: '' } }) as any) // a repository: no footer note takes a row
   return { seen, renders: () => renders, read: ($: any) => $.tool.call(read.input) }
 }
 

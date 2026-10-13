@@ -7,10 +7,11 @@ import { fileWritten, type FileWritten } from './fileWritten'
 import { mention, type Mention } from './mention'
 import { reattached, type Reattached } from './reattached'
 import { searched, type Searched } from './searched'
+import { shellChanged, type ShellChanged } from './shellChanged'
 
 // F15-R1: the actions that name a file, and so carry the calling agent's id.
 export type FileAction = FileRead | FileUnchanged | FileEdited | FileWritten | Mention | Searched
-export type Action = FileAction | Compacted | Reattached
+export type Action = FileAction | Compacted | Reattached | ShellChanged
 
 export const emptyGraph: Graph = { seq: 0, files: {}, edges: [], decisions: [], compactions: [] }
 
@@ -25,5 +26,6 @@ export function reduce(g: Graph | undefined, a: Action, turn: number): Graph {
     case 'searched': return searched(graph, a, turn)
     case 'compacted': return compacted(graph, a, turn)
     case 'reattached': return reattached(graph, a)
+    case 'shellChanged': return shellChanged(graph, a, turn)
   }
 }
