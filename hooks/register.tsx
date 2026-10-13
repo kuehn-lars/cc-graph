@@ -201,16 +201,16 @@ export const register: Register = (on, options) => {
     const notes = (await read($, NOTES)) ?? []
     // F08-R10: the renderer follows the table (Raster on terminal: F09, Svg: F10, else the list), then `view`.
     const rows = graphRows(e.props.scroll.bodyRows, notes)
-    const graphed = e.surface === 'terminal' && 'Raster' in table && (await read($, VIEW)) === 'graph'
+    const wantsGraph = e.surface === 'terminal' && 'Raster' in table && (await read($, VIEW)) === 'graph'
     return (
       <Box flexDirection="column">
         <Box gap={2}>
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
-        {graphed && rows >= MIN_ROWS
+        {wantsGraph && rows >= MIN_ROWS
           ? renderGraph(table, await readGraph($), await readFill($), notes, e.props.bodyColumns, rows)
-          : renderList(table, await readGraph($), await readFill($), await readMemory($), graphed ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )
   })

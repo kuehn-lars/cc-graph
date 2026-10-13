@@ -14,7 +14,7 @@ test('F09-AC4 the mounted Raster decodes to exactly columns × rows cells', asyn
   expect(decode(raster)).toHaveLength(64 * 28)
 })
 
-test('F09-AC4 the Raster gives up a row to each footer note and is capped at 512 by 256', async ($, on) => {
+test('F09-AC4 the Raster gives up a row to each footer note', async ($, on) => {
   ui(on)
   viewGraph(on, ['one', 'two'])
   await start($)
@@ -67,4 +67,12 @@ test('F09-AC7 with 8 rows left for the graph, the graph is drawn', async ($, on)
   const pane = await mount($, 'terminal', 64, 10)
   expect((await pane.find({ type: 'Raster' }))?.props.rows).toBe(8)
   expect(await texts(pane, /taller pane/)).toEqual([])
+})
+
+test('F09-AC4 more files than cells still draw columns × rows cells', async ($, on) => {
+  ui(on)
+  viewGraph(on, [], ...Array.from({ length: 12 }, (_, i) => node(`src/f${i}.ts`, i + 1)))
+  await start($)
+  const raster = await (await mount($, 'terminal', 1, 10)).find({ type: 'Raster' }) // 1 × 8 cells
+  expect(decode(raster)).toHaveLength(8)
 })

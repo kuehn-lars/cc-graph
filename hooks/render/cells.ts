@@ -26,6 +26,7 @@ export function paint(graph: Graph, columns: number, rows: number): Cell[] {
   const taken = new Set<number>()
   for (const n of Object.values(graph.files)) {
     const { x, y } = seedPoint(folderOf(n.path))
+    if (taken.size === cells.length) break // more files than cells: the rest are not drawn
     let at = Math.floor((y / CANVAS.height) * rows) * columns + Math.floor((x / CANVAS.width) * columns)
     while (taken.has(at)) at = (at + 1) % cells.length
     taken.add(at)
