@@ -242,7 +242,7 @@ export const register: Register = (on, options) => {
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>
         {wantsGraph && rows >= MIN_ROWS
-          ? renderGraph(table, await readGraph($), await readLayout($), await readFill($), notes, e.props.bodyColumns, rows)
+          ? renderGraph(table, await readGraph($), await readLayout($), await readMemory($), await readFill($), notes, e.props.bodyColumns, rows)
           : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, (await read($, SELECTED)) ?? null, path => update($, SELECTED, () => path))}
       </Box>
     )

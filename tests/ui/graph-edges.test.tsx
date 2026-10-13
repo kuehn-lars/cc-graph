@@ -3,7 +3,7 @@ import { CANVAS, folderOf, seedPoint } from '../../hooks/layout/seed'
 import { SURFACES, decode, mount, node, start, ui, viewLaidOut } from './kit'
 
 const COLUMNS = 64
-const ROWS = 28 // a 30-row pane less the view keys and the meter line
+const ROWS = 27 // a 30-row pane less the view keys, the meter line and the legend
 const at = (x: number, y: number) => Math.floor((y / CANVAS.height) * ROWS) * COLUMNS + Math.floor((x / CANVAS.width) * COLUMNS)
 const raster = async ($: any) => decode(await (await mount($, 'terminal', COLUMNS, 30)).find({ type: 'Raster' }))
 
@@ -39,7 +39,7 @@ test('F09-R9 a node is drawn at its position; one without is drawn at its folder
   await start($)
   const cells = await raster($)
   const seed = seedPoint(folderOf('src/b.ts'))
-  expect(cells[4 * COLUMNS + 6]!.char).toBe('●') // x 10 of 100 → column 6 of 64, y 10 of 64 → row 4 of 28
+  expect(cells[at(10, 10)]!.char).toBe('●') // x 10 of 100 → column 6 of 64, y 10 of 64 → row 4 of 27
   expect(cells[at(seed.x, seed.y)]!.char).toBe('◌')
 })
 

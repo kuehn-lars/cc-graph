@@ -1,6 +1,6 @@
 // Shared setup for UI tests: the Pane props the engine would hand the hook, and the test's own hooks beneath.
 import type { On, RenderSurface } from 'claude-code'
-import type { FileNode, Graph } from '../../types'
+import type { FileNode, Graph, MemoryNote } from '../../types'
 
 export const PANE_ID = 'cc-graph'
 export const SURFACES = ['terminal', 'desktop', 'vscode', 'mobile'] as const satisfies readonly RenderSurface[]
@@ -71,12 +71,12 @@ export function decode(raster: any): { char: string; fg: number; bg: number }[] 
   return Array.from({ length: words.length / 3 }, (_, i) => ({ char: String.fromCodePoint(words[i * 3]!), fg: words[i * 3 + 1]!, bg: words[i * 3 + 2]! }))
 }
 
-/** The test's own `state.get` hook beneath the mod: `view` is `graph`, and `graph` and `layout` hold these. */
-export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][], layout: Record<string, { x: number; y: number }>) {
+/** The test's own `state.get` hook beneath the mod: `view` is `graph`, and `graph`, `layout` and (when given) `memory` hold these. */
+export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][], layout: Record<string, { x: number; y: number }>, memory: MemoryNote[] = []) {
   const graph: Graph = {
     seq: Math.max(...nodes.map(n => n.touched)), files: Object.fromEntries(nodes.map(n => [n.path, n])),
     edges: edges.map(([from, to]) => ({ from, to, kind: 'import', blind: false, guessed: false })), decisions: [], compactions: [],
   }
-  const values: Record<string, unknown> = { view: 'graph', graph, layout }
+  const values: Record<string, unknown> = { view: 'graph', graph, layout, ...(memory.length ? { memory } : {}) }
   on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
 }
