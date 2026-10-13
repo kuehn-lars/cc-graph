@@ -45,18 +45,18 @@ const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () =
 // D5: slow work runs off the hook's return path. Hooks enqueue; one coalesced `$.clock.after` callback drains the queue, one job at a time, and a failing job is dropped. F07 adds its jobs here.
 const QUEUE_DELAY_MS = 20
 const jobs: (() => Promise<void>)[] = []
-let draining = false
+let draining = false // true from the first enqueue until the queue is empty: a job enqueued meanwhile joins the drain, so jobs never overlap
 function enqueue($: Pick<CoreEngineInterface, 'clock'>, job: () => Promise<void>) {
   jobs.push(job)
   if (draining) return
   draining = true
   $.clock.after(QUEUE_DELAY_MS, async () => {
-    draining = false // a job that enqueues schedules the next drain
-    for (const next of jobs.splice(0)) await next().catch(() => {})
+    for (let next = jobs.shift(); next; next = jobs.shift()) await next().catch(() => {})
+    draining = false
   })
 }
 
-// F09-R4: at most one layout pass waits in the queue; it reads the graph when it runs, so it lays out the latest.
+// F09-R4: at most one layout pass waits in the queue; it reads the graph when it runs, so it lays out the latest. A graph that changed shape while the pass ran (a Read, or /clear) queues the next.
 let layoutQueued = false
 const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
   if (layoutQueued) return
@@ -65,6 +65,7 @@ const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
     layoutQueued = false
     const graph = await readGraph($)
     await update($, LAYOUT, previous => layout(previous ?? {}, graph))
+    if (reshaped(graph, await readGraph($))) queueLayout($)
   })
 }
 

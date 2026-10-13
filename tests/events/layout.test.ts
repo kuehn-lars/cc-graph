@@ -1,3 +1,4 @@
+import reference from '../../fixtures/sessions/reference'
 import { expect, mock, test } from 'claude-code/testing'
 import { ui } from '../ui/kit'
 import { replay, written, writes } from './kit'
@@ -45,4 +46,21 @@ test('F09-AC12 an evicted node has no position after the next pass', async ($, o
   await clock.advance(1000)
   expect(sorted(written.layout)).toEqual(sorted(written.graph.files))
   expect(written.layout['gone.ts']).toBeUndefined()
+})
+
+test('F09-R4 a pass that fails is dropped and the next Read gets a pass', async ($, on) => {
+  const clock = mock.clock(on)
+  ui(on)
+  let failed = false
+  on('state.get', (_$, e: any, next) => {
+    if (e.key === 'layout' && !failed) throw ((failed = true), new Error('read refused'))
+    return next(e)
+  })
+  await replay($, on, 1)
+  await clock.advance(1000)
+  expect(failed).toBe(true)
+  // DERIVED: the recorded step 2 input, answered with step 1's result (the replay's bottom hook keeps the last answer): a Read that adds a node.
+  await $.tool.call(reference.events.find(c => c.event === 'tool.call' && c.process === 1 && c.step === 2)!.input as any)
+  await clock.advance(1000)
+  expect(sorted(written.layout)).toEqual(sorted(written.graph.files))
 })
