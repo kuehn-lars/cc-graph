@@ -3,7 +3,7 @@
 const WIDE = /[ᄀ-ᅟ⺀-꓏가-힣豈-﫿︰-﹯＀-｠￠-￦\u{1f300}-\u{1f64f}\u{1f900}-\u{1f9ff}\u{20000}-\u{3fffd}]/u
 const ZERO = /[̀-ͯ​-‏︀-️]/
 
-export const cols = (s: string) => [...s].reduce((w, c) => w + (ZERO.test(c) ? 0 : WIDE.test(c) ? 2 : 1), 0)
+export const cols = (s: string) => (/^[\x20-\x7e]*$/.test(s) ? s.length : [...s].reduce((w, c) => w + (ZERO.test(c) ? 0 : WIDE.test(c) ? 2 : 1), 0)) // printable ASCII: one column each
 
 /** The longest end of `s` that takes at most `max` columns. */
 export function tail(s: string, max: number) {
@@ -13,8 +13,8 @@ export function tail(s: string, max: number) {
   return chars.slice(i).join('')
 }
 
-/** A run of a line in one colour (a number, `undefined` for the text colour) or dimmed. */
-export type Seg = { text: string; color?: number; dim?: boolean }
+/** A run of a line in one colour (a theme key, `undefined` for the text colour) or dimmed. */
+export type Seg = { text: string; color?: string; dim?: boolean }
 
 /** F09-R21: the segments of a line cut from its end to `columns` and closed by a dimmed "…". ponytail: one column a character, as `fit` counts; the lines are ASCII plus marks. */
 export function cutSegs(segs: Seg[], columns: number): Seg[] {

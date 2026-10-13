@@ -81,24 +81,29 @@ export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][]
   on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
 }
 
-// A braille cell is U+2800 plus the bits of its lit dots, `BITS[dotRow][dotColumn]`.
-const BITS = [[0x01, 0x08], [0x02, 0x10], [0x04, 0x20], [0x40, 0x80]]
+type Decoded = { char: string; fg: number; bg: number }
 
-/** The lit dots of a decoded `Raster` `columns` wide: `"x,y"` in raster dots (2 per column, 4 per row), each with the foreground of its cell. */
-export function dots(cells: { char: string; fg: number }[], columns: number): Map<string, number> {
-  const lit = new Map<string, number>()
-  cells.forEach((c, i) => {
-    const bits = c.char.codePointAt(0)! - 0x2800
-    if (bits < 0 || bits > 0xff) return
-    BITS.forEach((row, dr) => row.forEach((bit, dc) => { if (bits & bit) lit.set(`${(i % columns) * 2 + dc},${Math.floor(i / columns) * 4 + dr}`, c.fg) }))
-  })
-  return lit
-}
+/** The decoded cells as lines of text, `columns` wide. */
+export const lines = (cells: Decoded[], columns: number) => Array.from({ length: cells.length / columns }, (_, r) => cells.slice(r * columns, (r + 1) * columns).map(c => c.char).join(''))
 
-/** The dots of one colour as `[x, y]`, and the centre of their bounding box. */
-export function ofColor(lit: Map<string, number>, color: number) {
-  const points = [...lit].filter(([, c]) => c === color).map(([k]) => k.split(',').map(Number) as [number, number])
-  const xs = points.map(p => p[0]), ys = points.map(p => p[1])
-  const [minX, maxX, minY, maxY] = [Math.min(...xs), Math.max(...xs), Math.min(...ys), Math.max(...ys)]
-  return { points, minX, maxX, minY, maxY, x: (minX + maxX) / 2, y: (minY + maxY) / 2 }
+/**
+ * The box whose middle row holds `name` after its glyph, or the tag (`boxed: false`, one row, from its glyph to the name's end) that does:
+ * its rows of text, the cell at `(x, y)` of it, and where it sits.
+ */
+export function boxOf(cells: Decoded[], columns: number, name: string) {
+  const rows = lines(cells, columns)
+  const row = rows.findIndex(r => r.includes(` ${name}`))
+  if (row < 0) return undefined
+  const at = rows[row]!.indexOf(` ${name}`) + 1
+  // A box's top side runs on over the glyph; a folder's frame has its title there (a tag at the frame's left).
+  const boxed = '│┆├┤'.includes(rows[row]![at - 4] ?? 'x') && rows[row - 1]?.[at - 4] === '╭' && rows[row - 1]?.[at - 2] !== ' '
+  const left = boxed ? at - 4 : at - 2
+  let right = at + name.length - 1
+  if (boxed) for (right = left + 1; rows[row - 1]![right] !== '╮'; right++);
+  const top = boxed ? row - 1 : row
+  return {
+    boxed, left, right, top, bottom: boxed ? row + 1 : row,
+    rows: rows.slice(top, boxed ? row + 2 : row + 1).map(r => r.slice(left, right + 1)),
+    cell: (x: number, y: number) => cells[(top + y) * columns + left + x]!,
+  }
 }

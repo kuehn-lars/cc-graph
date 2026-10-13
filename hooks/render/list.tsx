@@ -1,13 +1,12 @@
 // Pure: the list view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
-import type { FileNode, Fill, Graph, MemoryNote, NodeState } from '../../types'
+import type { FileNode, Fill, Graph, MemoryNote } from '../../types'
+import { GLYPH } from './cells'
 import { count, meterLine } from './meter'
 import { cols, tail } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
 
-// 02 Data model: the glyph of each state. No state is told by color alone (NFR-A1).
-export const GLYPH: Record<NodeState, string> = { read: '●', partial: '◐', search: '◌', compacted: '○', unread: '!', ghost: '⋯' }
 
 // F08-R8: the first nine rows carry a hotkey 1 to 9, and a plain Button draws "N: " (3 columns) before its text.
 const HOTKEY_ROWS = 9

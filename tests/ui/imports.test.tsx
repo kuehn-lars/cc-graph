@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import { replay } from '../events/kit'
-import { decode, dots, mount, node, run, start, ui, viewLaidOut } from './kit'
+import { boxOf, decode, lines, mount, node, run, start, ui, viewLaidOut } from './kit'
 
 const rows = async (pane: any): Promise<string[]> => (await pane.findAll({ type: 'Text', text: /^[●◐◌○!⋯] / })).map((r: any) => r.text)
 
@@ -36,12 +36,11 @@ test('NFR-A3 after step 8 every node, memory file and edge the graph draws has i
   await run($, 'list')
   const pane = await mount($, 'terminal', 100, 40)
   const list = await rows(pane)
-  // Every node and memory file is named under the card, and in the list, once tickets 10 and 12 land; until then the card must at least draw dots of each colour in the list.
-  const lit = new Set(dots(cells, 100).values())
+  // Every node the graph draws is a list row, and every file the list names is drawn (nodes without a layout start on one point and are moved apart, F09-R25).
   expect(list.length).toBeGreaterThan(0)
-  expect(lit).toContain(0x7aa7ff) // the nodes have no layout here, so shapes of one folder overlap: only the colour that wins is certain
+  for (const r of list) expect(boxOf(cells, 100, r.split(' ')[1]!.split('/').pop()!), r).toBeDefined()
   expect((await pane.findAll({ type: 'Text', text: /^■ / })).length).toBe(1) // the memory file stays in the list
   const edges = list.reduce((n, r) => n + Number(/imports (\d+)$/.exec(r)?.[1] ?? 0), 0)
   expect(edges).toBe(6) // routes→login, login→password, sessions, rateLimit, sessions→redis, redis→config
-  expect([...dots(cells, 100)].filter(([, c]) => c === 0x353a42).length).toBeGreaterThan(0) // edge dots
+  expect(lines(cells, 100).join('')).toMatch(/[┬┴├┤]/) // a line joins a box
 })

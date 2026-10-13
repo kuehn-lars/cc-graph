@@ -1,6 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import { replay } from '../events/kit'
-import { decode, dots, mount, node, start, ui, viewGraph } from './kit'
+import { decode, lines, mount, node, start, ui, viewGraph } from './kit'
 
 const texts = async (pane: any, text: RegExp) => (await pane.findAll({ type: 'Text', text })).map((t: any) => t.text)
 
@@ -49,14 +49,15 @@ test('F09-AC7 with 6 rows left for the graph, the list is drawn and the footer s
   expect(await texts(pane, /taller pane/)).toEqual(['Graph needs a taller pane'])
 })
 
-test('F09-AC4 after the reference session\'s step 3 the card holds in-context shapes and none of the list glyphs ◐ ● ◌ (nodes without a layout overlap, so the search shape is tested in graph-card)', async ($, on) => {
+test('F09-AC4 after the reference session\'s step 3 the graph holds boxes with the list glyphs and no braille', async ($, on) => {
   ui(on)
   viewGraph(on)
   await replay($, on, 3)
   const cells = decode(await (await mount($, 'terminal')).find({ type: 'Raster' }))
-  const colors = new Set(dots(cells, 64).values())
-  expect(colors).toContain(0x7aa7ff) // in context: ● and ◐
-  expect(cells.filter(c => '◐●◌'.includes(c.char))).toHaveLength(0)
+  const text = lines(cells, 64).join('\n')
+  expect(text).toMatch(/│ ● /)
+  expect(text).toMatch(/[╭╮╰╯]/)
+  expect(cells.filter(c => /[\u2800-\u28ff]/.test(c.char))).toHaveLength(0)
 })
 
 test('F09-AC7 with 8 rows left for the graph, the graph is drawn', async ($, on) => {

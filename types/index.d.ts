@@ -1,5 +1,5 @@
 export type NodeState = 'ghost' | 'search' | 'partial' | 'read' | 'compacted' | 'unread'
-export type Change = 'edited' | 'created' | 'external' | 'blind'
+export type Change = 'edited' | 'created' | 'deleted' | 'external' | 'blind'
 
 export type FileNode = {
   path: string               // I4

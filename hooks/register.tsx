@@ -69,11 +69,11 @@ const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
   })
 }
 
-// F09-R19: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each ripple take a new `pulses` number, so a render ends the ripple running, and a newer ripple keeps an older one from going on.
+// F09-R27: the size of the raster the last render drew (null: the list, or nothing), which a blit must carry. A render and each ripple take a new `pulses` number, so a render ends the ripple running, and a newer ripple keeps an older one from going on.
 // ponytail: one pane, one raster: a render on another surface (no Raster) nulls `drawn`, which only cancels pulses; give each surface its own size if two panes ever show at once.
 let drawn: { columns: number; rows: number } | null = null
 let pulses = 0
-const RIPPLE_MS = [0, 120, 120, 160] // the gaps before the white ring, the wide ring, the faint ring and the plain frame
+const RIPPLE_MS = [0, 120, 120, 160] // the gaps before the white border, the shimmer, Claude's colour and the plain frame
 
 // The ripple starts after the queue has placed the nodes; a denied blit is ignored. The redraw a layout write asks for lands after the job returns, not in it, so the ripple waits one more delay, or the redraw wipes it.
 function queuePulse($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'ui'>, paths: string[]) {
@@ -269,7 +269,7 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column">
         <Box gap={2}>
-          {wantsGraph && rows >= MIN_ROWS && <Text bold>CC Graph</Text>}
+          {wantsGraph && rows >= MIN_ROWS && <Text bold><Text color="claude">✻</Text> CC Graph</Text>}
           {wantsGraph && rows >= MIN_ROWS && <Text dimColor>what Claude knows</Text>}
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>

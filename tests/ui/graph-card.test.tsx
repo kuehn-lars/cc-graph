@@ -1,178 +1,140 @@
 import { expect, test } from 'claude-code/testing'
-import { folderOf, seedPoint } from '../../hooks/layout/seed'
-import { decode, dots, mount, node, ofColor, start, ui, viewLaidOut } from './kit'
+import { boxOf, decode, lines, mount, node, start, ui, viewLaidOut } from './kit'
 
-const CARD = 0x14161b
 const DEFAULT = 0x01000000 // the terminal's own colour
-const IN_CONTEXT = 0x7aa7ff
-const GREY = 0x5f6672
-const GHOST = 0x7d8590
-const EDGE = 0x353a42
-const HALO = 0x9aa4b1
-const AMBER = 0xf0b45a
-const WHITE = 0xf0f3f6
-const near = (r: number) => (dx: number, dy: number) => Math.round(Math.hypot(dx, dy)) === r
+const CLAUDE = 0xd77757, IN_CONTEXT = 0xb1b9f9, SUBTLE = 0x505050, INACTIVE = 0x999999, CREATED = 0x4eba65, DELETED = 0xff6b80
 
 const draw = async ($: any, columns: number, rows: number) => {
   await start($)
-  const cells = decode(await (await mount($, 'terminal', columns, rows + 5)).find({ type: 'Raster' })) // the pane gives 5 rows to the view keys, the meter line, the now line and two legend lines
-  const lit = dots(cells, columns)
-  for (const [k, c] of lit) if (c === HALO) lit.delete(k) // the focus's halo is read in graph-focus
-  return { cells, lit }
+  return decode(await (await mount($, 'terminal', columns, rows + 5)).find({ type: 'Raster' })) // the pane gives 5 rows to the view keys, the meter line, the now line and two legend lines
 }
 
-test('F09-AC13 an 84 × 24 Raster is a card: rounded half-block corners in #14161b, card background everywhere else', async ($, on) => {
+test('F09-AC28 an 84 × 24 Raster is drawn on the terminal\'s own background: no card, no grid, no braille', async ($, on) => {
   ui(on)
   viewLaidOut(on, [node('src/a.ts', 1)], [], { 'src/a.ts': { x: 50, y: 30 } })
-  const { cells } = await draw($, 84, 24)
-  const row = (r: number) => cells.slice(r * 84, r * 84 + 84)
-  expect(row(0).map(c => c.char).join('')).toBe(`▗${'▄'.repeat(82)}▖`)
-  expect(row(23).map(c => c.char).join('')).toBe(`▝${'▀'.repeat(82)}▘`)
-  for (const r of [0, 23]) for (const c of row(r)) expect([c.fg, c.bg]).toEqual([CARD, DEFAULT])
-  expect(cells.slice(84, 84 * 23).every(c => c.bg === CARD)).toBe(true)
-  expect(cells.slice(84, 84 * 23).filter(c => '▀▄'.includes(c.char))).toHaveLength(0)
-  expect(cells.slice(84, 84 * 23).filter((_, i) => i % 84 === 0 || i % 84 === 83).every(c => c.char === ' ')).toBe(true) // first and last columns stay empty
+  const cells = await draw($, 84, 24)
+  expect(cells.every(c => c.bg === DEFAULT)).toBe(true)
+  expect(cells.filter(c => /[⠀-⣿▀▄·]/.test(c.char))).toHaveLength(0)
+  expect(cells.filter(c => c.char === ' ').every(c => c.fg === DEFAULT)).toBe(true)
 })
 
-test('F09-AC14 src/a.ts read, 400 tokens, alone: its centre cell is ⣿ in #7aa7ff, its dots a disc of radius 9', async ($, on) => {
+test('F09-AC29 an edited login.ts is a box holding its glyph, name and change word, its border in Claude\'s colour as the now node', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400 })], [], { 'src/a.ts': { x: 50, y: 30 } })
-  const { cells, lit } = await draw($, 84, 24)
-  const body = ofColor(lit, IN_CONTEXT)
-  expect(body.points.length).toBe(lit.size) // nothing else is lit
-  expect([body.maxX - body.minX, body.maxY - body.minY]).toEqual([18, 18])
-  const centre = cells[Math.floor(body.y / 4) * 84 + Math.floor(body.x / 2)]!
-  expect([centre.char, centre.fg]).toEqual(['⣿', IN_CONTEXT])
-  for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++)
-    expect(lit.has(`${body.x + dx},${body.y + dy}`), `${dx},${dy}`).toBe(Math.round(Math.hypot(dx, dy)) <= 9)
+  viewLaidOut(on, [node('src/auth/login.ts', 2, { tokens: 400, change: 'edited', added: 2 }), node('src/middleware/rateLimit.ts', 1, { change: 'created', added: 12 })], [],
+    { 'src/auth/login.ts': { x: 20, y: 10 }, 'src/middleware/rateLimit.ts': { x: 80, y: 50 } })
+  const cells = await draw($, 84, 24)
+  const login = boxOf(cells, 84, 'login.ts')!
+  expect(login.rows).toEqual(['╭───────────────────╮', '│ ● login.ts  +2 −0 │', '╰━━━━━━━━━━━━━━━━━━━╯'])
+  expect(login.cell(2, 1).fg).toBe(IN_CONTEXT)
+  expect([4, 11, 14, 15, 17, 18].map(x => login.cell(x, 1).fg)).toEqual([DEFAULT, DEFAULT, CREATED, CREATED, DELETED, DELETED]) // the name in the terminal's own colour, the counts as a diff colours them
+  for (const [x, y] of [[0, 0], [20, 0], [0, 2], [20, 2], [0, 1]]) expect(login.cell(x!, y!).fg).toBe(CLAUDE)
+  const rate = boxOf(cells, 84, 'rateLimit.ts')!
+  expect(rate.rows[1]).toBe('│ ● rateLimit.ts  +12 new │')
+  expect([...'+12 new'].map((_, k) => rate.cell(18 + k, 1).fg)).toEqual(Array(7).fill(CREATED))
+  expect([rate.cell(0, 0).fg, rate.cell(0, 1).fg]).toEqual([CREATED, CREATED])
 })
 
-test('F09-AC15 a compacted node is an outline in #5f6672 with an empty centre; a ghost is a cross in #7d8590', async ($, on) => {
+test('F09-AC30 a compacted node is a dashed box in the subtle colour, its name inactive; a ghost is a tag with no box', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400 }), node('src/b.ts', 2, { tokens: 400, state: 'compacted' }), node('src/c.ts', 3, { state: 'ghost' })], [],
+  viewLaidOut(on, [node('src/a.ts', 3), node('src/b.ts', 2, { state: 'compacted' }), node('src/c.ts', 1, { state: 'ghost', tokens: null })], [],
     { 'src/a.ts': { x: 10, y: 10 }, 'src/b.ts': { x: 50, y: 30 }, 'src/c.ts': { x: 90, y: 50 } })
-  const { cells, lit } = await draw($, 84, 24)
-  const ring = ofColor(lit, GREY)
-  const middle = cells[Math.floor(ring.y / 4) * 84 + Math.floor(ring.x / 2)]!
-  expect(middle.char.codePointAt(0)! < 0x2800).toBe(true) // no dot in the centre cell
-  expect([lit.get(`${ring.x - 9},${ring.y}`), lit.get(`${ring.x + 9},${ring.y}`)]).toEqual([GREY, GREY])
-  expect(ring.points.every(([x, y]) => near(9)(x - ring.x, y - ring.y))).toBe(true)
-  const cross = ofColor(lit, GHOST)
-  for (const k of [0, 1, 2]) for (const [sx, sy] of [[1, 1], [1, -1], [-1, 1], [-1, -1]] as const)
-    expect(lit.get(`${cross.x + sx * k},${cross.y + sy * k}`)).toBe(GHOST)
-  expect(cross.points.every(([x, y]) => Math.abs(x - cross.x) === Math.abs(y - cross.y))).toBe(true)
+  const cells = await draw($, 84, 24)
+  const b = boxOf(cells, 84, 'b.ts')!
+  expect(b.rows[0]).toMatch(/^╭┄+╮$/)
+  expect(b.rows[1]).toBe('┆ ○ b.ts ┆')
+  expect([b.cell(0, 0).fg, b.cell(0, 1).fg, b.cell(4, 1).fg, b.cell(2, 1).fg]).toEqual([SUBTLE, SUBTLE, INACTIVE, INACTIVE])
+  const c = boxOf(cells, 84, 'c.ts')!
+  expect(c.boxed).toBe(false)
+  expect(c.rows).toEqual(['⋯ c.ts'])
+  const row = lines(cells, 84)[c.top]!
+  expect([row[c.left - 1], row[c.right + 1]]).toEqual([' ', ' ']) // no side of its own
 })
 
-test('F09-AC27 one node is drawn at the centre of the dot area', async ($, on) => {
+test('F09-AC31 the size bar fills the bottom side by √(tokens / largest); unknown tokens have none', async ($, on) => {
+  ui(on)
+  viewLaidOut(on, [node('a.ts', 1, { tokens: 400 }), node('b.ts', 2, { tokens: 100 }), node('c.ts', 3, { tokens: null })], [],
+    { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 50, y: 30 }, 'c.ts': { x: 90, y: 50 } })
+  const cells = await draw($, 84, 24)
+  const [a, b, c] = ['a.ts', 'b.ts', 'c.ts'].map(n => boxOf(cells, 84, n)!)
+  expect(a!.rows[2]).toBe('╰━━━━━━━━╯')
+  expect(b!.rows[2]).toBe('╰━━━━────╯')
+  expect(c!.rows[2]).toBe('╰────────╯')
+  expect([a!.cell(1, 2).fg, b!.cell(4, 2).fg]).toEqual([IN_CONTEXT, IN_CONTEXT])
+})
+
+test('F09-AC27 one node is drawn at the centre of the Raster', async ($, on) => {
   ui(on)
   viewLaidOut(on, [node('src/a.ts', 1)], [], { 'src/a.ts': { x: 3, y: 60 } })
-  const one = ofColor((await draw($, 84, 24)).lit, IN_CONTEXT)
-  expect(Math.abs(one.x - 83.5)).toBeLessThanOrEqual(1) // the card's centre: 84 columns of 2 dots
-  expect(Math.abs(one.y - 47.5)).toBeLessThanOrEqual(1) // 24 rows of 4 dots
+  const a = boxOf(await draw($, 84, 24), 84, 'a.ts')!
+  expect(Math.abs((a.left + a.right) / 2 - 41.5)).toBeLessThanOrEqual(1)
+  expect(Math.abs((a.top + a.bottom) / 2 - 11.5)).toBeLessThanOrEqual(1)
 })
 
-test('F09-AC27 two nodes 10 units apart on the same row sit the same number of dots from the centre on either side', async ($, on) => {
+test('F09-AC27 two nodes 10 units apart on the same row sit the same number of columns from the centre on either side', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1), node('src/b.ts', 2, { state: 'search' })], [], { 'src/a.ts': { x: 20, y: 7 }, 'src/b.ts': { x: 30, y: 7 } })
-  const { lit } = await draw($, 84, 24)
-  const [a, b] = [ofColor(lit, IN_CONTEXT), ofColor(lit, 0x5fc4d6)]
-  expect(a.x + b.x).toBe(167) // symmetric about 83.5, the middle of 168 dots
-  expect(a.y).toBe(b.y)
-  expect(Math.abs(a.y - 47.5)).toBeLessThanOrEqual(1)
+  viewLaidOut(on, [node('src/a.ts', 1), node('src/b.ts', 2)], [], { 'src/a.ts': { x: 20, y: 7 }, 'src/b.ts': { x: 30, y: 7 } })
+  const cells = await draw($, 84, 24)
+  const [a, b] = [boxOf(cells, 84, 'a.ts')!, boxOf(cells, 84, 'b.ts')!]
+  expect(Math.abs(a.left + b.right - 83)).toBeLessThanOrEqual(1) // symmetric about the middle of 84 columns
+  expect(a.top).toBe(b.top)
 })
 
-// A cell holds one colour, so a ring's dots recolour any body or inner-ring dots that share their cell: the tests read the rings, not the bodies.
-test('F09-R15 a changed node wears a one-dot ring of its change\'s colour 3 dots outside its radius; the selected node a white one 2 further out', async ($, on) => {
+test('F09-AC32 three nodes on one point: all three boxes whole, 2 columns or 1 row apart', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400, change: 'edited' })], [], { 'src/a.ts': { x: 50, y: 30 } }, [], 'src/a.ts')
-  const { lit } = await draw($, 84, 24)
-  const white = ofColor(lit, WHITE)
-  expect([white.maxX - white.minX, white.maxY - white.minY]).toEqual([28, 28]) // radius 9 + 5
-  for (let dy = -14; dy <= 14; dy++) for (let dx = -14; dx <= 14; dx++) {
-    if (near(14)(dx, dy)) expect(lit.get(`${white.x + dx},${white.y + dy}`), `white ${dx},${dy}`).toBe(WHITE)
-    if (near(12)(dx, dy)) expect([AMBER, WHITE], `amber ${dx},${dy}`).toContain(lit.get(`${white.x + dx},${white.y + dy}`))
+  const nodes = ['a', 'b', 'c'].map((n, i) => node(`${n}.ts`, i + 1))
+  viewLaidOut(on, nodes, [], Object.fromEntries(nodes.map(n => [n.path, { x: 50, y: 30 }])))
+  const cells = await draw($, 84, 24)
+  const boxes = ['a.ts', 'b.ts', 'c.ts'].map(n => boxOf(cells, 84, n)!)
+  for (const box of boxes) expect(box.boxed).toBe(true)
+  for (const p of boxes) for (const q of boxes) if (p !== q)
+    expect(p.right + 2 < q.left || q.right + 2 < p.left || p.bottom + 1 < q.top || q.bottom + 1 < p.top).toBe(true)
+})
+
+test('F09-AC32 twelve nodes on one point of a 64 × 8 Raster: some become tags, none share a cell', async ($, on) => {
+  ui(on)
+  const nodes = Array.from({ length: 12 }, (_, i) => node(`f${String(i).padStart(2, '0')}.ts`, i + 1))
+  viewLaidOut(on, nodes, [], Object.fromEntries(nodes.map(n => [n.path, { x: 50, y: 30 }])))
+  const cells = await draw($, 64, 8)
+  const drawn = nodes.map(n => boxOf(cells, 64, n.path)).filter(b => b !== undefined)
+  expect(drawn.some(b => !b!.boxed)).toBe(true)
+  const seen = new Set<number>()
+  for (const b of drawn) for (let y = b!.top; y <= b!.bottom; y++) for (let x = b!.left; x <= b!.right; x++) {
+    expect(seen.has(y * 64 + x)).toBe(false)
+    seen.add(y * 64 + x)
   }
-  expect(ofColor(lit, AMBER).points.length).toBeGreaterThan(40)
-  expect(ofColor(lit, AMBER).points.every(([x, y]) => Math.round(Math.hypot(x - white.x, y - white.y)) <= 12)).toBe(true)
 })
 
-test('F09-R15 a selected node without a change has its white ring 3 dots outside its radius', async ($, on) => {
+test('F09-R25 a name too long for the Raster is left out; the list still has the file', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400 })], [], { 'src/a.ts': { x: 50, y: 30 } }, [], 'src/a.ts')
-  const { lit } = await draw($, 84, 24)
-  const white = ofColor(lit, WHITE)
-  expect([white.maxX - white.minX, white.maxY - white.minY]).toEqual([24, 24])
-  for (let dy = -12; dy <= 12; dy++) for (let dx = -12; dx <= 12; dx++) if (near(12)(dx, dy)) expect(lit.get(`${white.x + dx},${white.y + dy}`)).toBe(WHITE)
+  viewLaidOut(on, [node('a-very-long-file-name-that-fits-nowhere-on-this-raster.ts', 1)], [], { 'a-very-long-file-name-that-fits-nowhere-on-this-raster.ts': { x: 0, y: 10 } })
+  expect(lines(await draw($, 40, 24), 40).join('')).not.toContain('a-very-long')
 })
 
-test('F09-R15 the radius follows √tokens against the largest file; a ghost has 2, unknown tokens 3', async ($, on) => {
+test('F09-R9 a node without a position is drawn at its folder\'s seed point: two such nodes of one folder are moved apart, both drawn', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('a.ts', 1, { tokens: 400 }), node('b.ts', 2, { tokens: 100, state: 'search' }), node('c.ts', 3, { tokens: null, state: 'compacted' })], [],
-    { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 50, y: 30 }, 'c.ts': { x: 90, y: 50 } })
-  const { lit } = await draw($, 84, 24)
-  const width = (c: number) => { const o = ofColor(lit, c); return o.maxX - o.minX }
-  expect(width(IN_CONTEXT)).toBe(18) // 2 + 7
-  expect(width(0x5fc4d6)).toBe(12) // 2 + round(3.5) = 6
-  expect(width(GREY)).toBe(6) // 3
+  viewLaidOut(on, [node('src/a.ts', 1), node('src/b.ts', 2)], [], {})
+  const cells = await draw($, 84, 24)
+  expect([boxOf(cells, 84, 'a.ts')?.boxed, boxOf(cells, 84, 'b.ts')?.boxed]).toEqual([true, true])
 })
 
-test('F09-R14 a node at the edge of the layout keeps its whole outer ring inside the card', async ($, on) => {
+test('F09-AC33 an edge from a box above to one below leaves the middle of its bottom side at ┬, enters the top side at one ┴, and runs in box-drawing lines', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('a.ts', 1, { tokens: 400, change: 'edited' }), node('b.ts', 2, { tokens: 400 })], [], { 'a.ts': { x: 0, y: 0 }, 'b.ts': { x: 100, y: 64 } }, [], 'a.ts')
-  const white = ofColor((await draw($, 84, 24)).lit, WHITE)
-  expect([white.maxX - white.minX, white.maxY - white.minY]).toEqual([28, 28]) // not cut by the edge of the dot area
-  expect([white.minX >= 2, white.minY >= 4]).toEqual([true, true]) // inside the card's first column and row
+  viewLaidOut(on, [node('src/routes/index.ts', 1, { tokens: null }), node('src/auth/login.ts', 2, { tokens: null })], [['src/routes/index.ts', 'src/auth/login.ts']],
+    { 'src/routes/index.ts': { x: 20, y: 10 }, 'src/auth/login.ts': { x: 70, y: 50 } })
+  const cells = await draw($, 84, 24)
+  const [up, down] = [boxOf(cells, 84, 'index.ts')!, boxOf(cells, 84, 'login.ts')!]
+  const mid = (b: typeof up) => (b.right - b.left + 1) >> 1
+  expect(up.cell(mid(up), 2).char).toBe('┬')
+  expect(down.rows[0]!.split('┴')).toHaveLength(2) // where it crosses least: the folder's title is over the middle
+  const between = lines(cells, 84).slice(up.bottom + 1, down.top).join('').replace(/ /g, '')
+  expect(between.length).toBeGreaterThan(5)
+  expect(between).toMatch(/^[│─╭╮╰╯┼]+(src\/auth\/[│─╭╮╰╯┼]*)?$/) // the folders' sides, crossed at ┼, and the lower folder's title
 })
 
-test('F09-R16 an import edge is a dotted line of #353a42 from ring to ring, and an edge to a missing file is not drawn', async ($, on) => {
+test('F09-R26 no edge, no lines; an edge to a missing file is not drawn', async ($, on) => {
   ui(on)
-  viewLaidOut(on, [node('a.ts', 1), node('b.ts', 2, { state: 'partial' }), node('c.ts', 3, { state: 'compacted' })], [['a.ts', 'b.ts'], ['a.ts', 'gone.ts']], { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 90, y: 50 }, 'c.ts': { x: 50, y: 30 } }) // c.ts is touched last, so it is the focus
-  const { lit } = await draw($, 84, 24)
-  const edge = ofColor(lit, EDGE).points
-  expect(edge.length).toBeGreaterThan(10)
-  const nodes = ofColor(lit, IN_CONTEXT) // both nodes are in context: their bounding box holds the line
-  for (const [x, y] of edge) for (const [x2, y2] of edge) if (x !== x2 || y !== y2) expect(Math.max(Math.abs(x - x2), Math.abs(y - y2))).toBeGreaterThan(1) // every other dot: none touch
-  expect(edge.every(([x, y]) => x > nodes.minX && x < nodes.maxX && y > nodes.minY && y < nodes.maxY)).toBe(true)
-})
-
-test('F09-R16 no edge, no edge dots', async ($, on) => {
-  ui(on)
-  viewLaidOut(on, [node('a.ts', 1), node('b.ts', 2)], [], { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 90, y: 50 } })
-  expect(ofColor((await draw($, 84, 24)).lit, EDGE).points).toHaveLength(0)
-})
-
-test('F09-R9 a node without a position is drawn at its folder\'s seed point', async ($, on) => {
-  const seed = seedPoint(folderOf('src/b.ts'))
-  ui(on)
-  viewLaidOut(on, [node('a.ts', 1), node('src/b.ts', 2, { state: 'search' })], [], { 'a.ts': { x: 10, y: 10 } })
-  const { lit } = await draw($, 84, 24)
-  const [a, b] = [ofColor(lit, IN_CONTEXT), ofColor(lit, 0x5fc4d6)]
-  const scale = Math.min(164 / Math.max(Math.abs(seed.x - 10) + 16, 40), 88 / Math.max(Math.abs(seed.y - 10) + 16, 26)) // R14's fit
-  expect(Math.abs(b.x - a.x - (seed.x - 10) * scale)).toBeLessThanOrEqual(1.5)
-  expect(Math.abs(b.y - a.y - (seed.y - 10) * scale)).toBeLessThanOrEqual(1.5)
-})
-
-test('F09-R12 a cell with no dot holds a grid dot in #262a31 where its column in the dot area is a multiple of 4 and its row is even', async ($, on) => {
-  ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1)], [], { 'src/a.ts': { x: 50, y: 30 } })
-  const { cells } = await draw($, 84, 24)
-  const at = (col: number, row: number) => cells[row * 84 + col]!
-  expect([at(1, 1).char, at(1, 1).fg]).toEqual(['·', 0x262a31])
-  expect([at(5, 1).char, at(5, 3).char]).toEqual(['·', '·'])
-  expect([at(2, 1).char, at(1, 2).char, at(4, 1).char]).toEqual([' ', ' ', ' '])
-})
-
-test('F09-R15 the radius scales by columns / 84 in a Raster under 84 columns', async ($, on) => {
-  ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400 })], [], { 'src/a.ts': { x: 50, y: 30 } })
-  const body = ofColor((await draw($, 42, 14)).lit, IN_CONTEXT)
-  expect(body.maxX - body.minX).toBe(10) // round(9 × 42 / 84) = 5
-})
-
-test('F09-R15 a search node is a dotted circle: no two dots of its ring touch', async ($, on) => {
-  ui(on)
-  viewLaidOut(on, [node('src/a.ts', 1, { tokens: 400, state: 'search' })], [], { 'src/a.ts': { x: 50, y: 30 } })
-  const ring = ofColor((await draw($, 84, 24)).lit, 0x5fc4d6).points
-  expect(ring.length).toBeGreaterThan(20)
-  for (const [x, y] of ring) expect(ring.filter(([x2, y2]) => Math.max(Math.abs(x - x2), Math.abs(y - y2)) === 1).length, `${x},${y}`).toBeLessThanOrEqual(2)
+  viewLaidOut(on, [node('a.ts', 1), node('b.ts', 2)], [['a.ts', 'gone.ts']], { 'a.ts': { x: 10, y: 10 }, 'b.ts': { x: 90, y: 50 } })
+  const cells = await draw($, 84, 24)
+  const outside = lines(cells, 84).join('').replace(/[╭╮╰╯│─━]|[●a-z./ ]/g, '') // boxes, names and the root folder's frame
+  expect(outside).toBe('')
 })

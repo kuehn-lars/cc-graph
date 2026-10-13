@@ -18,8 +18,8 @@ test('F09-AC22 the meter line reads a bar, the percent, the tokens and the count
   await start($)
   const pane = await mount($, 'terminal', 100, 30)
   expect((await meter(pane)).text).toBe('━━━━━━━━━━━━━━━━ 6% of 1M  ≈300 tokens · 3 files · 1 compacted · 1 changed unseen')
-  expect((await pane.find({ type: 'Text', text: /^━$/ }))?.props.color).toBe('#7aa7ff')
-  expect((await pane.find({ type: 'Text', text: /^1 changed unseen$/ }))?.props.color).toBe('#ff6b72')
+  expect((await pane.find({ type: 'Text', text: /^━$/ }))?.props.color).toBe('suggestion')
+  expect((await pane.find({ type: 'Text', text: /^1 changed unseen$/ }))?.props.color).toBe('error')
 })
 
 test('F09-R21 without a percent the meter says "window –" and draws no bar', async ($, on) => {
@@ -41,6 +41,19 @@ test('F09-R11 R21 the title leads the view keys, which stay pressable when the m
   expect([...text]).toHaveLength(64)
   expect(text.endsWith('…')).toBe(true)
   expect((await pane.findAll({ type: 'Button' })).map((b: any) => b.key)).toEqual(expect.arrayContaining(['view-list', 'view-graph']))
+})
+
+test('F09-AC37 the lines around the graph name theme keys: ✻ and ⏺ in claude, the bar in suggestion, never hex', async ($, on) => {
+  ui(on)
+  viewFilled(on, FILL, ...files())
+  await start($)
+  const pane = await mount($, 'terminal', 100, 30)
+  expect((await pane.find({ type: 'Text', text: /^✻$/ }))?.props.color).toBe('claude')
+  expect((await pane.find({ type: 'Text', text: /^⏺$/ }))?.props.color).toBe('claude')
+  expect((await pane.find({ type: 'Text', text: /^━$/ }))?.props.color).toBe('suggestion')
+  const colors = (await pane.findAll({ type: 'Text' })).map((t: any) => t.props.color).filter(Boolean)
+  expect(colors.length).toBeGreaterThan(3)
+  expect(colors.filter((c: string) => c.startsWith('#'))).toEqual([])
 })
 
 test('F09-R11 the list view keeps its own header', async ($, on) => {
