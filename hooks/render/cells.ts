@@ -10,9 +10,10 @@ export type Cell = [char: string, fg: number, bg: number]
 export const DEFAULT = 0x01000000
 
 // F09-R22: the card is dark in every theme, so the colours are fixed.
-const CARD = 0x14161b, GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, LIT_EDGE = 0x8a94a3, HALO = 0x9aa4b1, SELECTED = 0xf0f3f6, TEXT = 0xeef1f5, DIMMED = 0x9aa3ae
+export const GRID = 0x262a31, IN_CONTEXT = 0x7aa7ff, TEXT = 0xeef1f5
+const CARD = 0x14161b, SEARCH = 0x5fc4d6, GREY = 0x5f6672, GHOST = 0x7d8590, EDGE = 0x353a42, LIT_EDGE = 0x8a94a3, HALO = 0x9aa4b1, SELECTED = 0xf0f3f6, DIMMED = 0x9aa3ae
 
-const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
+export const COLOR = { read: IN_CONTEXT, partial: IN_CONTEXT, search: SEARCH, compacted: GREY, unread: GREY, ghost: GHOST }
 
 /** `[codePoint, foreground, background]` per cell, little-endian u32, as standard padded base64. */
 export const encode = (cells: Cell[]) =>

@@ -2,17 +2,17 @@
 import type { Elements } from 'claude-code'
 import type { Fill, Graph, Layout, MemoryNote } from '../../types'
 import { RING, changeWord, encode, hex, nowNode, paint } from './cells'
-import { legendLine } from './legend'
+import { legendLines } from './legend'
 import { FOOTER_NOTES, edgeWords, fit } from './list'
-import { meterLine } from './meter'
-import { cols, tail } from './width'
+import { meterSegs } from './meter'
+import { cols, cutSegs, tail, type Seg } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Raster'>
 
-// F09-R1: the view keys and the meter line above the raster, the now line (R18) and the legend line under it.
+// F09-R11: the view keys and the meter line above the card, the now line (R18) and two legend lines (R20) under it.
 const HEADER_ROWS = 2
 const NOW_ROWS = 1
-const LEGEND_ROWS = 1
+const LEGEND_ROWS = 2
 // F09-R2
 export const MIN_ROWS = 8
 export const TOO_SHORT = 'Graph needs a taller pane'
@@ -52,14 +52,24 @@ function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {
   )
 }
 
+/** A line of segments cut to `columns` (F09-R21), `key` for the test and the engine; an empty line keeps its row. */
+function segLine({ Text }: Pick<Table, 'Text'>, key: string, segs: Seg[], columns: number) {
+  const line = cutSegs(segs, columns)
+  return (
+    <Text key={key}>
+      {line.length ? line.map((s, i) => <Text key={`s${i}`} color={s.color === undefined ? undefined : hex(s.color)} dimColor={s.dim}>{s.text}</Text>) : ' '}
+    </Text>
+  )
+}
+
 export function renderGraph({ Box, Text, Raster }: Table, graph: Graph, layout: Layout, memory: MemoryNote[], fill: Fill | null, notes: string[], columns: number, rows: number, selected: string | null) {
   const width = graphColumns(columns)
   return (
     <Box flexDirection="column">
-      <Text>{fit(meterLine(graph, fill), columns)}</Text>
+      {segLine({ Text }, 'meter', meterSegs(graph, fill), columns)}
       <Raster key="graph" columns={width} rows={rows} cells={frame(graph, layout, width, rows, selected)} />
       {nowLine({ Text }, graph, columns)}
-      <Text dimColor>{fit(legendLine(graph, memory), columns) || ' '}</Text>
+      {legendLines(graph, memory).map((segs, i) => segLine({ Text }, `legend-${i + 1}`, segs, columns))}
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
   )

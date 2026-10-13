@@ -15,7 +15,7 @@ const near = (r: number) => (dx: number, dy: number) => Math.round(Math.hypot(dx
 
 const draw = async ($: any, columns: number, rows: number) => {
   await start($)
-  const cells = decode(await (await mount($, 'terminal', columns, rows + 4)).find({ type: 'Raster' })) // the pane gives 4 rows to the view keys, the meter line, the now line and the legend
+  const cells = decode(await (await mount($, 'terminal', columns, rows + 5)).find({ type: 'Raster' })) // the pane gives 5 rows to the view keys, the meter line, the now line and two legend lines
   const lit = dots(cells, columns)
   for (const [k, c] of lit) if (c === HALO) lit.delete(k) // the focus's halo is read in graph-focus
   return { cells, lit }

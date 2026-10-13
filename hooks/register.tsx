@@ -256,7 +256,7 @@ export const register: Register = (on, options) => {
   on('ui.render', { component: 'Pane', requestId: PANE }, async ($, e) => {
     pulses++
     const table = $.ui.resolve(e)
-    const { Box, Button } = table
+    const { Box, Button, Text } = table
     const notes = (await read($, NOTES)) ?? []
     // F08-R10: the renderer follows the table (Raster on terminal: F09, Svg: F10, else the list), then `view`.
     const rows = graphRows(e.props.scroll.bodyRows, notes)
@@ -266,6 +266,8 @@ export const register: Register = (on, options) => {
     return (
       <Box flexDirection="column">
         <Box gap={2}>
+          {wantsGraph && rows >= MIN_ROWS && <Text bold>CC Graph</Text>}
+          {wantsGraph && rows >= MIN_ROWS && <Text dimColor>what Claude knows</Text>}
           <Button plain key="view-list" hotkey="l" onPress={() => setView($, 'list')}>List</Button>
           <Button plain key="view-graph" hotkey="g" onPress={() => setView($, 'graph')}>Graph</Button>
         </Box>

@@ -104,5 +104,5 @@ test('F09-AC4 the Raster gives up a row to the now line', async ($, on) => {
   viewGraph(on, [], node('src/a.ts', 1))
   await start($)
   const raster = await (await mount($, 'terminal', 64, 30)).find({ type: 'Raster' })
-  expect(raster?.props.rows).toBe(26) // 30 rows less the view keys, the meter line, the now line and the legend
+  expect(raster?.props.rows).toBe(25) // 30 rows less the view keys, the meter line, the now line and two legend lines
 })

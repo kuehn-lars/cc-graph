@@ -2,7 +2,7 @@ import { expect, test } from 'claude-code/testing'
 import { decode, dots, mount, node, ofColor, start, ui, viewLaidOut } from './kit'
 
 const COLUMNS = 64
-const ROWS = 26 // a 30-row pane less the view keys, the meter line, the now line and the legend
+const ROWS = 25 // a 30-row pane less the view keys, the meter line, the now line and two legend lines
 const raster = async ($: any) => decode(await (await mount($, 'terminal', COLUMNS, 30)).find({ type: 'Raster' }))
 const text = (cells: { char: string }[]) => cells.map(c => c.char).join('')
 const rowOf = (cells: { char: string }[], y: number) => text(cells.slice(Math.floor(y / 4) * COLUMNS, (Math.floor(y / 4) + 1) * COLUMNS))
