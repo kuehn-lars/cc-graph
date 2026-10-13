@@ -1,6 +1,6 @@
 # 03: Edges and positions on screen
 
-**What to build:** The terminal graph draws each node at its stored position, scaled from the 100 × 64 canvas to the raster's columns and twice its rows, and draws each import edge as a line of half-block pixels (`▀`, foreground the top pixel, background the bottom) from cell to cell. In a real session the reference turn's files spread out by folder, linked by their imports, and stay put as new files arrive.
+**What to build:** The terminal graph draws each node at its stored position, scaled from the 100 × 64 canvas to the raster's columns and twice its rows, and draws each import edge as a line of half-block pixels (`▀`, foreground the top pixel, background the bottom; `▄` where only the bottom pixel is lit) from cell to cell. In a real session the reference turn's files spread out by folder, linked by their imports, and stay put as new files arrive.
 
 Requirements: F09-R1 (half blocks), R5 (import edges), R9 (positions from `layout`).
 
