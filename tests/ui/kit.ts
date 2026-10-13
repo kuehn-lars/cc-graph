@@ -70,3 +70,13 @@ export function decode(raster: any): { char: string; fg: number; bg: number }[] 
   const words = new Uint32Array(Uint8Array.from(atob(raster.props.cells), c => c.charCodeAt(0)).buffer)
   return Array.from({ length: words.length / 3 }, (_, i) => ({ char: String.fromCodePoint(words[i * 3]!), fg: words[i * 3 + 1]!, bg: words[i * 3 + 2]! }))
 }
+
+/** The test's own `state.get` hook beneath the mod: `view` is `graph`, and `graph` and `layout` hold these. */
+export function viewLaidOut(on: On, nodes: FileNode[], edges: [string, string][], layout: Record<string, { x: number; y: number }>) {
+  const graph: Graph = {
+    seq: Math.max(...nodes.map(n => n.touched)), files: Object.fromEntries(nodes.map(n => [n.path, n])),
+    edges: edges.map(([from, to]) => ({ from, to, kind: 'import', blind: false, guessed: false })), decisions: [], compactions: [],
+  }
+  const values: Record<string, unknown> = { view: 'graph', graph, layout }
+  on('state.get', async (_$, e: any, next) => (e.key in values ? ({ value: { value: values[e.key], version: 0 } } as any) : next(e)))
+}
