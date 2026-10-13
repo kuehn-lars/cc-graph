@@ -69,7 +69,7 @@ In the terminal the pane draws the graph the way Claude Code draws itself: round
 
 - **F09-AC1** The same nodes and edges give the same positions on two runs.
 - **F09-AC2** Adding one node to a 30-node graph moves no existing node more than 2 units.
-- **F09-AC3** A layout pass over 60 nodes and 120 edges finishes in under 50 ms on CI.
+- **F09-AC3** A layout pass over 60 nodes and 120 edges finishes in under 100 ms on CI.
 - **F09-AC4** On `terminal`, the mounted `Raster`'s `cells` decodes to exactly `columns × rows` cells.
 - **F09-AC5** On `desktop` the terminal renderer is never used.
 - ~~**F09-AC6** Given a changed node whose label would cover the cell of the selected node to its right, only the selected node's label is drawn.~~ Replaced by AC19.
@@ -181,3 +181,4 @@ The `layout` key (`Point` per node id) is unchanged. 02's state table: the termi
 - 2026-10-13 Owner's review of the box build: folders are not shown, two `index.ts` cannot be told apart, the layout scatters, deleted and shell-created files are missing (F07 ticket 01), and the bar is unexplained. Folders as titled frames laid out in layers, importers above, a folder without imports in free space (R30, replacing R25); edges always top down, entering where they cross least and going round a folder in the way, crossing frames at `┼` (R26); edit counts coloured as a diff, `deleted` in the error colour, a focused tag's name in Claude's colour (R24, R27, R29); the legend explains the bar and names `deleted` (R28). AC29 and AC33 amended, AC38 to AC43 added.
 - 2026-10-13 Implemented. Manual check walked by the owner, who approved the box and folder-frame changes. F09-Q1 and Q3 stay open, non-blocking.
 - 2026-10-13 Review of the branch before v0.2: the text follows the build the owner approved. R30 orders a folder's nodes by layer, then left to right (the build never ordered by height); its frame leaves one empty column beside the nodes and no row above or below them; a folder's fallback position names its mapping instead of the struck R25. AC35's first line ends with `━ size`, as R28 and AC43 ask whenever a drawn node has a known size. Approved by the owner; the code is unchanged, so Implemented stands.
+- 2026-10-13 AC3: 50 → 100 ms; CI measured 59 to 68 ms. Approved by the owner; the code is unchanged, so Implemented stands.
