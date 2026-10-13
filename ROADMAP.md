@@ -9,7 +9,7 @@ The specs behind every line are in [`specs/`](specs/README.md). A feature moves 
 | Milestone | Theme | Features | Status |
 | --- | --- | --- | --- |
 | [M0](#m0-foundations) | Foundations | none | Done |
-| [v0.1](#v01-what-claude-knows) | What Claude knows | F01, F02, F03, F04, F08, F14 (`maxNodes`), F15 | Planned |
+| [v0.1](#v01-what-claude-knows) | What Claude knows | F01, F02, F03, F04, F08, F14 (`maxNodes`), F15 | Done |
 | [v0.2](#v02-the-graph) | The graph | F06, F09 | Planned |
 | [v0.3](#v03-blind-spots) | Blind spots | F07, F14 (`blindSpots`) | Planned |
 | [v0.4](#v04-why-it-did-that) | Why it did that | F05, F11, F14 (`captureThinking`, `editorCommand`) | Planned |

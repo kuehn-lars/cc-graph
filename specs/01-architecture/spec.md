@@ -238,7 +238,7 @@ Every release:
 
 People install with `/plugin install cc-graph --marketplace kuehn-lars/cc-graph` and update with `claude plugin update cc-graph@cc-graph`.
 
-Before the first public tag: the README carries a screenshot per surface, the install line, the supported Claude Code versions and the privacy section, and `plugin.json` carries `description`, `author`, `homepage`, `repository` and `license`. At v1.0, once `check-calls.mjs` passes, the plugin is submitted to Anthropic's community catalog. `cc-graph` is permanent after the first release; a rename changes only `displayName`.
+Before the first public tag: the README carries the install line, the supported Claude Code versions and the privacy section, and `plugin.json` carries `description`, `author`, `homepage`, `repository` and `license`. At v1.0, once `check-calls.mjs` passes, the plugin is submitted to Anthropic's community catalog. `cc-graph` is permanent after the first release; a rename changes only `displayName`.
 
 ## Open questions
 
@@ -249,3 +249,4 @@ Before the first public tag: the README carries a screenshot per surface, the in
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added context diagram, decisions D1 to D9, the off-path work queue, the two test seams, strict validation through `check-calls.mjs` with the root `CLAUDE.md` warning as the one accepted exception, and the corrected API surface (`session.measure`, `classic.InstructionsLoaded`, `Read` result kinds, no `Grep` tool, `command.run` answering its own command).
 - 2026-10-12 CI step 2 runs `tsc` through `npx -p typescript@5`. ARCH-Q1 answered by spike S0. Approved by the owner.
+- 2026-10-13 The README screenshots per surface are no longer a condition of the first public tag; they follow in a later release. Approved by the owner.

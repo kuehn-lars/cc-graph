@@ -220,7 +220,7 @@ The largest risk is the Mods API itself: it is early access and moves between re
 
 Feature questions live in their feature specs as `Fxx-Qn`. Spikes that answer them are scheduled in the [roadmap](../../ROADMAP.md#spikes).
 
-- [ ] **REL-Q1** Is `cc-graph` still free in the community catalog when v0.1 goes public? Checked free on 2026-10-11; check again before the first public tag. Does not block: a release check in the v0.1 gate.
+- [x] **REL-Q1** Is `cc-graph` still free in the community catalog when v0.1 goes public? Checked free on 2026-10-11; check again before the first public tag. Does not block: a release check in the v0.1 gate. Checked again by the owner on 2026-10-13: still free.
 - [ ] **REL-Q2** How does a community-listed plugin move past the commit its listing is pinned to? Ask through the submission form before v1.0. Does not block: a release check in the v1.0 gate.
 - [ ] **UX-Q1** Should CC Graph offer to open its pane by itself when the terminal is 144 columns or wider, or only ever on `/graph`? Does not block: F08 opens the pane only on `/graph` until this is decided.
 
@@ -229,3 +229,4 @@ Feature questions live in their feature specs as `Fxx-Qn`. Spikes that answer th
 - 2026-10-11 Draft.
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added problem statement, solution, user stories, success checks and platform facts; principles P2 and P6 tightened; milestones moved to the roadmap.
 - 2026-10-11 Approved by the owner.
+- 2026-10-13 REL-Q1 closed for v0.1: `cc-graph` is still free.

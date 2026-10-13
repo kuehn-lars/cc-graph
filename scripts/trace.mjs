@@ -16,6 +16,9 @@ const tested = new Set()
 for (const f of files('tests', /\.test\.tsx?$/))
   for (const [, id] of readFileSync(f, 'utf8').matchAll(/\b(?:test|it)\(\s*['"`]((?:F\d+-AC|NFR-[A-Z]|RS-)\d+)\b/g))
     tested.add(id)
+// An NFR no test can run is traced by the check that names it: a script's problem message or a CI workflow comment.
+for (const f of [...files('scripts', /\.mjs$/), ...files('.github/workflows', /\.ya?ml$/)])
+  for (const [, id] of readFileSync(f, 'utf8').matchAll(/(?:[`'"]|# )(NFR-[A-Z]\d+):/g)) tested.add(id)
 
 const required = []
 const pending = []

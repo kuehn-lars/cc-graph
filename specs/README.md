@@ -24,7 +24,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 | --- | --- | --- | --- |
 | [F01](features/F01-file-tracking/spec.md) | File tracking: reads, edits, writes, mentions | v0.1 | Verified |
 | [F02](features/F02-search-tracking/spec.md) | Search-only tracking | v0.1 | Verified |
-| [F03](features/F03-context-layer/spec.md) | Context layer: compaction, fill, reset | v0.1 | Implemented |
+| [F03](features/F03-context-layer/spec.md) | Context layer: compaction, fill, reset | v0.1 | Verified |
 | [F04](features/F04-memory-layer/spec.md) | Memory layer | v0.1 | Verified |
 | [F05](features/F05-thinking-layer/spec.md) | Thinking layer | v0.4 | Review |
 | [F06](features/F06-import-edges/spec.md) | Import edges | v0.2 | Review |
@@ -35,7 +35,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 | [F11](features/F11-detail-card/spec.md) | Detail card and actions | v0.4 | Review |
 | [F12](features/F12-decisions/spec.md) | Decisions (opt-in) | v0.6 | Review |
 | [F13](features/F13-timeline/spec.md) | Timeline | v0.6 | Review |
-| [F14](features/F14-settings/spec.md) | Settings | v0.1 | Approved |
+| [F14](features/F14-settings/spec.md) | Settings | v0.1, then one field per milestone | Verified for v0.1 (`maxNodes` only); the other fields follow |
 | [F15](features/F15-subagents/spec.md) | Subagent attribution | v0.1 | Verified |
 
 When and in which order they ship: [ROADMAP.md](../ROADMAP.md).
@@ -83,5 +83,6 @@ An ID is never reused. Once a spec is Approved its IDs are frozen: a dropped req
 ## Traceability
 
 - Every test name starts with the ID it proves: `test('F03-AC4 a compacted node read whole again is read', …)`, `test('NFR-P1 …')`, `test('RS-5 …')`.
+- An NFR whose "Checked by" is `check-calls.mjs` or the CI matrix, which no test can run, is traced by that check naming its ID: a problem message in a script under `scripts/` (`NFR-S1: …`), or a comment in the CI workflow (`# NFR-C1: …`). The ID is followed by a colon.
 - `node scripts/trace.mjs --check` matches criteria against test names and fails when a required one has no test. Required: every `Fxx-ACn` of a feature spec at Implemented or Verified (one marked `(from vX.Y)` right after its ID only from that milestone), and every `NFR-*` and `RS-n` whose milestone (the NFR's "From", the checkpoint's milestone in 04) is at or below the `version` in `plugin.json`. Criteria of Approved specs that are not yet required are listed as pending.
 - Commits name what they implement: `feat(F03): compaction state (F03-AC1..AC4)`. Spec-only commits use `spec(F03): …`.

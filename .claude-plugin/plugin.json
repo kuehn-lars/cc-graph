@@ -1,10 +1,13 @@
 {
   "name": "cc-graph",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "A live graph of what Claude Code knows, read and changed",
   "author": {
     "name": "Lars Kühn"
   },
+  "homepage": "https://github.com/kuehn-lars/cc-graph",
+  "repository": "https://github.com/kuehn-lars/cc-graph",
+  "license": "MIT",
   "types": "./types/index.d.ts",
   "userConfig": {
     "maxNodes": {

@@ -2,7 +2,7 @@
 
 A [Claude Code mod](https://code.claude.com/docs/en/plugins/mods/overview) that draws a live pane beside the conversation: which files Claude read, searched and changed, what is still in its context window, which memory files it works under, what it was thinking, and which code that depends on its changes it never opened.
 
-> **Status: specification.** The design is written and checked against the Claude Code 2.1.296 Mods API; implementation starts with milestone [M0](ROADMAP.md#m0-foundations). There is nothing to install yet.
+> **Status: v0.1.** The list view: what Claude read, searched and changed, what is in its context window, and which memory files are in force. The graph, blind spots and thinking follow in the milestones of the [roadmap](ROADMAP.md).
 
 ## What it answers
 
@@ -32,8 +32,6 @@ CC Graph only watches. Its hooks see tool calls, compactions and the model's str
 Claude Code v2.1.287 or later in the terminal, or the desktop app's Code tab (v2.1.286 or later). Other surfaces run the hooks but draw no mod output.
 
 ## Install
-
-Once v0.1 is released:
 
 ```text
 /plugin install cc-graph --marketplace kuehn-lars/cc-graph
