@@ -123,7 +123,7 @@ declare module 'claude-code' {
 | `compacted` | Was in context before a compaction and was not kept | summary only | Hollow, dimmed | `○` |
 | `unread` | Changed outside Claude's tools and never read | no | Outline with a red ring | `!` |
 
-`read`, `partial` and `search` form the in-context group. A node no main-loop event touched is drawn with a second, dotted outline and the word "agent" ("subagent only", F15). Decisions are violet diamonds `◆` (F12); memory files are squares `■` in their own cluster (F04).
+`read`, `partial` and `search` form the in-context group. The Graph column is the vector graph's (F10); the terminal graph draws each node as its list glyph in one cell (F09). A node no main-loop event touched is drawn in the vector graph with a second, dotted outline, and its list row says "agent" ("subagent only", F15). Decisions are violet diamonds `◆` (F12); memory files are squares `■` in their own cluster (F04).
 
 ## Changes
 
@@ -193,3 +193,4 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 F02 ticketing: `readId` also holds a search node's latest search call; search hits and tokens add up per call and restart from `compacted`; tool-result clearing named as a known limit under Estimates. Approved by the owner.
 - 2026-10-12 F15 ticketing: I4 maps an agent's worktree copy onto the repository's path.
+- 2026-10-13 F09 ticketing: the Graph column and the subagent outline are the vector graph's; the terminal graph draws the list glyph. Approved by the owner.
