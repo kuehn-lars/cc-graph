@@ -17,7 +17,7 @@ One `claude -p` run whose prompt spells out the reads in order: `src/auth/passwo
 
 **Status:** ready-for-agent
 
-- [ ] The fixture recorded from a real run, nothing edited
-- [ ] README section: how to record again, how the run differed
-- [ ] No personal text in the fixture
-- [ ] The check command passes
+- [x] The fixture recorded from a real run, nothing edited
+- [x] README section: how to record again, how the run differed
+- [x] No personal text in the fixture
+- [x] The check command passes
