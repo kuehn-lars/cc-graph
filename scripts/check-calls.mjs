@@ -30,7 +30,7 @@ for (const entry of [report.manifest, ...report.contents]) {
   for (const g of entry.gatingHooks)
     if (!g.hasCatch) problems.push(`NFR-R1: gating hook without .catch: ${g.module} ${g.hook}`)
   for (const note of entry.notes) {
-    const calls = note.match(/ calls: (\$.*)$/)?.[1].split(', ').map(c => c.replace(/ \(via .*\)$/, '')) ?? []
+    const calls = note.match(/ calls: (\$.*)$/)?.[1].split(/, (?=\$)/).map(c => c.replace(/ \(via .*\)$/, '')) ?? []
     for (const call of calls) if (!ALLOWED.has(call)) problems.push(`NFR-S1: ${call} is not on the allowlist`)
     if (/ hooks: .*\btelemetry\.| hooks telemetry for: /.test(note)) problems.push(`NFR-S3: ${note}`)
   }
