@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F06, F08, F14 |
+| Approved | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F06, F08, F14 |
 
 ## Problem
 
@@ -103,8 +103,8 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 
 ## Open questions
 
-- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's. Not observed in spike S1 ([spike-s1.md](../F03-context-layer/spike-s1.md)): a file read whole and then changed outside Claude raised no `edited_text_file` in 2.1.296, headless or interactive, and the transcript held none either. F07-R7 is unconfirmed until a run shows the attachment. Untried: a connected IDE, a change other than an append, a file read with a range.
-- [ ] **F07-Q2** Can the `Bash` result's per-command change list (`bashEditDiff.changedFiles`, typed `@internal` in 2.1.296, "for rendering and for PostToolUse Bash hooks") replace the `git status` baseline? It would catch re-changed files and need no `git`. Spike S4: record it for `npm install`, a formatter and `rm` in `fixtures/sample-app`, then decide; an internal field is only used behind a fallback.
+- [ ] **F07-Q1** Does the `edited_text_file` attachment's text name the path in a stable form? If not, the mod matches the text against known nodes. Spike S1 records real attachments next to F03's. Not observed in spike S1 ([spike-s1.md](../F03-context-layer/spike-s1.md)): a file read whole and then changed outside Claude raised no `edited_text_file` in 2.1.296, headless or interactive, and the transcript held none either. F07-R7 is unconfirmed until a run shows the attachment. Untried: a connected IDE, a change other than an append, a file read with a range. Not blocking: R7 alone waits on it, and it ships with v0.3.
+- [ ] **F07-Q2** Can the `Bash` result's per-command change list (`bashEditDiff.changedFiles`, typed `@internal` in 2.1.296, "for rendering and for PostToolUse Bash hooks") replace the `git status` baseline? It would catch re-changed files and need no `git`. Spike S4: record it for `npm install`, a formatter and `rm` in `fixtures/sample-app`, then decide; an internal field is only used behind a fallback. Not blocking: the `git status` baseline (R5, R6) stands either way; it is decided during v0.3 (spike S4).
 
 ## Changelog
 
@@ -112,3 +112,5 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 - 2026-10-11 Review. Added the repository-root step, hit confirmation, clearing blind edges, baseline refresh at `turn.start`, change precedence, the off-path queue, the timeout note, the `blindSpots` switch, and the known re-change limit with spike S4.
 - 2026-10-12 F07-Q1 stays open: spike S1 saw no `edited_text_file`, so F07-R7 is unconfirmed in 2.1.296.
 - 2026-10-13 Shell changes pulled into v0.2 at the owner's request, after the F09 manual check showed files Claude created and deleted with `rm` and `printf >` missing from the graph: R1 says "Shell changes need git"; R6 tells a command's creations and deletions from other changes (`created`, `deleted`, `blind`), counts an untracked file gone as deleted, and leaves Claude's own changes alone; AC12 to AC15 added. R1, R5, R6 and R8 ship with v0.2 as ticket 01; the import search (R2 to R4), the attachment (R7), the timeout note (R9), the footer list (R10) and the `blindSpots` switch (R12) stay with v0.3. Back to Review.
+- 2026-10-13 Approved by the owner. F07-Q1 and Q2 marked not blocking: R7 waits on Q1 and ships with v0.3, and Q2 would only replace the baseline R5 and R6 already define. Shell changes (R1, R5, R6, R8, R11; AC2, AC12 to AC15) ship with v0.2; the rest with v0.3.
+- 2026-10-13 Ticket 01 (shell changes): manual check walked by the owner and approved; ticket deleted. The spec stays Approved until the rest ships with v0.3.
