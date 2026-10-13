@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.2 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F04, F06, F08 |
+| Verified | v0.2 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F04, F06, F08 |
 
 ## Problem
 
@@ -182,3 +182,4 @@ The `layout` key (`Point` per node id) is unchanged. 02's state table: the termi
 - 2026-10-13 Implemented. Manual check walked by the owner, who approved the box and folder-frame changes. F09-Q1 and Q3 stay open, non-blocking.
 - 2026-10-13 Review of the branch before v0.2: the text follows the build the owner approved. R30 orders a folder's nodes by layer, then left to right (the build never ordered by height); its frame leaves one empty column beside the nodes and no row above or below them; a folder's fallback position names its mapping instead of the struck R25. AC35's first line ends with `━ size`, as R28 and AC43 ask whenever a drawn node has a known size. Approved by the owner; the code is unchanged, so Implemented stands.
 - 2026-10-13 AC3: 50 → 100 ms; CI measured 59 to 68 ms. Approved by the owner; the code is unchanged, so Implemented stands.
+- 2026-10-14 Verified. CI is green on PR #13.
