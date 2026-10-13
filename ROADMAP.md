@@ -49,7 +49,7 @@ A list view that says, for every file, what Claude saw of it, what is in context
 
 ## v0.2 The graph
 
-Import edges from text Claude already saw, in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder and stable as it grows.
+Import edges from text Claude already saw, in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder and stable as it grows. Files a shell command created, deleted or changed show too (F07 ticket 01, pulled forward at the owner's request; the rest of F07 stays in v0.3).
 
 **Exit gate:** every criterion of F06, F09 and F14 (`importEdges`); NFR-P3, P4 and A3; the reference session's first turn draws in the terminal with its import edges and ghosts.
 
