@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.2 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F09, F14 |
+| Implemented | v0.2 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F09, F14 |
 
 ## Problem
 
@@ -112,3 +112,4 @@ Adds `Edge` with `kind: 'import'` and `guessed`, and the `ghost` state for impor
 - 2026-10-13 Approved by the owner. F06-Q2 stays open, not blocking.
 - 2026-10-13 R6 clarified during F06-04: "already a node" means a node other than a ghost, so a repeat import of a guess stays `guessed` (user story 5). F06-Q3 opened.
 - 2026-10-13 R3 after the branch review: `.js` tries `.tsx` after `.ts` (as TypeScript resolves it), the `.jsx`, `.mjs` and `.cjs` twins named, an extension of no language (`./styles.css`) links only to an existing node instead of guessing `styles.css.ts`, and a candidate outside the working directory stays absolute instead of being dropped. A language entry has no name.
+- 2026-10-13 Implemented. Manual check walked by the owner.
