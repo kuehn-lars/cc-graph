@@ -1,4 +1,5 @@
 import readWhole from '../../fixtures/tool-results/read-whole'
+import reference from '../../fixtures/sessions/reference'
 import { expect, test } from 'claude-code/testing'
 import { engine, graphOf, start, writes } from './kit'
 
@@ -67,4 +68,60 @@ test('F06-AC4 reading a file with imports makes no fs call', async ($, on) => {
   await start($)
   await read($, login)
   expect(seen).toEqual([])
+})
+
+// The recorded Write of rateLimit.ts (step 6) and Edit of login.ts (step 8) in the reference session.
+const recorded = (step: number) => {
+  const row = reference.events.find(c => c.event === 'tool.call' && c.process === 1 && c.step === step)!
+  return { tool: row.input.tool, tool_use_id: row.input.tool_use_id, input: row.input, result: row.result.result } as any
+}
+const write = recorded(6)
+const edit = recorded(8)
+
+test('F06-AC8 the recorded Edit of login.ts that adds ../middleware/rateLimit links to rateLimit.ts', async ($, on) => {
+  engine(on, edit)
+  await start($)
+  await $.tool.call({ ...edit.input, file_path: '/w/src/auth/login.ts' })
+  expect(await edgesOf()).toContainEqual({ from: 'src/auth/login.ts', to: 'src/middleware/rateLimit.ts', kind: 'import', blind: false, guessed: true })
+  expect((await graphOf())!.files['src/middleware/rateLimit.ts']).toMatchObject({ state: 'ghost' })
+})
+
+test('F06-AC2 the recorded Write of rateLimit.ts adds no edge and no node for rate-limiter-flexible', async ($, on) => {
+  engine(on, write)
+  await start($)
+  await $.tool.call({ ...write.input, file_path: '/w/src/middleware/rateLimit.ts' })
+  expect(await edgesOf()).toEqual([])
+  expect(Object.keys((await graphOf())!.files)).toEqual(['src/middleware/rateLimit.ts'])
+})
+
+test('F06-AC5 (derived) a 300,000-character Read result adds no edge', async ($, on) => {
+  const content = "import './password'\n" + 'x'.repeat(300_000)
+  engine(on, { ...readWhole, result: { ...readWhole.result, file: { ...readWhole.result.file, content } } })
+  await start($)
+  await read($, login)
+  expect(await edgesOf()).toEqual([])
+})
+
+const big = "import './password'\n" + 'x'.repeat(200_000) // 200,019 characters
+
+test('F06-R9 a Write over 200,000 characters adds no edge', async ($, on) => {
+  engine(on, { ...write, result: { ...write.result, content: big } })
+  await start($)
+  await $.tool.call({ ...write.input, file_path: login })
+  expect(await edgesOf()).toEqual([])
+})
+
+test('F06-R9 an Edit over 200,000 characters adds no edge', async ($, on) => {
+  engine(on, { ...edit, result: { ...edit.result, newString: big } })
+  await start($)
+  await $.tool.call({ ...edit.input, file_path: login })
+  expect(await edgesOf()).toEqual([])
+})
+
+test('F06-R9 a Write of exactly 200,000 characters is still parsed', async ($, on) => {
+  const content = "import './password'\n".padEnd(200_000, 'x')
+  engine(on, { ...write, result: { ...write.result, content } })
+  await start($)
+  await $.tool.call({ ...write.input, file_path: login })
+  expect(await edgesOf()).toHaveLength(1)
 })

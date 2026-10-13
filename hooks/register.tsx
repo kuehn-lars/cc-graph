@@ -86,8 +86,8 @@ const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
 const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r, cwd),
-  Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r), e.file_path),
-  Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r), e.file_path),
+  Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd), e.file_path),
+  Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
   Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
 }
