@@ -1,7 +1,7 @@
 // Pure: the one way a reducer touches a node (F01-R9). Every file action goes through here.
 import type { FileNode, Graph } from '../../types'
 
-export const fresh = (path: string, turn: number): FileNode => ({
+const fresh = (path: string, turn: number): FileNode => ({
   path, state: 'ghost', change: null, reason: null, tokens: null, seen: '', hits: 0, added: 0, removed: 0,
   line: null, readId: null, agents: [], mainLoop: true, firstTurn: turn, lastTurn: turn, touched: 0,
 })
@@ -26,6 +26,10 @@ export function touch(g: Graph, path: string, turn: number, patch: (old: FileNod
   const node = { ...(old ?? fresh(path, turn)), ...patch(old), ...(owner && owned(owner)), ...who, path, lastTurn: turn, touched: seq }
   return { ...g, seq, files: { ...g.files, [path]: node } }
 }
+
+/** F06-R7: a node for a file nobody has opened. Nobody holds it (`mainLoop` false, no agents), and it shares the event's `seq` rather than bumping it. */
+export const ghost = (g: Graph, path: string, turn: number): Graph =>
+  g.files[path] ? g : { ...g, files: { ...g.files, [path]: { ...fresh(path, turn), mainLoop: false, touched: g.seq } } }
 
 /** F15-R9: a change in a worktree says so, unless this tree already has a change of its own (`change` set, `reason` null). */
 export const worktreeReason = (old: FileNode | undefined, worktree?: string): string | null =>

@@ -72,6 +72,11 @@ test('F06-AC9 import x from \'@/lib/x\' has no candidates: no edge, no node (F06
   for (const s of ['@/lib/x', '~/x', '#internal']) expect(ts(s)).toEqual([])
 })
 
+test('F06-R10 a file importing itself resolves to its own path first, so the reducer can drop it', () => {
+  expect(ts('./login')[0]).toBe('src/auth/login.ts')
+  expect(ts('./login.ts')).toEqual(['src/auth/login.ts'])
+})
+
 test('F06-R3 a specifier that climbs out of the working folder has no candidates', () => {
   expect(ts('../../x', 'src/a.ts')).toEqual([])
 })
