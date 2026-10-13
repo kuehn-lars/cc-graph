@@ -10,7 +10,7 @@ The specs behind every line are in [`specs/`](specs/README.md). A feature moves 
 | --- | --- | --- | --- |
 | [M0](#m0-foundations) | Foundations | none | Done |
 | [v0.1](#v01-what-claude-knows) | What Claude knows | F01, F02, F03, F04, F08, F14 (`maxNodes`), F15 | Done |
-| [v0.2](#v02-the-graph) | The graph | F06, F09 | Planned |
+| [v0.2](#v02-the-graph) | The graph | F06, F09, F14 (`importEdges`) | Planned |
 | [v0.3](#v03-blind-spots) | Blind spots | F07, F14 (`blindSpots`) | Planned |
 | [v0.4](#v04-why-it-did-that) | Why it did that | F05, F11, F14 (`captureThinking`, `editorCommand`) | Planned |
 | [v0.5](#v05-desktop-graph-and-pointer) | Desktop graph and pointer | F10 | Planned |
@@ -49,9 +49,9 @@ A list view that says, for every file, what Claude saw of it, what is in context
 
 ## v0.2 The graph
 
-Import edges from text Claude already saw, and the terminal graph that draws them, laid out by folder and stable as it grows.
+Import edges from text Claude already saw, in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder and stable as it grows.
 
-**Exit gate:** every criterion of F06 and F09; NFR-P3, P4 and A3; the reference session's first turn draws in the terminal with its import edges and ghosts.
+**Exit gate:** every criterion of F06, F09 and F14 (`importEdges`); NFR-P3, P4 and A3; the reference session's first turn draws in the terminal with its import edges and ghosts.
 
 ## v0.3 Blind spots
 
