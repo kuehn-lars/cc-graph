@@ -8,9 +8,9 @@ Requirements: F09-R1 (half blocks), R5 (import edges), R9 (positions from `layou
 
 **Touches:** `render` (the raster renderer).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Given `layout` places two nodes apart and an edge joins them, the decoded cells between them hold half blocks and both glyphs stay drawn on top
-- [ ] A node with a position is drawn there; one without is drawn at its folder's seed point
-- [ ] NFR-P3 a render of 60 nodes and 120 edges builds its tree in under 16 ms on each surface (benchmark through `$.ui.mount`)
-- [ ] The check command passes
+- [x] Given `layout` places two nodes apart and an edge joins them, the decoded cells between them hold half blocks and both glyphs stay drawn on top
+- [x] A node with a position is drawn there; one without is drawn at its folder's seed point
+- [x] NFR-P3 a render of 60 nodes and 120 edges builds its tree in under 16 ms on each surface (benchmark through `$.ui.mount`)
+- [x] The check command passes

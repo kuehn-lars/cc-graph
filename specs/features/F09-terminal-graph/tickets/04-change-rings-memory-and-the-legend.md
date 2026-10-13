@@ -8,11 +8,11 @@ Requirements: F09-R1 (legend row), R5 (rings, memory row), R8, R10; NFR-A3.
 
 **Touches:** `render` (raster renderer, legend, list rows).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F09-AC8 the reference session after step 8: the legend names `●`, `◐`, `◌`, `■` and the amber and green rings, and none of `○`, `!`, `⋯`, `◆` or the blind edge
-- [ ] F09-AC10 after step 2: `login.ts`'s row ends with "imports 2"; `password.ts` and `sessions.ts` say "imported by login.ts"
-- [ ] NFR-A3 on the reference session after step 8, every node, state, change, memory file and edge the graph draws has its list row or row word
-- [ ] A legend wider than `bodyColumns` is cut and closed by "…", as the list's lines are
-- [ ] The F08 row tests still pass (widths, "…" cuts)
-- [ ] The check command passes
+- [x] F09-AC8 the reference session after step 8: the legend names `●`, `◐`, `◌`, `■` and the amber and green rings, and none of `○`, `!`, `⋯`, `◆` or the blind edge
+- [x] F09-AC10 after step 2: `login.ts`'s row ends with "imports 2"; `password.ts` and `sessions.ts` say "imported by login.ts"
+- [x] NFR-A3 on the reference session after step 8, every node, state, change, memory file and edge the graph draws has its list row or row word
+- [x] A legend wider than `bodyColumns` is cut and closed by "…", as the list's lines are
+- [x] The F08 row tests still pass (widths, "…" cuts)
+- [x] The check command passes

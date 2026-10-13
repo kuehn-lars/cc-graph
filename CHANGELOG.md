@@ -4,7 +4,7 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 
 ## Unreleased
 
-F06 import edges are in the graph state; the terminal graph that draws them (F09) follows, and F06's manual check waits for it. Until then a ghost shows as a `⋯` row in the list view and edges are not drawn.
+F06 import edges are in the graph state, and the terminal graph (F09) now draws them. On other surfaces a ghost is a `⋯` row in the list, and its row names its importer. F06's manual check waits for F09's (ticket 07).
 
 - F09 layout: when a write adds or removes nodes or edges, one pass runs after the hook has returned and stores every node's position in `layout`. Files of a folder start around the folder's seed point, offset by a hash of their path; a pass is deterministic, takes at most 200 iterations and moves no node more than 2 units; positions of evicted nodes are dropped, and `/clear` empties `layout` (F09-AC1..AC3, AC12, R3, R4, F03-R7, NFR-P4).
 - F09 queue: slow work is enqueued and drained by one coalesced `$.clock.after` callback, one job at a time, a failing job dropped (D5). At most one layout pass waits at a time; F07's `git` jobs will use the same queue.
