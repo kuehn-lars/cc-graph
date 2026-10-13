@@ -18,3 +18,10 @@ export function seedPoint(folder: string): Point {
   const h = hash(folder)
   return { x: 5 + (h % 9000) / 100, y: 4 + ((h >>> 12) % 5600) / 100 }
 }
+
+/** F09-R3: where a new node starts: its folder's seed point, offset by a hash of its path (up to 3 units each way) so no two new nodes share a point. */
+export function startPoint(path: string): Point {
+  const s = seedPoint(folderOf(path))
+  const h = hash(path)
+  return { x: s.x + ((h % 600) - 300) / 100, y: s.y + (((h >>> 10) % 600) - 300) / 100 }
+}

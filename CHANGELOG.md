@@ -6,6 +6,9 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 
 F06 import edges are in the graph state; the terminal graph that draws them (F09) follows, and F06's manual check waits for it. Until then a ghost shows as a `⋯` row in the list view and edges are not drawn.
 
+- F09 layout: when a write adds or removes nodes or edges, one pass runs after the hook has returned and stores every node's position in `layout`. Files of a folder start around the folder's seed point, offset by a hash of their path; a pass is deterministic, takes at most 200 iterations and moves no node more than 2 units; positions of evicted nodes are dropped, and `/clear` empties `layout` (F09-AC1..AC3, AC12, R3, R4, F03-R7, NFR-P4).
+- F09 queue: slow work is enqueued and drained by one coalesced `$.clock.after` callback, one job at a time, a failing job dropped (D5). At most one layout pass waits at a time; F07's `git` jobs will use the same queue.
+
 - F06 import edges: a successful text `Read`, `Write` or `Edit` links the file to the files it imports, parsed from `file.content`, `content` and `newString`. The node, its edges and its ghosts land in one write of `graph`, under the same eviction cap (F06-AC1, AC8, R1, I5, I9). The mod reads no file to find them (F06-AC4, R8).
 - F06 import edges: an imported file with no node becomes a `ghost`, held by nobody (`mainLoop: false`, no agents). An existing node keeps its state (F06-R7).
 - F06 import edges: one edge per pair of files, none from a file to itself, and none removed; a second read of `login.ts` adds nothing (F06-AC10, R10).

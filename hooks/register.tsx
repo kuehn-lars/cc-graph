@@ -1,4 +1,5 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
+import { layout, reshaped } from './layout'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
@@ -24,6 +25,7 @@ const SELECTED = { plugin: 'cc-graph', key: 'selected' } as const
 const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
 const NOTES = { plugin: 'cc-graph', key: 'notes' } as const
+const LAYOUT = { plugin: 'cc-graph', key: 'layout' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -34,10 +36,37 @@ const resetState = async ($: StateDollar) => {
   await update($, AGENTS, () => ({}))
   await update($, MEMORY, () => [])
   await update($, NOTES, () => [])
+  await update($, LAYOUT, () => ({}))
   named.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
+
+// D5: slow work runs off the hook's return path. Hooks enqueue; one coalesced `$.clock.after` callback drains the queue, one job at a time, and a failing job is dropped. F07 adds its jobs here.
+const QUEUE_DELAY_MS = 20
+const jobs: (() => Promise<void>)[] = []
+let draining = false
+function enqueue($: Pick<CoreEngineInterface, 'clock'>, job: () => Promise<void>) {
+  jobs.push(job)
+  if (draining) return
+  draining = true
+  $.clock.after(QUEUE_DELAY_MS, async () => {
+    draining = false // a job that enqueues schedules the next drain
+    for (const next of jobs.splice(0)) await next().catch(() => {})
+  })
+}
+
+// F09-R4: at most one layout pass waits in the queue; it reads the graph when it runs, so it lays out the latest.
+let layoutQueued = false
+const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
+  if (layoutQueued) return
+  layoutQueued = true
+  enqueue($, async () => {
+    layoutQueued = false
+    const graph = await readGraph($)
+    await update($, LAYOUT, previous => layout(previous ?? {}, graph))
+  })
+}
 
 const readGraph = async ($: StateDollar) => (await read($, GRAPH)) ?? emptyGraph
 // F04-R1, R2: the memory files the summary breakdown lists (never 'full', which costs a request per file). No breakdown, or no answer, no change; a throw here would run the handlers beneath twice (the hook's .catch).
@@ -63,15 +92,17 @@ async function nameAgent($: Pick<CoreEngineInterface, 'state' | 'agent'>, id: st
 }
 
 // F15-R1: an action of a call that names an agent carries its id, and a touched node asks for the agent's name (R4).
-async function record($: Pick<CoreEngineInterface, 'state' | 'agent'>, action: FileAction, agentId?: string) {
+async function record($: Pick<CoreEngineInterface, 'state' | 'agent' | 'clock'>, action: FileAction, agentId?: string) {
   await apply($, agentId ? { ...action, agentId } : action)
   if (agentId) await nameAgent($, agentId)
 }
 
 // One action -> one update of `graph` (I9). The turn is read first; reducers stay pure.
-async function apply($: StateDollar, action: Action) {
+async function apply($: StateDollar & Pick<CoreEngineInterface, 'clock'>, action: Action) {
   const turn = (await read($, TURN)) ?? 0
-  const graph = await update($, GRAPH, g => evict(reduce(g, action, turn), maxNodes)) // I5: the cap is held in the same write
+  let before = emptyGraph
+  const graph = await update($, GRAPH, g => ((before = g ?? emptyGraph), evict(reduce(g, action, turn), maxNodes))) // I5: the cap is held in the same write
+  if (reshaped(before, graph)) queueLayout($)
   // I5: what could not be evicted is said in the footer. A write of `notes` only when the note changes.
   const files = Object.keys(graph.files).length
   const notes = (await read($, NOTES)) ?? []
