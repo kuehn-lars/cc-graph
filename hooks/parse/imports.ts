@@ -1,3 +1,5 @@
+import type { ImportTarget } from '../model/imports'
+
 // Pure: F06. The imports of a text Claude's own tool result carried, one entry per language (F06 Implementation decisions).
 type Language = {
   name: string
@@ -6,6 +8,8 @@ type Language = {
   specifiers: (text: string) => string[]
   /** Ordered candidate paths for one specifier, relative to `workingDir` like the importer; none for a specifier the language does not link. */
   candidatesFor: (specifier: string, importer: string, workingDir: string) => string[]
+  /** True for a specifier that may only link to a node that already exists (F06-R4). */
+  existingOnly?: (specifier: string) => boolean
 }
 
 const TS_FAMILY = ['.ts', '.tsx', '.mts', '.cts']
@@ -55,7 +59,33 @@ function join(dir: string, spec: string): string | null {
   return root + out.join('/')
 }
 
-const languages: Language[] = [typescript]
+// Left to right like TS_TOKENS; statements start a line. Groups: 1 `from` module, 2|3 its names, 4 `import` list.
+const PY_TOKENS = new RegExp([
+  String.raw`#[^\n]*`,
+  String.raw`"""[\s\S]*?"""|'''[\s\S]*?'''`,
+  String.raw`"(?:\\.|[^"\\\n])*"|'(?:\\.|[^'\\\n])*'`,
+  String.raw`^[ \t]*from[ \t]+(\.*[A-Za-z_][\w.]*|\.+)[ \t]+import[ \t]*(?:\(([^)]*)\)|([^\n#;]*))`,
+  String.raw`^[ \t]*import[ \t]+([^\n#;]*)`,
+].join('|'), 'gm')
+
+/** The first word of each comma-separated item (`a as b, c` gives `a`, `c`), comments dropped; `*` gives none. */
+const pyNames = (list: string) =>
+  list.replace(/#[^\n]*/g, '').split(',').flatMap(i => /^\s*([A-Za-z_][\w.]*)/.exec(i)?.[1] ?? [])
+
+const python: Language = {
+  name: 'Python',
+  extensions: ['.py'],
+  specifiers: text => [...text.matchAll(PY_TOKENS)].flatMap(m =>
+    m[1] === undefined ? pyNames(m[4] ?? '') : /^\.+$/.test(m[1]) ? pyNames(m[2] ?? m[3] ?? '').map(n => m[1] + n) : [m[1]]), // `from . import x` names the module `.x`
+  candidatesFor(spec, importer, _workingDir) {
+    const dots = /^\.*/.exec(spec)![0].length
+    const base = dots ? join(dirOf(importer), '../'.repeat(dots - 1) + spec.slice(dots).replace(/\./g, '/')) : spec.replace(/\./g, '/')
+    return base ? [base + '.py', base + '/__init__.py'] : []
+  },
+  existingOnly: spec => !spec.startsWith('.'),
+}
+
+const languages: Language[] = [typescript, python]
 const MAX_CHARS = 200_000 // F06-R9
 
 const languageOf = (path: string) => languages.find(l => l.extensions.includes(extOf(path)))
@@ -68,6 +98,10 @@ export const importsIn = (text: string, path: string): string[] =>
 export const candidatesFor = (specifier: string, importer: string, workingDir: string): string[] =>
   languageOf(importer)?.candidatesFor(specifier, importer, workingDir) ?? []
 
-/** The candidate lists of every linkable import in `text`, one list per specifier. */
-export const importCandidates = (text: string, importer: string, workingDir: string): string[][] =>
-  importsIn(text, importer).map(s => candidatesFor(s, importer, workingDir)).filter(c => c.length > 0)
+/** The candidates of every linkable import in `text`, one per specifier. */
+export const importCandidates = (text: string, importer: string, workingDir: string): ImportTarget[] => {
+  const lang = languageOf(importer)
+  return importsIn(text, importer)
+    .map(s => ({ candidates: candidatesFor(s, importer, workingDir), ...(lang?.existingOnly?.(s) && { existing: true }) }))
+    .filter(t => t.candidates.length > 0)
+}

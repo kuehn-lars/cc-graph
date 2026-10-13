@@ -1,9 +1,9 @@
 // Pure: a Read lands in the graph (F01-R1, F01-R3).
 import type { Graph, NodeState } from '../../types'
-import { withImports } from './imports'
+import { withImports, type ImportTarget } from './imports'
 import { touch } from './node'
 
-export type FileRead = { type: 'fileRead'; path: string; state: Extract<NodeState, 'read' | 'partial'>; tokens: number | null; seen: string; readId: string; imports?: string[][]; agentId?: string }
+export type FileRead = { type: 'fileRead'; path: string; state: Extract<NodeState, 'read' | 'partial'>; tokens: number | null; seen: string; readId: string; imports?: ImportTarget[]; agentId?: string }
 
 export type FileUnchanged = { type: 'fileUnchanged'; path: string; agentId?: string }
 

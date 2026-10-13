@@ -1,9 +1,9 @@
 // Pure: a successful Edit or NotebookEdit lands in the graph (F01-R4, F01-R5).
 import type { Graph } from '../../types'
-import { withImports } from './imports'
+import { withImports, type ImportTarget } from './imports'
 import { touch, worktreeReason } from './node'
 
-export type FileEdited = { type: 'fileEdited'; path: string; added: number; removed: number; line: number | null; imports?: string[][]; worktree?: string; agentId?: string }
+export type FileEdited = { type: 'fileEdited'; path: string; added: number; removed: number; line: number | null; imports?: ImportTarget[]; worktree?: string; agentId?: string }
 
 export const fileEdited = (g: Graph, a: FileEdited, turn: number): Graph =>
   withImports(touch(g, a.path, turn, old => ({

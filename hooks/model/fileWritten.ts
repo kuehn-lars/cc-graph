@@ -1,9 +1,9 @@
 // Pure: a successful Write lands in the graph (F01-R6).
 import type { Graph } from '../../types'
-import { withImports } from './imports'
+import { withImports, type ImportTarget } from './imports'
 import { touch, worktreeReason } from './node'
 
-export type FileWritten = { type: 'fileWritten'; path: string; created: boolean; tokens: number; added: number; removed: number; line: number; imports?: string[][]; worktree?: string; agentId?: string }
+export type FileWritten = { type: 'fileWritten'; path: string; created: boolean; tokens: number; added: number; removed: number; line: number; imports?: ImportTarget[]; worktree?: string; agentId?: string }
 
 export const fileWritten = (g: Graph, a: FileWritten, turn: number): Graph =>
   withImports(touch(g, a.path, turn, old => ({

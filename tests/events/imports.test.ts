@@ -169,3 +169,33 @@ test('F06-R6 a ghost of another family does not pull a TypeScript importer off i
   await replayAll($, on, only('src/a.ts'))
   expect(await edgesOf()).toEqual([{ from: 'src/a.ts', to: 'src/util.ts', kind: 'import', blind: false, guessed: true }])
 })
+
+// Ticket 05: Python. The recorded read of app/views.py holds `from .models import User`, `from . import models` and `import app.models`.
+test('F06-AC3 the recorded read of app/views.py links app/models.py: one guessed edge, a ghost, nothing for import app.models', async ($, on) => {
+  await replayAll($, on, only('app/views.py'))
+  expect(await edgesOf()).toEqual([{ from: 'app/views.py', to: 'app/models.py', kind: 'import', blind: false, guessed: true }])
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['app/models.py', 'app/views.py'])
+  expect((await graphOf())!.files['app/models.py']).toMatchObject({ state: 'ghost' })
+})
+
+test('F06-R4 app/models.py already read: the edge points to it, not guessed', async ($, on) => {
+  await replayAll($, on, only('app/models.py', 'app/views.py'))
+  expect(await edgesOf()).toEqual([{ from: 'app/views.py', to: 'app/models.py', kind: 'import', blind: false, guessed: false }])
+})
+
+test('F06-R4 import app.models alone links only to an existing node', async ($, on) => {
+  const text = 'import app.models\nimport os\n'
+  const row = mixed.events.find(r => r.event === 'tool.call' && r.input.file_path?.endsWith('app/views.py'))! as any
+  const fixture = { tool: 'Read', tool_use_id: row.input.tool_use_id, input: row.input, result: { ...row.result.result, file: { ...row.result.result.file, content: text } } } // DERIVED: the recorded result with other content
+  engine(on, fixture)
+  await start($)
+  await read($, '/w/app/views.py')
+  expect(await edgesOf()).toEqual([])
+  expect(Object.keys((await graphOf())!.files)).toEqual(['app/views.py'])
+})
+
+test('F06-AC11 the recorded read of docs/usage.md adds no edge and no node', async ($, on) => {
+  await replayAll($, on, only('docs/usage.md'))
+  expect(await edgesOf()).toEqual([])
+  expect(Object.keys((await graphOf())!.files)).toEqual(['docs/usage.md'])
+})
