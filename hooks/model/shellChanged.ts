@@ -1,5 +1,5 @@
 // Pure: what a shell command did to files, from git's status around it (F07-R6).
-import type { Change, Graph } from '../../types'
+import type { Graph } from '../../types'
 import type { ShellChange } from '../parse/status'
 import { touch } from './node'
 
@@ -22,7 +22,7 @@ export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
     if (keep) return g
     return touch(g, path, turn, o => ({
       ...(!o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
-      change: change as Change,
-      reason: `${change === 'deleted' ? 'deleted' : change === 'created' ? 'created' : 'changed'} by \`${cut(a.command)}\``,
+      change,
+      reason: `${change === 'blind' ? 'changed' : change} by \`${cut(a.command)}\``,
     }))
   }, g)
