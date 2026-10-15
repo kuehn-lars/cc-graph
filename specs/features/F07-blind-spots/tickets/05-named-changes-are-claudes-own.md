@@ -8,7 +8,7 @@ Requirements: F07-R17.
 
 **Touches:** `parse` (status: named paths), `model` (shellChanged), `render` (palette: edited without counts).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC22
 - [x] The check command passes

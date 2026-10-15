@@ -8,7 +8,7 @@ Requirements: None (prefactor for F07-R17, R19).
 
 **Touches:** `parse` (search, a new shell module).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F02's tests pass unchanged
 - [x] The check command passes

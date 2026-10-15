@@ -8,7 +8,7 @@ Requirements: F07-R15, R16.
 
 **Touches:** `parse` (status: skip `.claude/worktrees/`), the wiring (a baseline per tree).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC20, AC21
 - [x] The check command passes

@@ -8,7 +8,7 @@ Requirements: F07-R9 (R1 as shipped).
 
 **Touches:** The wiring (the queue's failure path), `model` (notes).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC4, AC5
 - [x] The check command passes

@@ -10,7 +10,7 @@ Requirements: F07-R13 (and R5, R6 as shipped).
 
 **Touches:** The wiring (the baseline queue).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC16
 - [x] F07-AC3, AC10 (pass on arrival)

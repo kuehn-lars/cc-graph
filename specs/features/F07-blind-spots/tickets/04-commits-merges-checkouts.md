@@ -8,7 +8,7 @@ Requirements: F07-R11, R14; NFR-S5, NFR-P6.
 
 **Touches:** `parse` (a `--name-status -z` parser, `shellChanges` with the diff), the wiring (`HEAD` in the baseline), `scripts/check-calls.mjs`.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC17, AC18, AC19
 - [x] Unit tests for the name-status parser

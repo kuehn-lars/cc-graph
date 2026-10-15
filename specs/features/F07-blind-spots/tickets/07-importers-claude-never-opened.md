@@ -8,7 +8,7 @@ Requirements: F07-R2, R3, R4, R10.
 
 **Touches:** `parse` (pattern builder, `git grep` line parser), `model` (importers, clearing `blind`), `render` (the Blind spots section), the wiring.
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC1, AC7, AC8, AC9, AC11
 - [x] Unit tests for the pattern builder (escaped names) and the grep parser

@@ -10,7 +10,7 @@ Requirements: F07-R18, R19.
 
 **Touches:** `parse` (a shell-read parser beside search), `model` (a Bash call's reads and search as one action), the wiring (the Bash parser, the read-only skip).
 
-**Status:** ready-for-agent
+**Status:** done
 
 - [x] F07-AC23, AC24, AC25
 - [x] Unit tests: which segment reads which file
