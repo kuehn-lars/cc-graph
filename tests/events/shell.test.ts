@@ -11,14 +11,21 @@ const recorded = reference.events.find(e => e.event === 'tool.call' && (e.input 
 const quiet = { ...(recorded.result as any).result, stdout: '' }
 const npm = 'npm install --no-audit --no-fund --loglevel=error rate-limiter-flexible' // the command the captures ran
 
-/** The test's `git` beneath the mod: `rev-parse` answers `root` (or fails), each `status` the next of `statuses` (the last repeats). Returns the argument lists it saw. */
-function git(on: any, statuses: string[], root: string | null = '/w') {
+/**
+ * The test's `git` beneath the mod: `rev-parse --show-toplevel` answers `root` (or fails), each `status` the next of `statuses`, each `rev-parse HEAD` the next of `heads` (none: no commits), each `diff` the next of `diffs` (the last of each repeats).
+ * Returns the argument lists it saw.
+ */
+function git(on: any, statuses: string[], root: string | null = '/w', heads: string[] = [], diffs: string[] = []) {
   const seen: string[][] = []
+  const next = (xs: string[]) => (xs.length > 1 ? xs.shift()! : xs[0] ?? '')
   on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('process.run', (_$: any, e: any) => {
     seen.push([...e.argv])
+    if (e.argv[1] === 'rev-parse' && e.argv[2] === 'HEAD')
+      return { value: heads.length ? { exitCode: 0, stdout: `${next(heads)}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: ambiguous argument HEAD' } }
     if (e.argv[1] === 'rev-parse') return { value: root ? { exitCode: 0, stdout: `${root}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
-    return { value: { exitCode: 0, stdout: statuses.length > 1 ? statuses.shift()! : statuses[0]!, stderr: '' } }
+    if (e.argv[1] === 'diff') return { value: { exitCode: 0, stdout: next(diffs), stderr: '' } }
+    return { value: { exitCode: 0, stdout: next(statuses), stderr: '' } }
   })
   return seen
 }
@@ -96,7 +103,7 @@ test('F07-R8 the git calls run off the hook\'s path: a Bash call returns before 
   await $.tool.call({ tool: 'Bash', command: npm })
   expect(seen.length).toBe(before)
   await clock.advance(50)
-  expect(seen.length).toBe(before + 1)
+  expect(seen.slice(before).map(a => a[1])).toEqual(['status', 'rev-parse']) // F07-R14: HEAD comes with each status
   expect(seen.every(a => a[0] === 'git')).toBe(true)
 })
 
@@ -150,4 +157,42 @@ test('NFR-P6 a burst of three Edits queues one baseline refresh', async ($, on) 
   for (let i = 0; i < 3; i++) await $.tool.call({ tool: 'Edit', file_path: '/w/a.ts', old_string: 'a', new_string: 'b' })
   await clock.advance(50)
   expect(statusCount(seen) - before).toBe(1)
+})
+
+// F07-R14. The HEADs: the capture's, and a second no repository produced (derived). The diffs are captured from real commits and a merge.
+const head = [out['git-rev-parse-head'].stdout.trim(), 'b'.repeat(40)] as const
+const clean = out['git-status-clean'].stdout
+
+test('F07-AC17 git rm and git commit in one command: HEAD moved, the diff says D, test/helpers.ts is deleted, naming the command', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const command = 'git rm -q test/helpers.ts && git commit -qm "drop helpers"'
+  const seen = git(on, [clean], '/w', [head[0], head[0], head[1]], [out['git-diff-commit-delete'].stdout])
+  await session($, clock, command)
+  expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: 'deleted', state: 'unread', reason: `deleted by \`${command}\`` })
+  expect(seen).toContainEqual(['git', 'diff', '--name-status', '-z', '--no-renames', ...head])
+})
+
+test('F07-AC18 a merge moves HEAD and the diff says A side.txt: side.txt is created, unread, naming the command', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean], '/w', [head[0], head[0], head[1]], [out['git-diff-merge-add'].stdout])
+  await session($, clock, 'git merge side')
+  expect(await nodeOf('side.txt')).toMatchObject({ change: 'created', state: 'unread', reason: 'created by `git merge side`' })
+})
+
+test('F07-AC19 ?? notes/b.md in the baseline, committed: the status no longer names it, the diff adds it, it is not deleted', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean, '?? notes/b.md\0', clean], '/w', [head[0], head[0], head[1]], [out['git-diff-commit-untracked'].stdout])
+  await session($, clock, 'git add notes/b.md && git commit -qm b')
+  expect((await nodeOf('notes/b.md'))?.change).not.toBe('deleted')
+})
+
+test('F07-R14 HEAD unchanged: no diff runs (NFR-P6)', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const seen = git(on, [clean], '/w', [head[0]])
+  await session($, clock, 'git status')
+  expect(seen.filter(a => a[1] === 'diff')).toEqual([])
 })

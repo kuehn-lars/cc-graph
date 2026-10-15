@@ -10,6 +10,6 @@ Requirements: F07-R11, R14; NFR-S5, NFR-P6.
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC17, AC18, AC19
-- [ ] Unit tests for the name-status parser
-- [ ] The check command passes
+- [x] F07-AC17, AC18, AC19
+- [x] Unit tests for the name-status parser
+- [x] The check command passes

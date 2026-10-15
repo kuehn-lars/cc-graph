@@ -14,7 +14,7 @@ import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
-import { shellChanges, statusOf } from './parse/status'
+import { nameStatusOf, shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -159,12 +159,20 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
 
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
 let root: string | null = null
-let baseline: Map<string, string> | null = null
+type Snap = { status: Map<string, string>; head: string | null }
+let baseline: Snap | null = null
 const NO_GIT = 'Shell changes need git'
 const GIT = { timeoutMs: 5000, env: { GIT_OPTIONAL_LOCKS: '0' } } // NFR-S5: never the index lock
-async function status($: Pick<CoreEngineInterface, 'process'>) {
+// F07-R14: each status takes `HEAD` with it (none in a repository without commits).
+async function status($: Pick<CoreEngineInterface, 'process'>): Promise<Snap | null> {
   const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd, ...GIT })
-  return r.exitCode === 0 ? statusOf(r.stdout) : null
+  if (r.exitCode !== 0) return null
+  const h = await $.process.run(['git', 'rev-parse', 'HEAD'], { cwd, ...GIT })
+  return { status: statusOf(r.stdout), head: h.exitCode === 0 ? h.stdout.trim() : null }
+}
+async function headDiff($: Pick<CoreEngineInterface, 'process'>, from: string, to: string) {
+  const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd, ...GIT })
+  return r.exitCode === 0 ? nameStatusOf(r.stdout) : undefined
 }
 async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
   const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
@@ -229,7 +237,8 @@ export const register: Register = (on, options) => {
     if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, async () => {
       const now = await status($)
       if (!now || !baseline) return
-      const changes = shellChanges(baseline, now, root!, cwd)
+      const moved = baseline.head && now.head && baseline.head !== now.head
+      const changes = shellChanges(baseline.status, now.status, root!, cwd, moved ? await headDiff($, baseline.head!, now.head!) : undefined)
       baseline = now
       if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
     })
