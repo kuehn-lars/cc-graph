@@ -9,7 +9,7 @@ const root = resolve(process.argv[2] ?? '.')
 const ALLOWED = new Set([
   '$.agent.list', '$.clock.after', '$.clock.now', '$.command.register', '$.model.fork', '$.process.run',
   '$.prompt.fill', '$.session.surfaces', '$.session.usage', '$.state.get', '$.state.set', '$.tool.register',
-  '$.ui.blit', '$.ui.open', '$.ui.resolve', '$.ui.toast',
+  '$.ui.blit', '$.ui.log', '$.ui.open', '$.ui.resolve', '$.ui.toast',
 ])
 const problems = []
 
