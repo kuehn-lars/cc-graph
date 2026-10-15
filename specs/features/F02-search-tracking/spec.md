@@ -22,7 +22,7 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 
 ## Requirements
 
-- **F02-R1** When a `Bash` call succeeds (no `isError`, `result.interrupted` false) and its command holds a search, the mod parses its output for hits (F02-R9). A search is a command segment (split on `|`, `&&`, `||`, `;` and newlines, outside quotes) whose first word after any `NAME=value` assignments is `rg`, `grep`, `egrep` or `fgrep`, or whose first two words are `git grep`.
+- **F02-R1** When a `Bash` call succeeds (no `isError`, `result.interrupted` false) and its command holds a search, the mod parses its output for hits (F02-R9). A search is a command segment (split on `|`, `&&`, `||`, `;` and newlines, outside quotes; the lines of a here-document, `<<EOF` to `EOF`, are its text, not commands) whose first word after any `NAME=value` assignments is `rg`, `grep`, `egrep` or `fgrep`, or whose first two words are `git grep`.
 - **F02-R2** The mod reads these hit forms, one per line: `path:line:text`, `path:text`, and a bare path for `-l` or `--files-with-matches`. When the search has exactly one path operand and no output line starts with a path, every line is a hit in that operand. A line whose path part has a space or a quote, or neither a `/` nor a `.`, or that ends in the colon after its path (`src/auth:`, how `ls` heads a folder's listing), is skipped. A flag's value (`-t ts`, `-g '*.ts'`, `-m 5`) and a redirection (`2>&1`) are not operands, and a pattern given by `-e` or `-f` leaves every operand a path.
 - **F02-R3** When a search's flags make it print no hits (`--files`, `-c`, `--count` or `--count-matches`, `--json`, `-q`, `--files-without-match`, and `-L` for `grep` and `git grep`, where it means the same; for `rg` `-L` is `--follow` and its hits count), or it reads standard input (it is not the first segment of a pipeline and has no path operand), the mod adds nothing for it.
 - **F02-R4** When a hit names a path with no node, or a `ghost`, `compacted` or `unread` node, the mod sets it to `search` with `hits` set to this call's hits. A `read`, `partial` or `search` node keeps its state and adds this call's hits to `hits`. One search call adds one copy: the same line found by two calls counts twice, because Claude's context holds both outputs.
@@ -55,6 +55,7 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 - **F02-AC18** Given `grep -rn verify src ; echo '---'; ls src src/*`, then only `src/auth/login.ts` and `src/auth/password.ts` get hits, and none of the folders `ls` heads with `src/auth:`.
 - **F02-AC19** Given `ls src src/middleware 2>&1; rg -n log src`, where the output holds `"src/middleware": No such file or directory`, then `"src/middleware"` gets no hit.
 - **F02-AC20** Given an earlier `Bash` call ran `cd src`, so the next starts in `src`, when `rg -n verify auth` prints `auth/login.ts:23:…`, then `src/auth/login.ts` gets the hit.
+- **F02-AC21** Given `cat > notes.md <<'EOF'`, a body line `grep -n x src`, `EOF`, then `rg -n verify src`, then `rg`'s hits count: the body line is no second search.
 
 ## Implementation decisions
 
@@ -107,4 +108,5 @@ Adds the `search` state and the `hits` field. A search node's `readId` is its la
 - 2026-10-12 Implemented and manually checked by the owner; CI green. Verified.
 - 2026-10-13 Review: an `ls` after a search in the same command put its folder headers (`src/auth:`) in the graph as search nodes; a line ending in its path's colon is no hit (R2, AC18). Found in the owner's manual check of F09.
 - 2026-10-15 A quoted path is no hit (R2, AC19): an error line of another segment, `"src/middleware": No such file or directory`, made a search node in a real session the owner asked to be tested. The status stays Verified, to be confirmed with the review.
+- 2026-10-15 R1: a here-document's lines are text, not commands (AC21). Claude writes files with `cat > f <<'EOF'`; a body line that began with `grep` dropped the real search's hits (R10). The status stays Verified, to be confirmed with the review.
 - 2026-10-15 R8 resolves from where the command starts, `$.session.cwd()` read before the call: Claude Code's `Bash` tool keeps a `cd` for the next call, and a real session put every path after `cd src` in the wrong place (AC20). The status stays Verified, to be confirmed with the review.
