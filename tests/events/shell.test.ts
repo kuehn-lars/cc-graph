@@ -11,20 +11,27 @@ const recorded = reference.events.find(e => e.event === 'tool.call' && (e.input 
 const quiet = { ...(recorded.result as any).result, stdout: '' }
 const npm = 'npm install --no-audit --no-fund --loglevel=error rate-limiter-flexible' // the command the captures ran
 
+const cwds: string[] = [] // the cwd of each process.run the last git() stand-in saw, in step with its result
 /**
  * The test's `git` beneath the mod: `rev-parse --show-toplevel` answers `root` (or fails), each `status` the next of `statuses`, each `rev-parse HEAD` the next of `heads` (none: no commits), each `diff` the next of `diffs` (the last of each repeats).
- * Returns the argument lists it saw.
+ * `trees` answers `status` by cwd (a worktree); null: git cannot run there. Returns the argument lists it saw; `cwds` holds the cwd of each.
  */
-function git(on: any, statuses: string[], root: string | null = '/w', heads: string[] = [], diffs: string[] = []) {
+function git(on: any, statuses: string[], root: string | null = '/w', heads: string[] = [], diffs: string[] = [], trees: Record<string, string | null> = {}) {
   const seen: string[][] = []
+  cwds.length = 0
   const next = (xs: string[]) => (xs.length > 1 ? xs.shift()! : xs[0] ?? '')
   on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('process.run', (_$: any, e: any) => {
     seen.push([...e.argv])
+    cwds.push(e.init?.cwd)
     if (e.argv[1] === 'rev-parse' && e.argv[2] === 'HEAD')
       return { value: heads.length ? { exitCode: 0, stdout: `${next(heads)}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: ambiguous argument HEAD' } }
     if (e.argv[1] === 'rev-parse') return { value: root ? { exitCode: 0, stdout: `${root}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
     if (e.argv[1] === 'diff') return { value: { exitCode: 0, stdout: next(diffs), stderr: '' } }
+    if (e.init?.cwd in trees) { // F07-R16: a worktree answers for itself
+      if (trees[e.init.cwd] === null) throw new Error('ENOENT')
+      if (e.argv[1] === 'status') return { value: { exitCode: 0, stdout: trees[e.init.cwd], stderr: '' } }
+    }
     return { value: { exitCode: 0, stdout: next(statuses), stderr: '' } }
   })
   return seen
@@ -225,4 +232,39 @@ test('F07-AC22 a change the command does not name stays blind', async ($, on) =>
   git(on, [clean, clean, out['git-status-after-npm-install'].stdout])
   await session($, clock, 'npm pkg set description=probe')
   expect(await nodeOf('package.json')).toMatchObject({ change: 'blind' })
+})
+
+// F07-R15, R16. Agent worktrees. The id is the one spike S4 recorded; the statuses are derived (no run created a worktree), in the `-z` form git-status-variety shows.
+const AGENT = 'a279be1fce34363f9'
+const WT = `/w/.claude/worktrees/agent-${AGENT}`
+
+test('F07-AC20 a status naming .claude/worktrees/agent-<id>/ adds no node', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean, clean, `?? .claude/worktrees/agent-${AGENT}/\0?? .claude/worktrees/agent-${AGENT}/src/a.ts\0`])
+  await session($, clock, 'git worktree add .claude/worktrees/agent-x')
+  expect(await nodeOf(`.claude/worktrees/agent-${AGENT}`)).toBeUndefined()
+  expect(await nodeOf('src/a.ts')).toBeUndefined()
+})
+
+test('F07-AC21 a subagent rm in its worktree: the working tree node is deleted "in worktree agent-<id>", and no status runs in the working tree', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const seen = git(on, [clean], '/w', [], [], { [WT]: ' D src/routes/index.ts\0' })
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  const from = seen.length
+  await $.tool.call({ tool: 'Bash', command: 'rm src/routes/index.ts', agentId: AGENT } as any); await clock.advance(50)
+  expect(await nodeOf('src/routes/index.ts')).toMatchObject({ change: 'deleted', reason: `deleted by \`rm src/routes/index.ts\` in worktree agent-${AGENT}` })
+  expect(seen.map((a, i) => [a, cwds[i]] as const).slice(from).filter(([a]) => a[1] === 'status').map(([, cwd]) => cwd)).toEqual([WT])
+})
+
+test('F07-R16 where git cannot run in the worktree, the working tree answers, and its reason does not claim a worktree', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean, clean, ' D src/routes/index.ts\0'], '/w', [], [], { [WT]: null })
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  await $.tool.call({ tool: 'Bash', command: 'rm src/routes/index.ts', agentId: AGENT } as any); await clock.advance(50)
+  expect(await nodeOf('src/routes/index.ts')).toMatchObject({ change: 'deleted', reason: 'deleted by `rm src/routes/index.ts`' })
 })

@@ -28,6 +28,9 @@ export function nameStatusOf(stdout: string): Map<string, string> {
   return out
 }
 
+// F07-R15: an agent's worktree is not a file of the project. Checked on git's own path: normalize would map a file inside it onto the repository's.
+const worktree = (p: string) => /(^|\/)\.claude\/worktrees\//.test(p)
+
 /**
  * F07-R6: the paths a command changed, relative to `cwd` (I4): new and untracked, or the new path of a rename, `created`; deleted, or an untracked path gone, `deleted`; any other path new to the status or with other letters, `blind`.
  * F07-R17: a change that would be `blind`, to a path `named` says the command named, is `edited`.
@@ -39,11 +42,12 @@ export function shellChanges(before: Map<string, string>, after: Map<string, str
   const out: ShellChange[] = []
   const other = (p: string) => (named(p) ? 'edited' : 'blind')
   for (const [p, code] of after) {
-    if (before.get(p) === code) continue
+    if (before.get(p) === code || worktree(p)) continue
     out.push({ path: at(p), change: code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : other(at(p)) })
   }
-  for (const [p, code] of before) if (code === '??' && !after.has(p) && diff !== 'first' && !diff.has(p)) out.push({ path: at(p), change: 'deleted' })
+  for (const [p, code] of before) if (!worktree(p) && code === '??' && !after.has(p) && diff !== 'first' && !diff.has(p)) out.push({ path: at(p), change: 'deleted' })
   if (diff !== 'first') for (const [p, letter] of diff) {
+    if (worktree(p)) continue
     const was = before.get(p)
     if (letter === 'D' ? was?.includes('D') : was !== undefined) continue
     if (after.has(p)) continue // the status named it (R6)

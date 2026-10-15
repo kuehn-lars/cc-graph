@@ -10,5 +10,5 @@ Requirements: F07-R15, R16.
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC20, AC21
-- [ ] The check command passes
+- [x] F07-AC20, AC21
+- [x] The check command passes

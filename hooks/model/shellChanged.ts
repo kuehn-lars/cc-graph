@@ -4,7 +4,7 @@ import type { ShellChange } from '../parse/status'
 import { cut } from '../parse/shell'
 import { touch } from './node'
 
-export type ShellChanged = { type: 'shellChanged'; command: string; changes: ShellChange[] }
+export type ShellChanged = { type: 'shellChanged'; command: string; changes: ShellChange[]; worktree?: string }
 
 /**
  * F07-R6: each changed path touched once. A deletion always shows; a creation replaces no change but a deletion; any other change (`blind` or `edited`, F07-R17) leaves alone what Claude's own Write or Edit did.
@@ -18,6 +18,6 @@ export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
     return touch(g, path, turn, o => ({
       ...(!o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
       change,
-      reason: `${change === 'blind' || change === 'edited' ? 'changed' : change} by \`${cut(a.command)}\``,
+      reason: `${change === 'blind' || change === 'edited' ? 'changed' : change} by \`${cut(a.command)}\`${a.worktree ? ` in worktree ${a.worktree}` : ''}`, // F07-R16
     }))
   }, g)

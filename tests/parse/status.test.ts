@@ -91,3 +91,11 @@ test('F07-R17 namedPaths: words resolve from the folder of a cd before them; a f
   expect(of('sed -i s/a/b/ src/db/redis.tsx')).toBe('blind')
   expect(of('printf x >src/db/redis.ts')).toBe('edited') // no space after the operator
 })
+
+test('F07-R15 shellChanges skips a path under .claude/worktrees/ in the status, the baseline and the diff', () => {
+  const wt = '.claude/worktrees/agent-a1/src/a.ts'
+  const after = new Map([[wt, '??']])
+  expect(shellChanges(new Map(), after, '/w', '/w')).toEqual([])
+  expect(shellChanges(new Map([[wt, '??']]), new Map(), '/w', '/w')).toEqual([]) // untracked, gone
+  expect(shellChanges(new Map(), new Map(), '/w', '/w', new Map([[wt, 'D']]))).toEqual([])
+})

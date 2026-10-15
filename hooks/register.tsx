@@ -161,37 +161,58 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
 let root: string | null = null
 type Snap = { status: Map<string, string>; head: string | null }
-let baseline: Snap | null = null
+// F07-R16: one baseline per tree, by folder: the working tree (`cwd`) and each agent worktree.
+const bases = new Map<string, Snap>()
 const NO_GIT = 'Shell changes need git'
 const GIT = { timeoutMs: 5000, env: { GIT_OPTIONAL_LOCKS: '0' } } // NFR-S5: never the index lock
 // F07-R14: each status takes `HEAD` with it (none in a repository without commits).
-async function status($: Pick<CoreEngineInterface, 'process'>): Promise<Snap | null> {
-  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd, ...GIT })
+async function status($: Pick<CoreEngineInterface, 'process'>, dir = cwd): Promise<Snap | null> {
+  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd: dir, ...GIT })
   if (r.exitCode !== 0) return null
-  const h = await $.process.run(['git', 'rev-parse', 'HEAD'], { cwd, ...GIT })
+  const h = await $.process.run(['git', 'rev-parse', 'HEAD'], { cwd: dir, ...GIT })
   return { status: statusOf(r.stdout), head: h.exitCode === 0 ? h.stdout.trim() : null }
 }
-async function headDiff($: Pick<CoreEngineInterface, 'process'>, from: string, to: string) {
-  const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd, ...GIT })
+async function headDiff($: Pick<CoreEngineInterface, 'process'>, dir: string, from: string, to: string) {
+  const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd: dir, ...GIT })
   return r.exitCode === 0 ? nameStatusOf(r.stdout) : undefined
+}
+// Takes the working tree's baseline anew; a failing `git` keeps the old one.
+async function rebase($: Pick<CoreEngineInterface, 'process'>) {
+  const now = await status($)
+  if (now) bases.set(cwd, now)
 }
 async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
   const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
   root = r?.exitCode === 0 ? r.stdout.trim() : null
-  if (root) baseline = await status($)
+  bases.clear()
+  if (root) await rebase($)
   else await update($, NOTES, ns => (ns ?? []).includes(NO_GIT) ? ns ?? [] : [...(ns ?? []), NO_GIT])
 }
 
 // F07-R13: Claude's own change goes into the baseline, so a later command that removes the file is seen. One refresh waits at a time; it reads `git` when it runs, so it takes the latest.
-// ponytail: one tree (the session's) and one flag; per-worktree baselines come with ticket 06. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
+// ponytail: the working tree only (a worktree's baseline is taken at its first command, R16); one flag. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
 let refreshQueued = false
 function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>) {
   if (!root || refreshQueued) return
   refreshQueued = true
   enqueue($, async () => {
     refreshQueued = false
-    baseline = (await status($)) ?? baseline
+    await rebase($)
   })
+}
+
+// F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
+async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, e: { command: string; agentId?: string }) {
+  const wt = e.agentId ? `${cwd}/.claude/worktrees/agent-${e.agentId}` : null
+  const inWt = wt ? await status($, wt).catch(() => null) : null
+  const dir = inWt ? wt! : cwd
+  const now = inWt ?? (await status($))
+  const before = bases.get(dir) ?? (inWt ? { status: new Map<string, string>(), head: null } : undefined) // a new worktree is clean
+  if (!now || !before) return
+  const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
+  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd))
+  bases.set(dir, now)
+  if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}) })
 }
 
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
@@ -222,7 +243,7 @@ export const register: Register = (on, options) => {
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
-    if (root) enqueue($, async () => { baseline = (await status($)) ?? baseline }) // F07-R5: what the person changed between turns is not the next command's doing
+    if (root) enqueue($, () => rebase($)) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
 
@@ -235,14 +256,7 @@ export const register: Register = (on, options) => {
     if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($)
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
-    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, async () => {
-      const now = await status($)
-      if (!now || !baseline) return
-      const diff = !now.head || baseline.head === now.head ? undefined : baseline.head ? await headDiff($, baseline.head, now.head) : 'first' // F07-R14
-      const changes = shellChanges(baseline.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd))
-      baseline = now
-      if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
-    })
+    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, () => shellJob($, e))
     return out
   }).catch(($, e, next) => next(e))
 
