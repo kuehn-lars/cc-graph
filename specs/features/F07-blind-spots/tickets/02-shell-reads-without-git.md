@@ -12,6 +12,6 @@ Requirements: F07-R18, R19.
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC23, AC24, AC25
-- [ ] Unit tests: which segment reads which file
-- [ ] The check command passes
+- [x] F07-AC23, AC24, AC25
+- [x] Unit tests: which segment reads which file
+- [x] The check command passes

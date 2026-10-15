@@ -1,6 +1,7 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { layout, reshaped } from './layout'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote } from './model/notes'
@@ -12,6 +13,7 @@ import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
+import { shellReads } from './parse/shellReads'
 import { shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
@@ -152,7 +154,7 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
-  Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
+  Bash: (e, r, text) => together([searchAction(e.command, e.tool_use_id, r, cwd, text), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges)]), // F02: the hits of a search; F07-R19: the files it prints
 }
 
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
@@ -210,7 +212,8 @@ export const register: Register = (on, options) => {
       if (action) await record($, action, e.agentId)
     }
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
-    if (e.tool === 'Bash' && !out.deny && root) enqueue($, async () => {
+    // F07-R18: a call the engine held read-only changed no file.
+    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, async () => {
       const now = await status($)
       if (!now || !baseline) return
       const changes = shellChanges(baseline, now, root!, cwd)

@@ -2,6 +2,10 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
+## Unreleased
+
+- F07 shell reads: a file Claude prints with `cat`, `bat`, `nl`, `head`, `tail` or `sed -n` shows as `read` or `partial` with what it saw ("48 lines", "lines 1 to 5"), and, for a single-file read, its tokens and import candidates; a piped `cat` is not a read. A search and the reads of one call land in one write of `graph`. A `Bash` call the engine held read-only raises no `git` at all (F07-AC23..AC25, R18, R19).
+
 ## 0.2.0 (2026-10-14)
 
 The graph: import edges in TypeScript and Python, switchable in `/config`, and the terminal graph that draws them, laid out by folder; files a shell command created, deleted or changed show too (F06, F09, F14 `importEdges`, F07 ticket 01). On other surfaces a ghost is a `⋯` row in the list, and its row names its importer. Tested on Claude Code 2.1.296.
