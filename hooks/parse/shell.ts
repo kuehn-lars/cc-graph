@@ -1,0 +1,55 @@
+// Pure: the segments of a shell command and the folder each runs in (F02-R1, R8; F07-R17, R19).
+import { isAbs } from './path'
+
+/** `redirs`: indices of the unquoted words that are redirections (`2>&1`, `>file`). */
+export type Segment = { words: string[]; sep: string; redirs: Set<number> }
+
+/** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `sep`: the separator before the segment. */
+export function segments(command: string): Segment[] {
+  const out: Segment[] = []
+  let words: string[] = []
+  let cur = ''
+  let has = false
+  let quote = ''
+  let sep = ''
+  let quoted = false
+  let redirs = new Set<number>()
+  const word = () => {
+    if (has) (!quoted && /^(\d*|&)(>>?|<)/.test(cur) && redirs.add(words.length), words.push(cur))
+    cur = ''
+    has = false
+    quoted = false
+  }
+  for (let i = 0; i < command.length; i++) {
+    const c = command[i]!
+    if (quote === "'") c === "'" ? (quote = '') : (cur += c)
+    else if (quote === '"') {
+      if (c === '"') quote = ''
+      else if (c === '\\' && '"\\$`'.includes(command[i + 1] ?? ' ')) cur += command[++i]
+      else cur += c
+    } else if (c === '\\') (cur += command[++i] ?? ''), (has = true), (quoted = true)
+    else if (c === "'" || c === '"') (quote = c), (has = true), (quoted = true)
+    else if (c === ';' || c === '|' || c === '\n' || (c === '&' && command[i + 1] === '&')) {
+      word()
+      out.push({ words, sep, redirs })
+      words = []
+      redirs = new Set()
+      sep = c
+      if (c !== ';' && c !== '\n' && command[i + 1] === c) (sep += c), i++
+    } else if (/\s/.test(c)) word()
+    else (cur += c), (has = true)
+  }
+  word()
+  out.push({ words, sep, redirs })
+  return out
+}
+
+/** F02-R8: the directory after segment `s`, given the one before it (`undefined`: the session's, `null`: unknown). Only a literal `cd <path>` ended by `&&` is known; a subshell, any other `cd` or separator is not. */
+// ponytail: `cd a && make || rg …` is taken as in a; if the cd failed the search ran elsewhere. Needs a shell to know.
+export function dirAfter(dir: string | null | undefined, s: Segment, next: string): string | null | undefined {
+  const [cmd = '', path = ''] = s.words
+  if (/^[({]/.test(cmd)) return null
+  if (cmd !== 'cd') return dir
+  if (s.words.length !== 2 || next !== '&&' || /[$`~*?[{\\]|^-/.test(path)) return null
+  return isAbs(path) ? path : dir === null ? null : dir === undefined ? path : `${dir}/${path}`
+}

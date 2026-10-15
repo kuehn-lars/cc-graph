@@ -10,5 +10,5 @@ Requirements: None (prefactor for F07-R17, R19).
 
 **Status:** ready-for-agent
 
-- [ ] F02's tests pass unchanged
-- [ ] The check command passes
+- [x] F02's tests pass unchanged
+- [x] The check command passes
