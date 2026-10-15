@@ -60,7 +60,7 @@ export function resolve(path: string, dir: string | undefined, cwd: string): str
   return normalize(isAbs(path) ? path : join(dir && isAbs(dir) ? dir : join(cwd, dir), path), cwd)
 }
 
-/** F07-R17: a predicate for the node paths a command names: a word of it that resolves to the path, or to a folder that holds it. Redirection operators are stripped; a word the shell expands, or one in an unknown folder, names nothing. */
+/** F07-R17: a predicate for the node paths a command names: a word of it, or a part of a word holding a `/` or a `.`, that resolves to the path, or to a folder that holds it. Redirection operators are stripped; a word the shell expands, or one in an unknown folder, names nothing. */
 // ponytail: `.` resolves to '' and names nothing, so `prettier --write .` stays blind. Needs the folder's contents to say more.
 export function namedPaths(command: string, cwd: string): (path: string) => boolean {
   const names: string[] = []
@@ -69,7 +69,9 @@ export function namedPaths(command: string, cwd: string): (path: string) => bool
   segs.forEach((s, i) => {
     if (dir !== null) for (const w of s.words) {
       const word = w.replace(/^(\d*|&)(>>?|<)/, '')
-      if (word && !/[$`~*?[{]/.test(word)) names.push(resolve(word, dir, cwd))
+      // A path-like part of a word: `open('src/gen.ts', 'w')` in a `python3 -c` names src/gen.ts.
+      const parts = word.split(/[\s'"()[\]{},=:;]+/).filter(p => p !== word && /[/.]/.test(p))
+      for (const name of [word, ...parts]) if (name && !/[$`~*?[{]/.test(name)) names.push(resolve(name, dir, cwd))
     }
     dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
   })

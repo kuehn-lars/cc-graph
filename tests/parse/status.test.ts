@@ -99,3 +99,12 @@ test('F07-R15 shellChanges skips a path under .claude/worktrees/ in the status, 
   expect(shellChanges(new Map([[wt, '??']]), new Map(), '/w', '/w')).toEqual([]) // untracked, gone
   expect(shellChanges(new Map(), new Map(), '/w', '/w', new Map([[wt, 'D']]))).toEqual([])
 })
+
+test('F07-AC36 namedPaths: a path-like part of a word names its file; a bare word inside a string does not', () => {
+  const created = new Map([['src/gen.ts', '??']])
+  const command = 'python3 -c "open(\\"src/gen.ts\\",\\"w\\").write(\\"export const g = 1\\\\n\\")"' // as Claude ran it in a real session
+  expect(shellChanges(clean, created, '/r', '/r', undefined, namedPaths(command, '/r'))).toEqual([{ path: 'src/gen.ts', change: 'created', named: true }])
+  expect(namedPaths("node -e \"require('fs').writeFileSync('src/a.ts', 'x')\"", '/r')('src/a.ts')).toBe(true)
+  const changed = new Map([['src/config.ts', ' M']])
+  expect(shellChanges(clean, changed, '/r', '/r', undefined, namedPaths('npx prettier --write --log-level=warn . && echo "built src"', '/r'))).toEqual([{ path: 'src/config.ts', change: 'blind' }])
+})
