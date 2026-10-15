@@ -377,3 +377,12 @@ test('F07-AC40 a patch a command applies names the files it changes: edited, not
   await session($, clock, 'git apply fix.patch')
   expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', state: 'partial' })
 })
+
+test('F07-AC41 a deleted, committed file that git reset --hard brings back has no change', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'test/helpers.ts': node('test/helpers.ts', 1, { state: 'unread', change: 'deleted', reason: 'deleted by `git rm -q test/helpers.ts && git commit -qm drop`' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean], '/w', [head[1], head[1], head[0]], ['A\0test/helpers.ts\0'])
+  await session($, clock, 'git reset --hard HEAD~1')
+  expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: null, reason: null })
+})

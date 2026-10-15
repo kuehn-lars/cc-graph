@@ -49,9 +49,9 @@ test('F07-R14 nameStatusOf: each path with its letter', () => {
 })
 
 test('F07-AC17 / AC18 shellChanges: a diff D is deleted, A created, another letter blind; the status stays unchanged', () => {
-  expect(shellChanges(clean, clean, '/r', '/r', deleted)).toEqual([{ path: 'test/helpers.ts', change: 'deleted' }])
-  expect(shellChanges(clean, clean, '/r', '/r', added)).toEqual([{ path: 'side.txt', change: 'created' }])
-  expect(shellChanges(clean, clean, '/r', '/r', modified)).toEqual([{ path: 'test/helpers.ts', change: 'blind' }])
+  expect(shellChanges(clean, clean, '/r', '/r', deleted)).toEqual([{ path: 'test/helpers.ts', change: 'deleted', history: true }])
+  expect(shellChanges(clean, clean, '/r', '/r', added)).toEqual([{ path: 'side.txt', change: 'created', history: true }])
+  expect(shellChanges(clean, clean, '/r', '/r', modified)).toEqual([{ path: 'test/helpers.ts', change: 'blind', history: true }])
 })
 
 test('F07-AC19 shellChanges: an untracked path of the baseline that the diff adds was committed, not deleted', () => {

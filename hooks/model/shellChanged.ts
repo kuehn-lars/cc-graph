@@ -25,9 +25,9 @@ function reverted(g: Graph, path: string, turn: number, agentId?: string): Graph
  * A new node, or a ghost, becomes `unread`: Claude has not seen what the command wrote. One the command named is Claude's own (`own`).
  */
 export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
-  a.changes.reduce((g, { path, change, named }) => {
-    if (change === 'reverted') return reverted(g, path, turn, a.agentId)
+  a.changes.reduce((g, { path, change, named, history }) => {
     const old = g.files[path]?.change ?? null
+    if (change === 'reverted' || (history && change === 'created' && old === 'deleted')) return reverted(g, path, turn, a.agentId) // F07-R14: brought back from history
     const keep = change === 'created' ? old !== null && old !== 'deleted' : change !== 'deleted' && (old === 'edited' || old === 'created')
     if (keep) return g
     return touch(g, path, turn, o => ({
