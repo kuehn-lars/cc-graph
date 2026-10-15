@@ -99,6 +99,24 @@ export function namedPaths(command: string, cwd: string, start?: string): (path:
   return path => names.some(n => n !== '' && (path === n || path.startsWith(`${n}/`)))
 }
 
+/** F07-R17: what each `mv ‹a› ‹b›` or `git mv ‹a› ‹b›` segment moved, as node paths: `‹b›`, and `‹b›/‹name of a›` for a folder, each to `‹a›`. */
+export function moves(command: string, cwd: string, start?: string): Map<string, string> {
+  const out = new Map<string, string>()
+  const segs = segments(command)
+  let dir: string | null | undefined = start
+  segs.forEach((s, i) => {
+    const at = s.words[0] === 'mv' ? 1 : s.words.slice(0, 2).join(' ') === 'git mv' ? 2 : -1
+    const [a, b, ...more] = at < 0 ? [] : s.words.slice(at).filter(w => !w.startsWith('-'))
+    if (dir !== null && a && b && !more.length && ![a, b].some(w => /[$`~*?[{]/.test(w))) {
+      const from = resolve(a, dir, cwd)
+      out.set(resolve(b, dir, cwd), from)
+      out.set(resolve(`${b}/${a.split('/').pop()}`, dir, cwd), from)
+    }
+    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
+  })
+  return out
+}
+
 /** F07-R6: whether a segment runs `git stash`. Joined: a lone quoted git word in hooks/ makes check-calls.mjs ask for GIT_OPTIONAL_LOCKS (NFR-S5), and this runs nothing. */
 export const stashes = (command: string) => segments(command).some(s => s.words.slice(0, 2).join(' ') === 'git stash')
 

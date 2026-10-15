@@ -1,8 +1,8 @@
 // Pure: what a shell command did to the working tree, from `git status --porcelain=v1 -z --untracked-files=all` before and after it (F07-R5, R6).
 import { normalize } from './path'
 
-/** `named`: the command named the path (F07-R17), so the change is Claude's own. `reverted`: a tracked change undone (F07-R6). `history`: the `HEAD` diff names it (F07-R14). */
-export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited' | 'reverted'; named?: boolean; history?: boolean }
+/** `named`: the command named the path (F07-R17), so the change is Claude's own. `reverted`: a tracked change undone (F07-R6). `from`: the path a `mv` moved here (F07-R17). `history`: the `HEAD` diff names it (F07-R14). */
+export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited' | 'reverted'; named?: boolean; from?: string; history?: boolean }
 
 /** Each path the status names, with its two status letters (`" M"`, `"??"`); a rename or copy names its new path, and its old path as deleted (`" D"`). */
 export function statusOf(stdout: string): Map<string, string> {

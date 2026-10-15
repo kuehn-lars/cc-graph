@@ -370,6 +370,25 @@ test('F07-AC37 after an earlier cd src, sed -i on config.ts names src/config.ts:
   expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', state: 'partial' })
 })
 
+test('F07-AC39 mv of a file Claude read: the old path is deleted, the new one created and read with its seen and tokens', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/db/redis.ts': node('src/db/redis.ts', 1, { tokens: 166, seen: '22 lines', readId: 'r1' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, clean, ' D src/db/redis.ts\0?? src/db/cache.ts\0'])
+  await session($, clock, 'mv src/db/redis.ts src/db/cache.ts')
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'deleted' })
+  expect(await nodeOf('src/db/cache.ts')).toMatchObject({ change: 'created', state: 'read', seen: '22 lines', tokens: 166, readId: 'r1' })
+})
+
+test('F07-R17 git mv into a folder carries the read over to the file of the same name there', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/db/redis.ts': node('src/db/redis.ts', 1, { state: 'partial', seen: 'lines 1 to 5' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, clean, 'R  src/store/redis.ts\0src/db/redis.ts\0'])
+  await session($, clock, 'git mv src/db/redis.ts src/store/')
+  expect(await nodeOf('src/store/redis.ts')).toMatchObject({ change: 'created', state: 'partial', seen: 'lines 1 to 5' })
+})
+
 test('F07-AC40 a patch a command applies names the files it changes: edited, not blind', async ($, on) => {
   const clock = mock.clock(on)
   engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })

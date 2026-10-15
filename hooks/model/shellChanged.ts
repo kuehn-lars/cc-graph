@@ -7,9 +7,10 @@ import { touch } from './node'
 /** `agentId`: the subagent whose command it was (F15-R1). */
 export type ShellChanged = { type: 'shellChanged'; command: string; changes: ShellChange[]; worktree?: string; agentId?: string }
 
-/** F07-R17: a change the command named is Claude's own, as an Edit is (F01-R4): a node with nothing of the file in context becomes partial; a search node keeps its tokens and readId. */
-const own = (o: FileNode | undefined): Partial<FileNode> =>
-  !o || o.state === 'ghost' || o.state === 'unread' ? { state: 'partial', tokens: null, readId: null, seen: 'only what the command changed' }
+/** F07-R17: a change the command named is Claude's own, as an Edit is (F01-R4): a node with nothing of the file in context becomes partial, or takes what Claude had of the file a `mv` moved here (`moved`); a search node keeps its tokens and readId. */
+const own = (o: FileNode | undefined, moved?: FileNode): Partial<FileNode> =>
+  (!o || o.state === 'ghost' || o.state === 'unread') && moved && moved.state !== 'ghost' && moved.state !== 'unread' ? { state: moved.state, tokens: moved.tokens, seen: moved.seen, readId: moved.readId }
+    : !o || o.state === 'ghost' || o.state === 'unread' ? { state: 'partial', tokens: null, readId: null, seen: 'only what the command changed' }
     : o.state === 'search' ? { state: 'partial', seen: 'only what the command changed' }
       : {}
 
@@ -25,13 +26,13 @@ function reverted(g: Graph, path: string, turn: number, agentId?: string): Graph
  * A new node, or a ghost, becomes `unread`: Claude has not seen what the command wrote. One the command named is Claude's own (`own`).
  */
 export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
-  a.changes.reduce((g, { path, change, named, history }) => {
+  a.changes.reduce((g, { path, change, named, from, history }) => {
     const old = g.files[path]?.change ?? null
     if (change === 'reverted' || (history && change === 'created' && old === 'deleted')) return reverted(g, path, turn, a.agentId) // F07-R14: brought back from history
     const keep = change === 'created' ? old !== null && old !== 'deleted' : change !== 'deleted' && (old === 'edited' || old === 'created')
     if (keep) return g
     return touch(g, path, turn, o => ({
-      ...(named ? own(o) : !o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
+      ...(named ? own(o, from ? g.files[from] : undefined) : !o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
       change,
       reason: `${change === 'blind' || change === 'edited' ? 'changed' : change} by \`${cut(a.command)}\`${a.worktree ? ` in worktree ${a.worktree}` : ''}`, // F07-R16
     }), a.agentId)
