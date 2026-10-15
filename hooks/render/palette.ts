@@ -32,7 +32,7 @@ export const nowNode = (graph: Graph) => Object.values(graph.files).filter(n => 
 /** F09-R24: what a change says, in its colours: an edit's added lines in the created colour and its removed lines in the deleted one, as a diff does; every other change in its own. */
 export function changeParts(n: FileNode): [string, Tone][] {
   switch (n.change) {
-    case 'edited': return [[`+${n.added}`, TONE.created], [' ', TONE.text], [`−${n.removed}`, TONE.blind]]
+    case 'edited': return !n.added && !n.removed ? [['edited', TONE.edited]] : [[`+${n.added}`, TONE.created], [' ', TONE.text], [`−${n.removed}`, TONE.blind]]
     case 'created': return [[`+${n.added} new`, TONE.created]]
     case 'deleted': return [['deleted', TONE.blind]]
     case 'external': return [['changed', TONE.inactive]]

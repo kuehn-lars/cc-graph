@@ -60,6 +60,22 @@ export function resolve(path: string, dir: string | undefined, cwd: string): str
   return normalize(isAbs(path) ? path : join(dir && isAbs(dir) ? dir : join(cwd, dir), path), cwd)
 }
 
+/** F07-R17: a predicate for the node paths a command names: a word of it that resolves to the path, or to a folder that holds it. Redirection operators are stripped; a word the shell expands, or one in an unknown folder, names nothing. */
+// ponytail: `.` resolves to '' and names nothing, so `prettier --write .` stays blind. Needs the folder's contents to say more.
+export function namedPaths(command: string, cwd: string): (path: string) => boolean {
+  const names: string[] = []
+  const segs = segments(command)
+  let dir: string | null | undefined
+  segs.forEach((s, i) => {
+    if (dir !== null) for (const w of s.words) {
+      const word = w.replace(/^(\d*|&)(>>?|<)/, '')
+      if (word && !/[$`~*?[{]/.test(word)) names.push(resolve(word, dir, cwd))
+    }
+    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
+  })
+  return path => names.some(n => n !== '' && (path === n || path.startsWith(`${n}/`)))
+}
+
 /** The command as a reason names it: its first line, cut to 60 characters. */
 export const cut = (command: string) => {
   const line = command.split('\n')[0]!

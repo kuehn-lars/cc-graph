@@ -209,3 +209,20 @@ test('F07-AC27 the first commit of a repository (no HEAD before): no diff runs, 
   expect((await nodeOf('notes/b.md'))?.change).not.toBe('deleted')
   expect(seen.filter(a => a[1] === 'diff')).toEqual([])
 })
+
+test('F07-AC22 a file the command appended to is edited, "changed by `printf …`", with no counted lines; package.json under npm pkg set stays blind', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const command = "printf '// probe\\n' >> src/db/redis.ts"
+  git(on, [clean, clean, out['git-status-appended'].stdout])
+  await session($, clock, command)
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', state: 'unread', added: 0, removed: 0, reason: `changed by \`${command}\`` })
+})
+
+test('F07-AC22 a change the command does not name stays blind', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean, clean, out['git-status-after-npm-install'].stdout])
+  await session($, clock, 'npm pkg set description=probe')
+  expect(await nodeOf('package.json')).toMatchObject({ change: 'blind' })
+})

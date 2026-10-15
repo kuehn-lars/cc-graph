@@ -16,7 +16,7 @@ const MARK = '▸ '
 const MARK_COLUMNS = 2
 
 const badge = (n: FileNode) =>
-  n.change === 'edited' ? `edited +${n.added} −${n.removed}` : n.change === 'created' ? `created +${n.added}` : n.change
+  n.change === 'edited' ? (n.added || n.removed ? `edited +${n.added} −${n.removed}` : 'edited') : n.change === 'created' ? `created +${n.added}` : n.change
 
 /** F09-R10 (NFR-A3): per path, "imports 2" for a file that imports, "imported by login.ts +1" for a ghost: its most recently touched importer and the count of the others. */
 export function edgeWords(graph: Graph) {

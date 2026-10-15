@@ -1,5 +1,6 @@
 import { expect, test } from 'claude-code/testing'
 import out from '../../fixtures/output/outputs'
+import { namedPaths } from '../../hooks/parse/shell'
 import { nameStatusOf, shellChanges, statusOf } from '../../hooks/parse/status'
 
 const clean = statusOf(out['git-status-clean'].stdout)
@@ -68,4 +69,25 @@ test('F07-R14 shellChanges: the diff adds nothing for a path the status already 
 
 test('F07-AC27 shellChanges: after a first commit an untracked path that left the status was committed, not deleted', () => {
   expect(shellChanges(statusOf('?? notes/b.md\0'), clean, '/r', '/r', 'first')).toEqual([])
+})
+
+// F07-R17: a path a word of the command names, or a folder that holds it, is Claude's own edit.
+const appended = statusOf(out['git-status-appended'].stdout)
+
+test('F07-AC22 shellChanges: a modified file the command names is edited, one it never named stays blind', () => {
+  const named = namedPaths('printf \'// probe\\n\' >> src/db/redis.ts', '/r')
+  expect(Object.fromEntries(appended)).toEqual({ 'src/db/redis.ts': ' M' })
+  expect(shellChanges(clean, appended, '/r', '/r', undefined, named)).toEqual([{ path: 'src/db/redis.ts', change: 'edited' }])
+  expect(shellChanges(clean, installed, '/r', '/r', undefined, namedPaths('npm pkg set description=probe', '/r'))).toContainEqual({ path: 'package.json', change: 'blind' })
+})
+
+test('F07-R17 namedPaths: words resolve from the folder of a cd before them; a folder covers what it holds; globs and unknown folders name nothing', () => {
+  const of = (c: string, cwd = '/r') => shellChanges(clean, appended, '/r', cwd, undefined, namedPaths(c, cwd))[0]!.change
+  expect(of('cd src && sed -i s/a/b/ db/redis.ts')).toBe('edited')
+  expect(of('rm -rf src/')).toBe('edited')
+  expect(of('cat > /r/src/db/redis.ts')).toBe('edited')
+  expect(of('sed -i s/a/b/ src/db/*.ts')).toBe('blind')
+  expect(of('cd "$d" && sed -i s/a/b/ src/db/redis.ts')).toBe('blind') // the folder is unknown
+  expect(of('sed -i s/a/b/ src/db/redis.tsx')).toBe('blind')
+  expect(of('printf x >src/db/redis.ts')).toBe('edited') // no space after the operator
 })

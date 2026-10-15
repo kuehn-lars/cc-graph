@@ -14,6 +14,7 @@ import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
+import { namedPaths } from './parse/shell'
 import { nameStatusOf, shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
@@ -238,7 +239,7 @@ export const register: Register = (on, options) => {
       const now = await status($)
       if (!now || !baseline) return
       const diff = !now.head || baseline.head === now.head ? undefined : baseline.head ? await headDiff($, baseline.head, now.head) : 'first' // F07-R14
-      const changes = shellChanges(baseline.status, now.status, root!, cwd, diff)
+      const changes = shellChanges(baseline.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd))
       baseline = now
       if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
     })

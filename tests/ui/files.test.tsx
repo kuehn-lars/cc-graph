@@ -30,6 +30,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the five changes
     node('a/compacted', 5, { state: 'compacted' }),
     node('a/unread', 6, { state: 'unread' }),
     node('b/edited', 7, { change: 'edited', added: 3, removed: 1 }),
+    node('b/shell', 12, { change: 'edited' }),
     node('b/created', 8, { change: 'created', added: 12 }),
     node('b/external', 9, { change: 'external' }),
     node('b/blind', 10, { change: 'blind' }),
@@ -41,6 +42,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the five changes
   for (const [p, glyph] of [['ghost', '⋯'], ['search', '◌'], ['partial', '◐'], ['read', '●'], ['compacted', '○'], ['unread', '!']])
     expect(row(`a/${p}`)?.startsWith(`${glyph} `)).toBe(true)
   expect(row('b/edited')).toContain('edited +3 −1')
+  expect(row('b/shell')).toContain('edited  ≈') // F07-R17: no counted lines, no counts
   expect(row('b/created')).toContain('created +12')
   expect(row('b/external')).toContain('external')
   expect(row('b/blind')).toContain('blind')
