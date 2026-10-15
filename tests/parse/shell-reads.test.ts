@@ -61,3 +61,7 @@ test('F07-R19 a persisted result is partial "preview only"; an interrupted call 
 test('F07-R19 commands that print no file read nothing', () => {
   for (const c of ['ls src', 'cat', 'cat < src/a.ts', 'echo cat src/a.ts', 'sed -i s/a/b/ src/a.ts', 'git cat-file -p HEAD']) expect(reads(c)).toEqual([])
 })
+
+test('F07-R19 an operand the shell expands, and a lone &, name no file', () => {
+  for (const c of ['cat "$F"', 'cat *.ts', 'cat $(ls)', 'cat ~/a.ts', 'cat `ls`', 'cat src/{a,b}.ts', 'cat src/a.ts &']) expect(reads(c).map(r => r.path)).toEqual(c === 'cat src/a.ts &' ? ['src/a.ts'] : [])
+})

@@ -10,7 +10,7 @@ import { reattached, type Reattached } from './reattached'
 import { searched, type Searched } from './searched'
 import { shellChanged, type ShellChanged } from './shellChanged'
 
-// F15-R1: the actions that name a file, and so carry the calling agent's id.
+// F15-R1: the actions that name a file (a Batch holds them), and so carry the calling agent's id.
 export type FileAction = FileRead | FileUnchanged | FileEdited | FileWritten | Mention | Searched | Batch
 export type Action = FileAction | Compacted | Reattached | ShellChanged
 

@@ -11,6 +11,9 @@ const PRINTERS = ['cat', 'bat', 'nl', 'head', 'tail', 'sed']
 const VALUE_SHORT: Record<string, string> = { bat: 'rlHmdt', nl: 'bfhilnsvw', head: 'nc', tail: 'nc' }
 const VALUE_LONG = ['--line-range', '--language', '--theme', '--highlight-line']
 
+/** An operand the shell expands to other words: nothing here is a path (as `dirAfter` refuses a `cd` to one). */
+const EXPANDED = /[$`~*?[{]/
+
 type Print = { cmd: string; files: string[]; flags: string[]; n?: string; script?: string; dir: string | null | undefined; stdout: boolean }
 
 /** The printing command of a segment, its file operands and flags; null for any other command or one piped into another (Claude saw only what came out of the pipe). */
@@ -29,7 +32,7 @@ function printOf({ words: w, redirs }: Segment, piped: boolean): Omit<Print, 'di
       continue
     }
     if (!ended && a === '--') { ended = true; continue }
-    if (ended || a.length < 2 || a[0] !== '-') { a !== '-' && out.files.push(a); continue } // `-` is standard input
+    if (ended || a.length < 2 || a[0] !== '-') { a !== '-' && a !== '&' && !EXPANDED.test(a) && out.files.push(a); continue } // `-` is standard input, a lone `&` backgrounds the command
     out.flags.push(a)
     const k = a[1] === '-' ? -1 : [...a.slice(1)].findIndex(c => (VALUE_SHORT[cmd] ?? '').includes(c))
     const takes = k >= 0 ? a.length === k + 2 : VALUE_LONG.includes(a)
