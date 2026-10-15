@@ -235,7 +235,7 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const before = bases.get(dir) ?? (inWt ? { status: new Map<string, string>(), head: null } : undefined) // a new worktree is clean
   if (!now || !before) return
   const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
-  const reverts = before.head === now.head && !stashes(e.command) // F07-R6: `git stash pop` brings a stashed change back
+  const reverts = !stashes(e.command) && (before.head === now.head || diff !== undefined) // F07-R6: `git stash pop` brings a stashed change back; a failed diff cannot tell a commit
   const moved = moves(e.command, cwd, start) // F07-R17: a mv's new path takes what Claude had of the old one
   const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
   bases.set(dir, now)

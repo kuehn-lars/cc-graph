@@ -405,3 +405,21 @@ test('F07-AC41 a deleted, committed file that git reset --hard brings back has n
   await session($, clock, 'git reset --hard HEAD~1')
   expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: null, reason: null })
 })
+
+test('F07-AC42 git reset --hard HEAD~1 discards a deletion the diff does not name', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/db/redis.ts': node('src/db/redis.ts', 1, { change: 'deleted', reason: 'deleted by `rm src/db/redis.ts`' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [' D src/db/redis.ts\0', ' D src/db/redis.ts\0', clean], '/w', [head[1], head[1], head[0]], ['A\0test/helpers.ts\0'])
+  await session($, clock, 'git reset --hard HEAD~1')
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: null })
+})
+
+test('F07-AC42 a commit whose diff names the deletion keeps it deleted', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/db/redis.ts': node('src/db/redis.ts', 1, { change: 'deleted', reason: 'deleted by `rm src/db/redis.ts`' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [' D src/db/redis.ts\0', ' D src/db/redis.ts\0', clean], '/w', [head[0], head[0], head[1]], ['D\0src/db/redis.ts\0'])
+  await session($, clock, 'git commit -qam drop')
+  expect(written.graph).toBeUndefined() // nothing to change: the seeded node stays deleted
+})
