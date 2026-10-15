@@ -29,7 +29,7 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 - **F02-R5** For a node that is `search` after the call, the mod adds `ceil(characters of this call's hit lines / 4)` to `tokens` (a node that just became `search` starts from 0), sets `readId` to the call's `tool_use_id`, and sets `seen` to "N search hits, never opened", or to "N search hits since compaction" when the node became `search` from `compacted`, and it keeps saying so while later searches add to it. N is `hits`, and "1 search hit" when it is 1. A `read` or `partial` node keeps its `tokens`, `seen` and `readId`: the file's own size is what the meter counts.
 - **F02-R6** When a command holds no search (`ls`, `cat`, `npm test`), the mod adds nothing, even when its output looks like `path:line`.
 - **F02-R7** If the call failed or was interrupted, then the mod adds nothing.
-- **F02-R8** The mod resolves relative hit paths against the working directory, or, when the search segment follows `cd <literal path> &&` in the same command, against that path. If the directory cannot be known (a variable, `cd -`, a subshell, or a `cd` ended by `;`, a newline or `||`, since the search would run even if the `cd` failed), then the mod drops that search's hits.
+- **F02-R8** The mod resolves relative hit paths against the directory the command starts in, or, when the search segment follows `cd <literal path> &&` in the same command, against that path. If the directory cannot be known (a variable, `cd -`, a subshell, or a `cd` ended by `;`, a newline or `||`, since the search would run even if the `cd` failed), then the mod drops that search's hits. The directory a command starts in is `$.session.cwd()`, read before the call runs: Claude Code's `Bash` tool keeps a `cd` from one call for the next, so it may not be the working directory.
 - **F02-R9** The mod parses at most 1,000 lines per call, and only what Claude read: `result.stdout`, or, when `result.persistedOutputPath` is set (the output passed `bashOutputMaxChars` and Claude got a preview of it), the call's `text`. `text` is not used otherwise, because it also carries `stderr`.
 - **F02-R10** When a command holds more than one search that reads files, the mod adds nothing, because their outputs run together and cannot be told apart.
 
@@ -54,6 +54,7 @@ Files Claude saw only as search hits appear as dotted nodes with the number of h
 - **F02-AC17** Given `rg -n verify src; rg -n error tests`, then nothing changes.
 - **F02-AC18** Given `grep -rn verify src ; echo '---'; ls src src/*`, then only `src/auth/login.ts` and `src/auth/password.ts` get hits, and none of the folders `ls` heads with `src/auth:`.
 - **F02-AC19** Given `ls src src/middleware 2>&1; rg -n log src`, where the output holds `"src/middleware": No such file or directory`, then `"src/middleware"` gets no hit.
+- **F02-AC20** Given an earlier `Bash` call ran `cd src`, so the next starts in `src`, when `rg -n verify auth` prints `auth/login.ts:23:…`, then `src/auth/login.ts` gets the hit.
 
 ## Implementation decisions
 
@@ -106,3 +107,4 @@ Adds the `search` state and the `hits` field. A search node's `readId` is its la
 - 2026-10-12 Implemented and manually checked by the owner; CI green. Verified.
 - 2026-10-13 Review: an `ls` after a search in the same command put its folder headers (`src/auth:`) in the graph as search nodes; a line ending in its path's colon is no hit (R2, AC18). Found in the owner's manual check of F09.
 - 2026-10-15 A quoted path is no hit (R2, AC19): an error line of another segment, `"src/middleware": No such file or directory`, made a search node in a real session the owner asked to be tested. The status stays Verified, to be confirmed with the review.
+- 2026-10-15 R8 resolves from where the command starts, `$.session.cwd()` read before the call: Claude Code's `Bash` tool keeps a `cd` for the next call, and a real session put every path after `cd src` in the wrong place (AC20). The status stays Verified, to be confirmed with the review.
