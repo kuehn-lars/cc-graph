@@ -2,6 +2,7 @@ import cat from '../../fixtures/tool-results/bash-cat'
 import persisted from '../../fixtures/tool-results/bash-persisted'
 import sed from '../../fixtures/tool-results/bash-sed-n'
 import { expect, test } from 'claude-code/testing'
+import { cut } from '../../hooks/parse/shell'
 import { shellReads } from '../../hooks/parse/shellReads'
 
 // F07-R19: which segment reads which file. The results are the recorded ones (fixtures/tool-results); the commands
@@ -82,4 +83,12 @@ test('F07-R19 commands that print no file read nothing', () => {
 
 test('F07-R19 an operand the shell expands, and a lone &, name no file', () => {
   for (const c of ['cat "$F"', 'cat *.ts', 'cat $(ls)', 'cat ~/a.ts', 'cat `ls`', 'cat src/{a,b}.ts', 'cat src/a.ts &']) expect(reads(c).map(r => r.path)).toEqual(c === 'cat src/a.ts &' ? ['src/a.ts'] : [])
+})
+
+test('F07-AC38 a for loop reads each of its words through $f; the expanded words and other variables read nothing', () => {
+  const command = 'for f in src/config.ts src/db/redis.ts; do echo "=== $f"; cat -n "$f"; done'
+  expect(reads(command)).toEqual([...one('src/config.ts', 'read', `through \`${cut(command)}\``), ...one('src/db/redis.ts', 'read', `through \`${cut(command)}\``)])
+  expect(reads('for f in src/*.ts; do cat "${f}"; done')).toEqual([])
+  expect(reads('for f in a.ts; do cat "$g"; done')).toEqual([])
+  expect(reads('for f in src/a.ts src/b.ts; do head -n 5 $f; done').map(r => r.seen)).toEqual(['first 5 lines', 'first 5 lines'])
 })

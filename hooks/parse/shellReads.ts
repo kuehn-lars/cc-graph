@@ -22,7 +22,7 @@ type Print = Printed & { dir: string | null | undefined; filter?: Printed }
 /** The printing command of a segment, its file operands and flags; null for any other command. */
 function printOf({ words: w, redirs }: Segment): Printed | null {
   let i = 0
-  while (/^[A-Za-z_]\w*=/.test(w[i] ?? '')) i++
+  while (/^[A-Za-z_]\w*=/.test(w[i] ?? '') || (i === 0 && ['do', 'then', 'else'].includes(w[i] ?? ''))) i++ // `do cat "$f"` in a loop
   const cmd = w[i] ?? ''
   if (!PRINTERS.includes(cmd) || (cmd === 'sed' && w[i + 1] !== '-n')) return null
   const out: Printed = { cmd, files: [], flags: [], stdout: true }
@@ -44,6 +44,18 @@ function printOf({ words: w, redirs }: Segment): Printed | null {
     if (k >= 0 && a[1 + k] === 'n') out.n = a.length > k + 2 ? a.slice(k + 2) : w[j + 1]
     if (takes) j++
   }
+  return out
+}
+
+/** A `for ‹name› in ‹words›` loop: each `$‹name›` or `${‹name›}` word of a segment stands for every word the shell does not expand. */
+type Loop = { name: string; words: string[] }
+function expand({ words, sep, redirs }: Segment, loop: Loop | null): Segment {
+  if (!loop) return { words, sep, redirs }
+  const out: Segment = { words: [], sep, redirs: new Set() }
+  words.forEach((w, i) => {
+    if (redirs.has(i)) out.redirs.add(out.words.length)
+    out.words.push(...(w === `$${loop.name}` || w === `\${${loop.name}}` ? loop.words : [w]))
+  })
   return out
 }
 
@@ -71,12 +83,15 @@ export function shellReads(command: string, readId: string, result: { stdout?: s
   let dir: string | null | undefined = start
   const prints: Print[] = []
   let others = 0
+  let loop: Loop | null = null
   for (let i = 0; i < segs.length; i++) {
-    const s = segs[i]!
+    const s = expand(segs[i]!, loop)
+    if (s.words[0] === 'for' && s.words[2] === 'in') loop = { name: s.words[1]!, words: s.words.slice(3).filter(w => !EXPANDED.test(w)) }
+    if (s.words[0] === 'done') loop = null
     const p = printOf(s)
     const next = segs[i + 1]
     // A print piped on is read only through `head`, `tail` or `sed -n` that names no file and is piped nowhere: Claude saw what came out of the pipe.
-    const f = p && next?.sep === '|' ? printOf(next) : null
+    const f = p && next?.sep === '|' ? printOf(expand(next, loop)) : null
     const filter = f && FILTERS.includes(f.cmd) && !f.files.length && segs[i + 2]?.sep !== '|' ? f : undefined
     if (p && (next?.sep !== '|' || filter)) prints.push({ ...p, dir, filter })
     else if (s.words.length && s.words[0] !== 'cd') others++
