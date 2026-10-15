@@ -7,6 +7,7 @@ import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote } from './model/notes'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { reattachedAction } from './parse/attachment'
+import { PATHSPECS, importPattern, importersOf } from './parse/grep'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
@@ -42,6 +43,7 @@ const resetState = async ($: StateDollar) => {
   await update($, NOTES, () => [])
   await update($, LAYOUT, () => ({}))
   named.clear()
+  searched.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
@@ -203,6 +205,18 @@ function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>, path: s
   })
 }
 
+// F07-R2, R3, R4: the files that import a path Claude changed and were never opened, found by `git grep` and confirmed with F06's rules. `grep` exits 1 when nothing matches.
+const searched = new Set<string>() // paths searched this main-loop turn, cleared at `turn.start`
+function queueImporters($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, path: string) {
+  if (!root || searched.has(path)) return
+  searched.add(path)
+  enqueue($, async () => {
+    const r = await $.process.run(['git', 'grep', '-n', '-I', '--untracked', '-E', '-e', importPattern(path), '--', ...PATHSPECS], { cwd: root!, ...GIT })
+    const importers = r.exitCode === 0 ? importersOf(r.stdout, path, root!, cwd) : []
+    if (importers.length) await apply($, { type: 'importers', path, importers })
+  })
+}
+
 // F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
 async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, e: { command: string; agentId?: string }) {
   const wt = e.agentId ? `${cwd}/.claude/worktrees/agent-${e.agentId}` : null
@@ -245,6 +259,7 @@ export const register: Register = (on, options) => {
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
+    searched.clear()
     if (root) enqueue($, () => rebase($)) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
@@ -256,6 +271,7 @@ export const register: Register = (on, options) => {
       if (action) await record($, action, e.agentId)
     }
     if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($, e.file_path ?? e.notebook_path)
+    if (!out.deny && !out.isError && /^(Edit|Write)$/.test(e.tool)) queueImporters($, normalize(e.file_path, cwd)) // F07-R2
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
     if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, () => shellJob($, e))

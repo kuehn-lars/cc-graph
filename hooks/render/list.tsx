@@ -2,6 +2,7 @@
 import type { Elements } from 'claude-code'
 import type { FileNode, Fill, Graph, MemoryNote } from '../../types'
 import { fileName } from '../layout/seed'
+import { blindSpots } from './blind'
 import { GLYPH } from './palette'
 import { count, meterLine } from './meter'
 import { cols, tail } from './width'
@@ -67,6 +68,7 @@ const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.t
 export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   const edges = edgeWords(graph)
+  const blind = blindSpots(graph)
   return (
     <Box flexDirection="column">
       <Text>{fit(meterLine(graph, fill), columns)}</Text>
@@ -81,6 +83,9 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       ))}
       {memory.length > 0 && <Text bold>{fit(memoryTotal(memory), columns)}</Text>}
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
+      <Text bold>Blind spots</Text>
+      {blind.length === 0 && <Text dimColor>No blind spots.</Text>}
+      {blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
   )

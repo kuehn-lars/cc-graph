@@ -10,6 +10,6 @@ Requirements: F07-R2, R3, R4, R10.
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC1, AC7, AC8, AC9, AC11
-- [ ] Unit tests for the pattern builder (escaped names) and the grep parser
-- [ ] The check command passes
+- [x] F07-AC1, AC7, AC8, AC9, AC11
+- [x] Unit tests for the pattern builder (escaped names) and the grep parser
+- [x] The check command passes

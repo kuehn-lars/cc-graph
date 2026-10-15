@@ -24,7 +24,9 @@ export function touch(g: Graph, path: string, turn: number, patch: (old: FileNod
     : !agentId && old && !old.mainLoop ? { ...fresh(path, turn), ...patch(undefined) }
     : null
   const node = { ...(old ?? fresh(path, turn)), ...patch(old), ...(owner && owned(owner)), ...who, path, lastTurn: turn, touched: seq }
-  return { ...g, seq, files: { ...g.files, [path]: node } }
+  // F07-R4: a ghost that is opened, or changed, is no blind spot.
+  const edges = old?.state === 'ghost' && node.state !== 'ghost' && g.edges.some(e => e.from === path && e.blind) ? g.edges.map(e => (e.from === path ? { ...e, blind: false } : e)) : g.edges
+  return { ...g, seq, edges, files: { ...g.files, [path]: node } }
 }
 
 /** F06-R7: a node for a file nobody has opened. Nobody holds it (`mainLoop` false, no agents), and it shares the event's `seq` rather than bumping it. */
