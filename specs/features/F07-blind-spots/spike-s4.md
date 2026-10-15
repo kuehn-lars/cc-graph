@@ -31,9 +31,12 @@ The same steps on a dirty copy (an earlier attempt) gave the same extras: none.
 - **Worktrees:** both recordings named the worktree `.claude/worktrees/agent-<agentId>`, with the `agentId` that `agent.spawn` returns and the `Agent` result carries. Neither `agent.spawn`'s input nor the subagent's `tool.call` carries the worktree path or a `cwd`.
 - **Commits move `HEAD`, not the status.** Steps 9 and 10 change files on disk and leave `git status` as it was. Comparing `HEAD` before and after (`git rev-parse HEAD`, then `git diff --name-status` between the two) names them. The same comparison tells step 16's commit from a deletion: the diff adds the path.
 
+## Interactive session (manual check step 11)
+
+2026-10-15, 2.1.300, Haiku, an interactive `claude` driven through a pseudo-terminal on a fresh copy of the sample app, with the same probe. Steps: `Read src/db/redis.ts`, `sed -i` on it, `printf … >> src/config.ts`, `git rm -q test/helpers.ts && git commit -qm drop`, `rm src/routes/index.ts`. Every `Bash` result carried the keys `bashEditDiff`, `gitOperation` and `staleReadFileStateHint`, each `undefined`, and no `edited_text_file` attachment arrived. The interactive client draws a `sed -i` as `Update(…)` from the command alone. F07-Q2's answer holds there too.
+
 ## Untried
 
-- An interactive session (the extras above may appear there).
 - A background command (`run_in_background`): its changes land after the call returns, so they will be named by the next command's status.
 - `git stash`, `git reset --hard`, `git pull`, and a rebase.
 - A worktree a `WorktreeCreate` hook puts outside `.claude/worktrees/`.
