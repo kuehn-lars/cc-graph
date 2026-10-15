@@ -173,6 +173,18 @@ async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
   else await update($, NOTES, ns => (ns ?? []).includes(NO_GIT) ? ns ?? [] : [...(ns ?? []), NO_GIT])
 }
 
+// F07-R13: Claude's own change goes into the baseline, so a later command that removes the file is seen. One refresh waits at a time; it reads `git` when it runs, so it takes the latest.
+// ponytail: one tree (the session's) and one flag; per-worktree baselines come with ticket 06. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
+let refreshQueued = false
+function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>) {
+  if (!root || refreshQueued) return
+  refreshQueued = true
+  enqueue($, async () => {
+    refreshQueued = false
+    baseline = (await status($)) ?? baseline
+  })
+}
+
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
 let maxNodes = 60
 // F06-R12, F14-R2: read once; off means no import is parsed.
@@ -211,6 +223,7 @@ export const register: Register = (on, options) => {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
       if (action) await record($, action, e.agentId)
     }
+    if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($)
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
     if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, async () => {

@@ -5,6 +5,7 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 ## Unreleased
 
 - F07 shell reads: a file Claude prints with `cat`, `bat`, `nl`, `head`, `tail` or `sed -n` shows as `read` or `partial` with what it saw ("48 lines", "lines 1 to 5"), and, for a single-file read, its tokens and import candidates; a piped `cat` is not a read. A search and the reads of one call land in one write of `graph`. A `Bash` call the engine held read-only raises no `git` at all (F07-AC23..AC25, R18, R19).
+- F07 own changes: after each `Write`, `Edit` or `NotebookEdit` the mod queues one refresh of its `git status` baseline (at most one waiting), so a file Claude wrote and a later command removed shows as `deleted` (F07-AC16, R13; AC3 and AC10 now have tests).
 
 ## 0.2.0 (2026-10-14)
 

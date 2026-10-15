@@ -12,7 +12,7 @@ Requirements: F07-R13 (and R5, R6 as shipped).
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC16
-- [ ] F07-AC3, AC10 (pass on arrival)
-- [ ] NFR-P6: one refresh per burst of edits, counted
-- [ ] The check command passes
+- [x] F07-AC16
+- [x] F07-AC3, AC10 (pass on arrival)
+- [x] NFR-P6: one refresh per burst of edits, counted
+- [x] The check command passes

@@ -4,6 +4,8 @@ import { expect, mock, test } from 'claude-code/testing'
 import { node } from '../ui/kit'
 import { engine, nodeOf, seedGraph, start, turn, written } from './kit'
 
+const step = (tool: string) => reference.events.find(e => e.event === 'tool.call' && (e.input as any).tool === tool && (e.result as any).result?.filePath)!
+
 // A Bash result as the sessions record it (fixtures/sessions/reference.ts), with no output.
 const recorded = reference.events.find(e => e.event === 'tool.call' && (e.input as any).command?.startsWith('rg -n'))!
 const quiet = { ...(recorded.result as any).result, stdout: '' }
@@ -96,4 +98,56 @@ test('F07-R8 the git calls run off the hook\'s path: a Bash call returns before 
   await clock.advance(50)
   expect(seen.length).toBe(before + 1)
   expect(seen.every(a => a[0] === 'git')).toBe(true)
+})
+
+// The recorded Write (step 6) and Edit (step 8) results, with the path of the tree these tests run in: derived, no session ran in /w.
+const wrote = (path: string) => ({ ...(step('Write').result as any).result, filePath: `/w/${path}` })
+const edited = (path: string) => ({ ...(step('Edit').result as any).result, filePath: `/w/${path}` })
+const statusCount = (seen: string[][]) => seen.filter(a => a[1] === 'status').length
+
+test('F07-AC16 a file Claude wrote with Write and a later rm removed is deleted, "deleted by `rm notes/draft.md`"', async ($, on) => {
+  const clock = mock.clock(on)
+  const answer = engine(on, { tool: 'Write', tool_use_id: 'x', input: {}, result: wrote('notes/draft.md') })
+  git(on, ['', '', '?? notes/draft.md\0', ''])
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  await $.tool.call({ tool: 'Write', file_path: '/w/notes/draft.md', content: 'x' }); await clock.advance(50)
+  Object.assign(answer, { result: quiet })
+  await $.tool.call({ tool: 'Bash', command: 'rm notes/draft.md' }); await clock.advance(50)
+  expect(await nodeOf('notes/draft.md')).toMatchObject({ change: 'deleted', reason: 'deleted by `rm notes/draft.md`' })
+})
+
+test('F07-AC3 an Edit of a.ts, then a command with a.ts modified in git status: a.ts stays edited, no blind mark', async ($, on) => {
+  const clock = mock.clock(on)
+  const answer = engine(on, { tool: 'Edit', tool_use_id: 'x', input: {}, result: edited('a.ts') })
+  git(on, ['', '', ' M a.ts\0'])
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  await $.tool.call({ tool: 'Edit', file_path: '/w/a.ts', old_string: 'a', new_string: 'b' }); await clock.advance(50)
+  Object.assign(answer, { result: quiet })
+  await $.tool.call({ tool: 'Bash', command: npm }); await clock.advance(50)
+  expect(await nodeOf('a.ts')).toMatchObject({ change: 'edited', reason: null })
+})
+
+test('F07-AC10 README.md modified between two turns: the second turn\'s npm test does not blame it', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, ['', '', ' M README.md\0'])
+  await start($); await clock.advance(50)
+  await turn($, 't1'); await clock.advance(50)
+  await turn($, 't2'); await clock.advance(50)
+  await $.tool.call({ tool: 'Bash', command: 'npm test' }); await clock.advance(50)
+  expect(await nodeOf('README.md')).toBeUndefined()
+})
+
+test('NFR-P6 a burst of three Edits queues one baseline refresh', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Edit', tool_use_id: 'x', input: {}, result: edited('a.ts') })
+  const seen = git(on, [''])
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  const before = statusCount(seen)
+  for (let i = 0; i < 3; i++) await $.tool.call({ tool: 'Edit', file_path: '/w/a.ts', old_string: 'a', new_string: 'b' })
+  await clock.advance(50)
+  expect(statusCount(seen) - before).toBe(1)
 })
