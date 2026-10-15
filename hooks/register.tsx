@@ -227,7 +227,7 @@ function queueImporters($: StateDollar & Pick<CoreEngineInterface, 'process' | '
 }
 
 // F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
-async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, e: { command: string; agentId?: string }) {
+async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui' | 'agent'>, e: { command: string; agentId?: string }) {
   const wt = e.agentId ? `${cwd}/.claude/worktrees/agent-${e.agentId}` : null
   const inWt = wt ? await status($, wt).catch(() => null) : null
   const dir = inWt ? wt! : cwd
@@ -238,7 +238,8 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const reverts = before.head === now.head && !stashes(e.command) // F07-R6: `git stash pop` brings a stashed change back
   const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd), reverts)
   bases.set(dir, now)
-  if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}) })
+  if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}), ...(e.agentId ? { agentId: e.agentId } : {}) }) // F15-R1
+  if (changes.length && e.agentId) await nameAgent($, e.agentId)
   for (const c of changes) if (c.named) queueImporters($, c.path) // F07-R2: a change the command named is Claude's own
 }
 

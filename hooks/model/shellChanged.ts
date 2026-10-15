@@ -4,7 +4,8 @@ import type { ShellChange } from '../parse/status'
 import { cut } from '../parse/shell'
 import { touch } from './node'
 
-export type ShellChanged = { type: 'shellChanged'; command: string; changes: ShellChange[]; worktree?: string }
+/** `agentId`: the subagent whose command it was (F15-R1). */
+export type ShellChanged = { type: 'shellChanged'; command: string; changes: ShellChange[]; worktree?: string; agentId?: string }
 
 /** F07-R17: a change the command named is Claude's own, as an Edit is (F01-R4): a node with nothing of the file in context becomes partial; a search node keeps its tokens and readId. */
 const own = (o: FileNode | undefined): Partial<FileNode> =>
@@ -13,9 +14,9 @@ const own = (o: FileNode | undefined): Partial<FileNode> =>
       : {}
 
 /** F07-R6: a reverted path loses its change, and the blind edges to it, since nothing changed is left to miss. A path with no node, or none to clear, is left alone. */
-function reverted(g: Graph, path: string, turn: number): Graph {
+function reverted(g: Graph, path: string, turn: number, agentId?: string): Graph {
   if (!g.files[path]?.change) return g
-  const out = touch(g, path, turn, () => ({ change: null, reason: null, added: 0, removed: 0 }))
+  const out = touch(g, path, turn, () => ({ change: null, reason: null, added: 0, removed: 0 }), agentId)
   return out.edges.some(e => e.to === path && e.blind) ? { ...out, edges: out.edges.map(e => (e.to === path ? { ...e, blind: false } : e)) } : out
 }
 
@@ -25,7 +26,7 @@ function reverted(g: Graph, path: string, turn: number): Graph {
  */
 export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
   a.changes.reduce((g, { path, change, named }) => {
-    if (change === 'reverted') return reverted(g, path, turn)
+    if (change === 'reverted') return reverted(g, path, turn, a.agentId)
     const old = g.files[path]?.change ?? null
     const keep = change === 'created' ? old !== null && old !== 'deleted' : change !== 'deleted' && (old === 'edited' || old === 'created')
     if (keep) return g
@@ -33,5 +34,5 @@ export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
       ...(named ? own(o) : !o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
       change,
       reason: `${change === 'blind' || change === 'edited' ? 'changed' : change} by \`${cut(a.command)}\`${a.worktree ? ` in worktree ${a.worktree}` : ''}`, // F07-R16
-    }))
+    }), a.agentId)
   }, g)

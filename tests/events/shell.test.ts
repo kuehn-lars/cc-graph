@@ -348,3 +348,15 @@ test('F07-R6 a deleted file a command restores loses its deletion', async ($, on
   await session($, clock, 'git restore test/helpers.ts')
   expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: null, reason: null })
 })
+
+test('F15-R1 a subagent\'s shell change carries its id: a subagent only read node stays read and subagent only, a new node is subagent only', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/auth/sessions.ts': node('src/auth/sessions.ts', 1, { mainLoop: false, agents: [AGENT] }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, clean, ' M src/auth/sessions.ts\0 D test/helpers.ts\0'], '/w', [], [], { [WT]: null })
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  await $.tool.call({ tool: 'Bash', command: "sed -i '' s/a/b/ src/auth/sessions.ts && rm test/helpers.ts", agentId: AGENT } as any); await clock.advance(50)
+  expect(await nodeOf('src/auth/sessions.ts')).toMatchObject({ change: 'edited', state: 'read', mainLoop: false, agents: [AGENT] })
+  expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: 'deleted', mainLoop: false, agents: [AGENT] })
+})
