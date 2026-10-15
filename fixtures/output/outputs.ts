@@ -120,5 +120,29 @@ export default {
     "cwd": ".",
     "exitCode": 0,
     "stdout": "src/auth/password.ts:21:// verify compares in constant time, so a wrong guess takes as long as a right one.\nsrc/auth/password.ts:22:export async function verifyPassword(password: string, stored: string): Promise<boolean> {\nsrc/auth/login.ts:2:import { hashPassword, verifyPassword } from './password'\nsrc/auth/login.ts:23:  if (!(await verifyPassword(password, user.passwordHash))) {\n---\nsrc/config.ts\n\nsrc:\napi\nauth\nconfig.ts\ndb\nroutes\n\nsrc/api:\nusers.ts\n\nsrc/auth:\nCLAUDE.md\nlogin.ts\npassword.ts\nsessions.ts\n\nsrc/db:\nredis.ts\n\nsrc/routes:\nindex.ts\n"
+  },
+  "git-rev-parse-head": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "0f1ca9ba7ad0cc90cdb609af51689e368abb471e\n"
+  },
+  "git-diff-commit-delete": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "D\u0000test/helpers.ts\u0000"
+  },
+  "git-diff-merge-add": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "A\u0000side.txt\u0000"
+  },
+  "git-diff-commit-untracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "A\u0000notes/b.md\u0000"
   }
 }

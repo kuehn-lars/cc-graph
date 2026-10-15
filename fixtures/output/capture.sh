@@ -54,6 +54,23 @@ rm test/helpers.ts
 printf 'x\n' > 'notes with space.md'
 run git-status-variety . "$git_ro status --porcelain=v1 -z --untracked-files=all"
 
+# Commits, merges (F07-R14): HEAD, and the diff of what a commit and a merge changed, in a repository of their own
+work2="$(mktemp -d)/sample-app"
+cp -R "$app" "$work2"
+cd "$work2"
+git init -q -b main && git add -A && git -c user.name=fixture -c user.email=fixture@example.com commit -qm init
+gc() { git -c user.name=fixture -c user.email=fixture@example.com "$@"; }
+work="$work2"
+run git-rev-parse-head . "$git_ro rev-parse HEAD"
+git rm -q test/helpers.ts && gc commit -qm "drop helpers"
+run git-diff-commit-delete . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+git checkout -q -b side && printf 'x\n' > side.txt && git add side.txt && gc commit -qm side && git checkout -q main
+printf 'y\n' > other.txt && git add other.txt && gc commit -qm other
+gc merge -q --no-ff -m merge side
+run git-diff-merge-add . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+mkdir -p notes && printf 'b\n' > notes/b.md && git add notes/b.md && gc commit -qm b
+run git-diff-commit-untracked . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+
 # Outside a repository (F07-AC4)
 none="$(mktemp -d)"
 code=0; (cd "$none" && GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel) > "$out/git-rev-parse-outside.txt" 2>&1 || code=$?

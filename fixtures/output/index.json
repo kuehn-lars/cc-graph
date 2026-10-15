@@ -99,5 +99,25 @@
     "command": "grep -rn verify src ; echo '---'; ls src src/*",
     "cwd": ".",
     "exitCode": 0
+  },
+  "git-rev-parse-head": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse HEAD",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-diff-commit-delete": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-diff-merge-add": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-diff-commit-untracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0
   }
 }
