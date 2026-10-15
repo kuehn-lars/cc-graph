@@ -84,6 +84,7 @@ export async function replay($: any, on: On, upToStep: number, reattached = fals
   await turn($)
   for (const c of reference.events)
     if (c.event === 'tool.call' && c.process === 1 && c.step! <= upToStep) {
+      for (const k of Object.keys(answer)) delete (answer as any)[k] // nothing left over from the call before (an earlier isReadOnly)
       Object.assign(answer, c.result)
       await $.tool.call(c.input)
     }
