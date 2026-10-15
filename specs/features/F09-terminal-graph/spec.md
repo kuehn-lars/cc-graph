@@ -111,6 +111,7 @@ In the terminal the pane draws the graph the way Claude Code draws itself: round
 - **F09-AC41** Given `src/db/redis.ts` `read` with change `deleted`, then its box reads `│ ● redis.ts  deleted │` with its corners and `deleted` in `#ff6b80` and its name in `#999999`.
 - **F09-AC42** Given the now node drawn as a tag (12 nodes on a 64 × 8 `Raster`), then its name is in `#d77757`.
 - **F09-AC43** Given a `read` node of known size and an edited and a deleted node, then the first legend line ends with `━ size`, the `━` in `suggestion`, and the second reads `changes  edited · deleted`.
+- **F09-AC44** Given the ghost `src/api/users.ts` with a blind import edge to `src/auth/login.ts`, then the line between them is drawn with `╎` (and `╌` on a horizontal run) in `#ff6b80`, where the same edge, not blind, is drawn with `│` and `─`.
 
 ## Implementation decisions
 
@@ -183,3 +184,4 @@ The `layout` key (`Point` per node id) is unchanged. 02's state table: the termi
 - 2026-10-13 Review of the branch before v0.2: the text follows the build the owner approved. R30 orders a folder's nodes by layer, then left to right (the build never ordered by height); its frame leaves one empty column beside the nodes and no row above or below them; a folder's fallback position names its mapping instead of the struck R25. AC35's first line ends with `━ size`, as R28 and AC43 ask whenever a drawn node has a known size. Approved by the owner; the code is unchanged, so Implemented stands.
 - 2026-10-13 AC3: 50 → 100 ms; CI measured 59 to 68 ms. Approved by the owner; the code is unchanged, so Implemented stands.
 - 2026-10-14 Verified. CI is green on PR #13.
+- 2026-10-15 AC44: R26 already draws blind edges dashed in the error colour, from v0.3; F07 ticket 07 ships them, so they get a criterion. Status stays Verified: no requirement changes.
