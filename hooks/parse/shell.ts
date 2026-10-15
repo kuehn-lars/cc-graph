@@ -76,6 +76,9 @@ export function namedPaths(command: string, cwd: string): (path: string) => bool
   return path => names.some(n => n !== '' && (path === n || path.startsWith(`${n}/`)))
 }
 
+/** F07-R6: whether a segment runs `git stash`. Joined: a lone quoted git word in hooks/ makes check-calls.mjs ask for GIT_OPTIONAL_LOCKS (NFR-S5), and this runs nothing. */
+export const stashes = (command: string) => segments(command).some(s => s.words.slice(0, 2).join(' ') === 'git stash')
+
 /** The command as a reason names it: its first line, cut to 60 characters. */
 export const cut = (command: string) => {
   const line = command.split('\n')[0]!

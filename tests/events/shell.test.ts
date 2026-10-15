@@ -317,3 +317,34 @@ test('F07-R17 a named change keeps a read node read, and a ghost it names become
   expect(await nodeOf('b.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: ONLY })
 })
 
+// F07-R6: a tracked change that leaves the status while HEAD stays was reverted.
+test('F07-AC35 git checkout -- of a file Claude edited clears its change and its blind edges; a path with no node gets none', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const ghost = node('src/db/redis.ts', 1, { state: 'ghost', tokens: null, mainLoop: false })
+  seedGraph(on, { seq: 1, files: { 'src/config.ts': node('src/config.ts', 1, { change: 'edited', added: 1, removed: 1, line: 4 }), 'src/db/redis.ts': ghost }, edges: [{ from: 'src/db/redis.ts', to: 'src/config.ts', kind: 'import', blind: true, guessed: false }], decisions: [], compactions: [] })
+  const dirty = ' M src/config.ts\0 M README.md\0'
+  git(on, [dirty, dirty, clean], '/w', [head[0]])
+  await session($, clock, 'git checkout -- src/config.ts README.md')
+  expect(await nodeOf('src/config.ts')).toMatchObject({ change: null, reason: null, added: 0, removed: 0 })
+  expect(await nodeOf('README.md')).toBeUndefined()
+  expect(written.graph.edges).toEqual([{ from: 'src/db/redis.ts', to: 'src/config.ts', kind: 'import', blind: false, guessed: false }])
+})
+
+test('F07-AC35 git stash takes the change away but the file stays edited', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/config.ts': node('src/config.ts', 1, { change: 'edited', added: 1, removed: 1 }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [' M src/config.ts\0', ' M src/config.ts\0', clean], '/w', [head[0]])
+  await session($, clock, 'git stash')
+  expect(written.graph).toBeUndefined() // the seeded node, edited, is not touched
+})
+
+test('F07-R6 a deleted file a command restores loses its deletion', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'test/helpers.ts': node('test/helpers.ts', 1, { state: 'unread', change: 'deleted', reason: 'deleted by `rm test/helpers.ts`' }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [' D test/helpers.ts\0', ' D test/helpers.ts\0', clean], '/w', [head[0]])
+  await session($, clock, 'git restore test/helpers.ts')
+  expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: null, reason: null })
+})

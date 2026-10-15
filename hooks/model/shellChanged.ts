@@ -12,12 +12,20 @@ const own = (o: FileNode | undefined): Partial<FileNode> =>
     : o.state === 'search' ? { state: 'partial', seen: 'only what the command changed' }
       : {}
 
+/** F07-R6: a reverted path loses its change, and the blind edges to it, since nothing changed is left to miss. A path with no node, or none to clear, is left alone. */
+function reverted(g: Graph, path: string, turn: number): Graph {
+  if (!g.files[path]?.change) return g
+  const out = touch(g, path, turn, () => ({ change: null, reason: null, added: 0, removed: 0 }))
+  return out.edges.some(e => e.to === path && e.blind) ? { ...out, edges: out.edges.map(e => (e.to === path ? { ...e, blind: false } : e)) } : out
+}
+
 /**
  * F07-R6: each changed path touched once. A deletion always shows; a creation replaces no change but a deletion; any other change (`blind` or `edited`, F07-R17) leaves alone what Claude's own Write or Edit did.
  * A new node, or a ghost, becomes `unread`: Claude has not seen what the command wrote. One the command named is Claude's own (`own`).
  */
 export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
   a.changes.reduce((g, { path, change, named }) => {
+    if (change === 'reverted') return reverted(g, path, turn)
     const old = g.files[path]?.change ?? null
     const keep = change === 'created' ? old !== null && old !== 'deleted' : change !== 'deleted' && (old === 'edited' || old === 'created')
     if (keep) return g

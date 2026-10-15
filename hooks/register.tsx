@@ -15,7 +15,7 @@ import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
-import { namedPaths } from './parse/shell'
+import { namedPaths, stashes } from './parse/shell'
 import { nameStatusOf, shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
@@ -235,7 +235,8 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const before = bases.get(dir) ?? (inWt ? { status: new Map<string, string>(), head: null } : undefined) // a new worktree is clean
   if (!now || !before) return
   const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
-  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd))
+  const reverts = before.head === now.head && !stashes(e.command) // F07-R6: `git stash pop` brings a stashed change back
+  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd), reverts)
   bases.set(dir, now)
   if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}) })
   for (const c of changes) if (c.named) queueImporters($, c.path) // F07-R2: a change the command named is Claude's own
