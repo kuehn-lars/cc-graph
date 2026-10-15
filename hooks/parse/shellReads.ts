@@ -63,12 +63,12 @@ function form(p: Printed, command: string, known: number | null): Pick<FileRead,
 
 /**
  * F07-R19: one read per file operand of each segment that prints its file. Lines and tokens are known only when the whole output belongs to one file: one operand in one segment, with no other segment that prints (a `cd` prints nothing).
- * `dir`: where each ran (F02-R8); a segment in an unknown folder reads nothing.
+ * `dir`: where each ran (F02-R8), from `start`, where the command starts when not the session's directory; a segment in an unknown folder reads nothing.
  */
-export function shellReads(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text: string | undefined, importEdges: boolean): FileRead[] {
+export function shellReads(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text: string | undefined, importEdges: boolean, start?: string): FileRead[] {
   if (result.interrupted) return []
   const segs = segments(command)
-  let dir: string | null | undefined
+  let dir: string | null | undefined = start
   const prints: Print[] = []
   let others = 0
   for (let i = 0; i < segs.length; i++) {

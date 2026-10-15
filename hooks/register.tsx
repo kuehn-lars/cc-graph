@@ -161,12 +161,12 @@ const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
 }
 
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
-const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string, start?: string) => FileAction | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r, cwd, importEdges),
   Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
-  Bash: (e, r, text) => together([searchAction(e.command, e.tool_use_id, r, cwd, text), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges)]), // F02: the hits of a search; F07-R19: the files it prints
+  Bash: (e, r, text, start) => together([searchAction(e.command, e.tool_use_id, r, cwd, text, start), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges, start)]), // F02: the hits of a search; F07-R19: the files it prints
 }
 
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
@@ -227,7 +227,7 @@ function queueImporters($: StateDollar & Pick<CoreEngineInterface, 'process' | '
 }
 
 // F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
-async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui' | 'agent'>, e: { command: string; agentId?: string }) {
+async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui' | 'agent'>, e: { command: string; agentId?: string }, start?: string) {
   const wt = e.agentId ? `${cwd}/.claude/worktrees/agent-${e.agentId}` : null
   const inWt = wt ? await status($, wt).catch(() => null) : null
   const dir = inWt ? wt! : cwd
@@ -236,7 +236,7 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   if (!now || !before) return
   const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
   const reverts = before.head === now.head && !stashes(e.command) // F07-R6: `git stash pop` brings a stashed change back
-  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd), reverts)
+  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts)
   bases.set(dir, now)
   if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}), ...(e.agentId ? { agentId: e.agentId } : {}) }) // F15-R1
   if (changes.length && e.agentId) await nameAgent($, e.agentId)
@@ -277,16 +277,18 @@ export const register: Register = (on, options) => {
   }).catch(($, e, next) => next(e))
 
   on('tool.call', { tool: /^(Read|Edit|Write|NotebookEdit|Bash)$/ }, async ($, e: any, next) => {
+    // F02-R8: where a command starts, read before it runs: the Bash tool keeps a `cd` from one call for the next.
+    const start = e.tool === 'Bash' ? await $.session.cwd().then(d => (d === cwd ? undefined : d), () => undefined) : undefined
     const out = await next(e)
     if (!out.deny && !out.isError && out.result) {
-      const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
+      const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text, start)
       if (action) await record($, action, e.agentId)
     }
     if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($, e.file_path ?? e.notebook_path)
     if (!out.deny && !out.isError && /^(Edit|Write)$/.test(e.tool)) queueImporters($, normalize(e.file_path, cwd)) // F07-R2
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
-    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, gitJob($, () => shellJob($, e)))
+    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, gitJob($, () => shellJob($, e, start)))
     return out
   }).catch(($, e, next) => next(e))
 

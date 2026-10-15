@@ -57,10 +57,10 @@ function searchIn({ words: w, redirs }: Segment): Search | null {
   return { tool, flags, operands }
 }
 
-/** F02-R1, R3, R8: the searches of a command, one per segment that holds one, less those reading standard input: piped into and naming no path (the pattern is the first operand, so a path is a second one). */
-export function searchesIn(command: string): Search[] {
+/** F02-R1, R3, R8: the searches of a command, one per segment that holds one, less those reading standard input: piped into and naming no path (the pattern is the first operand, so a path is a second one). `start`: where the command starts, when not the session's directory. */
+export function searchesIn(command: string, start?: string): Search[] {
   const segs = segments(command)
-  let dir: string | null | undefined
+  let dir: string | null | undefined = start
   return segs.flatMap((s, i) => {
     const search = searchIn(s)
     const here = dir
@@ -104,8 +104,8 @@ export function hitsIn(stdout: string, search: Search): Hits {
 const preview = (text: string) => text.split('\n').filter(l => !/^(<\/?persisted-output>|Output too large.*|Preview \(first .*\):|\.\.\.)$/.test(l)).join('\n')
 
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
-export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
-  const [search, ...more] = searchesIn(command)
+export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string, start?: string): Searched | null {
+  const [search, ...more] = searchesIn(command, start)
   if (!search || more.length || search.dir === null || result.interrupted) return null // F02-R10: two searches' outputs run together
   const files: Searched['files'] = {}
   for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[resolve(path, search.dir, cwd)] = h // F02-R8

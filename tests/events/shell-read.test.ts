@@ -61,3 +61,11 @@ test('F07-R19 a call that searches and reads changes graph once', async ($, on) 
   expect(await nodeOf('src/auth/password.ts')).toMatchObject({ state: 'search' })
   expect((await graphOf())!.seq).toBe(3)
 })
+
+test('F07-AC37 after an earlier cd src, cat auth/login.ts reads src/auth/login.ts', async ($, on) => {
+  setup(on, cat)
+  on('session.cwd', () => ({ value: '/w/src' })) // the Bash tool kept the cd
+  await start($)
+  await $.tool.call({ tool: 'Bash', command: 'cat auth/login.ts' })
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ state: 'read', seen: '48 lines' })
+})

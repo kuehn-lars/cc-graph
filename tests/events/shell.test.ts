@@ -360,3 +360,12 @@ test('F15-R1 a subagent\'s shell change carries its id: a subagent only read nod
   expect(await nodeOf('src/auth/sessions.ts')).toMatchObject({ change: 'edited', state: 'read', mainLoop: false, agents: [AGENT] })
   expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: 'deleted', mainLoop: false, agents: [AGENT] })
 })
+
+test('F07-AC37 after an earlier cd src, sed -i on config.ts names src/config.ts: edited', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  on('session.cwd', () => ({ value: '/w/src' })) // the Bash tool kept the cd
+  git(on, [clean, clean, ' M src/config.ts\0'])
+  await session($, clock, "sed -i '' s/a/b/ config.ts")
+  expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', state: 'partial' })
+})

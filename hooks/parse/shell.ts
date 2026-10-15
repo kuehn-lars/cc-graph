@@ -62,10 +62,10 @@ export function resolve(path: string, dir: string | undefined, cwd: string): str
 
 /** F07-R17: a predicate for the node paths a command names: a word of it, or a part of a word holding a `/` or a `.`, that resolves to the path, or to a folder that holds it. Redirection operators are stripped; a word the shell expands, or one in an unknown folder, names nothing. */
 // ponytail: `.` resolves to '' and names nothing, so `prettier --write .` stays blind. Needs the folder's contents to say more.
-export function namedPaths(command: string, cwd: string): (path: string) => boolean {
+export function namedPaths(command: string, cwd: string, start?: string): (path: string) => boolean {
   const names: string[] = []
   const segs = segments(command)
-  let dir: string | null | undefined
+  let dir: string | null | undefined = start
   segs.forEach((s, i) => {
     if (dir !== null) for (const w of s.words) {
       const word = w.replace(/^(\d*|&)(>>?|<)/, '')
