@@ -196,3 +196,16 @@ test('F07-R14 HEAD unchanged: no diff runs (NFR-P6)', async ($, on) => {
   await session($, clock, 'git status')
   expect(seen.filter(a => a[1] === 'diff')).toEqual([])
 })
+
+test('F07-AC27 the first commit of a repository (no HEAD before): no diff runs, and an untracked file it committed is not deleted', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const heads = [] as string[] // no commits: rev-parse HEAD fails, then (set below) answers
+  const seen = git(on, [clean, '?? notes/b.md\0', clean], '/w', heads)
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  heads.push(head[1]) // the command's commit
+  await $.tool.call({ tool: 'Bash', command: 'git add notes/b.md && git commit -qm b' }); await clock.advance(50)
+  expect((await nodeOf('notes/b.md'))?.change).not.toBe('deleted')
+  expect(seen.filter(a => a[1] === 'diff')).toEqual([])
+})

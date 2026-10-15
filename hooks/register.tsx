@@ -237,8 +237,8 @@ export const register: Register = (on, options) => {
     if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, async () => {
       const now = await status($)
       if (!now || !baseline) return
-      const moved = baseline.head && now.head && baseline.head !== now.head
-      const changes = shellChanges(baseline.status, now.status, root!, cwd, moved ? await headDiff($, baseline.head!, now.head!) : undefined)
+      const diff = !now.head || baseline.head === now.head ? undefined : baseline.head ? await headDiff($, baseline.head, now.head) : 'first' // F07-R14
+      const changes = shellChanges(baseline.status, now.status, root!, cwd, diff)
       baseline = now
       if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
     })

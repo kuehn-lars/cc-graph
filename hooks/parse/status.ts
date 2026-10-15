@@ -31,17 +31,17 @@ export function nameStatusOf(stdout: string): Map<string, string> {
 /**
  * F07-R6: the paths a command changed, relative to `cwd` (I4): new and untracked, or the new path of a rename, `created`; deleted, or an untracked path gone, `deleted`; any other path new to the status or with other letters, `blind`.
  * A path that left the status otherwise (a commit, a checkout) changed nothing Claude needs to see.
- * F07-R14: `diff`, when `HEAD` moved, adds what a commit, merge or checkout did: `D` deleted (unless the baseline holds it as deleted), `A` created, any other letter blind; those two only for a path the baseline does not hold. An untracked path the diff adds was committed.
+ * F07-R14: `diff`, when `HEAD` moved, adds what a commit, merge or checkout did: `D` deleted (unless the baseline holds it as deleted), `A` created, any other letter blind; those two only for a path the baseline does not hold. An untracked path the diff adds was committed. `'first'`: the baseline had no `HEAD`, so there is no diff and every untracked path that left the status was committed.
  */
-export function shellChanges(before: Map<string, string>, after: Map<string, string>, root: string, cwd: string, diff = new Map<string, string>()): ShellChange[] {
+export function shellChanges(before: Map<string, string>, after: Map<string, string>, root: string, cwd: string, diff: Map<string, string> | 'first' = new Map()): ShellChange[] {
   const at = (p: string) => normalize(`${root}/${p}`, cwd)
   const out: ShellChange[] = []
   for (const [p, code] of after) {
     if (before.get(p) === code) continue
     out.push({ path: at(p), change: code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : 'blind' })
   }
-  for (const [p, code] of before) if (code === '??' && !after.has(p) && !diff.has(p)) out.push({ path: at(p), change: 'deleted' })
-  for (const [p, letter] of diff) {
+  for (const [p, code] of before) if (code === '??' && !after.has(p) && diff !== 'first' && !diff.has(p)) out.push({ path: at(p), change: 'deleted' })
+  if (diff !== 'first') for (const [p, letter] of diff) {
     const was = before.get(p)
     if (letter === 'D' ? was?.includes('D') : was !== undefined) continue
     if (after.has(p)) continue // the status named it (R6)

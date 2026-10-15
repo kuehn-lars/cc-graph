@@ -65,3 +65,7 @@ test('F07-R14 shellChanges: the diff adds nothing for a path the status already 
   expect(shellChanges(clean, gone, '/r', '/r', deleted)).toEqual([{ path: 'test/helpers.ts', change: 'deleted' }])
   expect(shellChanges(statusOf(' M side.txt\0'), clean, '/r', '/r', added)).toEqual([])
 })
+
+test('F07-AC27 shellChanges: after a first commit an untracked path that left the status was committed, not deleted', () => {
+  expect(shellChanges(statusOf('?? notes/b.md\0'), clean, '/r', '/r', 'first')).toEqual([])
+})
