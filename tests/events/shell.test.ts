@@ -28,6 +28,7 @@ function git(on: any, statuses: string[], root: string | null = '/w', heads: str
       return { value: heads.length ? { exitCode: 0, stdout: `${next(heads)}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: ambiguous argument HEAD' } }
     if (e.argv[1] === 'rev-parse') return { value: root ? { exitCode: 0, stdout: `${root}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
     if (e.argv[1] === 'diff') return { value: { exitCode: 0, stdout: next(diffs), stderr: '' } }
+    if (e.argv[1] === 'grep') return { value: { exitCode: 1, stdout: '', stderr: '' } } // F07-R2: no importers
     if (e.init?.cwd in trees) { // F07-R16: a worktree answers for itself
       if (trees[e.init.cwd] === null) throw new Error('ENOENT')
       if (e.argv[1] === 'status') return { value: { exitCode: 0, stdout: trees[e.init.cwd], stderr: '' } }
@@ -56,8 +57,8 @@ test('F07-AC12 a file a command created is created, unread, with a reason naming
   const clock = mock.clock(on)
   engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
   git(on, [out['git-status-clean'].stdout, out['git-status-clean'].stdout, out['git-status-after-npm-install'].stdout])
-  await session($, clock, 'printf x > src/middleware/rateLimit.ts')
-  expect(await nodeOf('src/middleware/rateLimit.ts')).toMatchObject({ change: 'created', state: 'unread', reason: 'created by `printf x > src/middleware/rateLimit.ts`' })
+  await session($, clock, 'npm run codegen')
+  expect(await nodeOf('src/middleware/rateLimit.ts')).toMatchObject({ change: 'created', state: 'unread', reason: 'created by `npm run codegen`' })
 })
 
 test('F07-AC13 rm and a rename: deleted files keep their state, the new path is created; one write of graph', async ($, on) => {
@@ -223,7 +224,7 @@ test('F07-AC22 a file the command appended to is edited, "changed by `printf …
   const command = "printf '// probe\\n' >> src/db/redis.ts"
   git(on, [clean, clean, out['git-status-appended'].stdout])
   await session($, clock, command)
-  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', state: 'unread', added: 0, removed: 0, reason: `changed by \`${command}\`` })
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: 'only what the command changed', added: 0, removed: 0, reason: `changed by \`${command}\`` })
 })
 
 test('F07-AC22 a change the command does not name stays blind', async ($, on) => {
@@ -283,3 +284,36 @@ test('F07-R13 a file a subagent wrote in its worktree and a later rm there remov
   await $.tool.call({ tool: 'Bash', command: 'rm notes/draft.md', agentId: AGENT } as any); await clock.advance(50)
   expect(await nodeOf('notes/draft.md')).toMatchObject({ change: 'deleted', reason: `deleted by \`rm notes/draft.md\` in worktree agent-${AGENT}` })
 })
+
+// F07-R17: a change the command names is Claude's own, as an Edit is (F01-R4).
+const ONLY = 'only what the command changed'
+
+test('F07-AC30 sed -i on a file Claude only searched: edited, partial "only what the command changed", its tokens and readId kept', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/auth/login.ts': node('src/auth/login.ts', 1, { state: 'search', hits: 2, tokens: 31, readId: 'r1', seen: '2 search hits, never opened' }) }, edges: [], decisions: [], compactions: [] })
+  const command = "sed -i '' 's/verify/verifyUser/' src/auth/login.ts"
+  git(on, [clean, clean, ' M src/auth/login.ts\0'])
+  await session($, clock, command)
+  expect(await nodeOf('src/auth/login.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: ONLY, tokens: 31, readId: 'r1', reason: `changed by \`${command}\`` })
+})
+
+test('F07-AC31 a file a command names and creates is created, partial "only what the command changed"', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const command = 'echo "export const u = 1" > src/util.ts'
+  git(on, [clean, clean, '?? src/util.ts\0'])
+  await session($, clock, command)
+  expect(await nodeOf('src/util.ts')).toMatchObject({ change: 'created', state: 'partial', seen: ONLY, tokens: null, added: 0, reason: `created by \`${command}\`` })
+})
+
+test('F07-R17 a named change keeps a read node read, and a ghost it names becomes partial', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 2, files: { 'a.ts': node('a.ts', 1), 'b.ts': node('b.ts', 2, { state: 'ghost', tokens: null, mainLoop: false }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, clean, ' M a.ts\0 M b.ts\0'])
+  await session($, clock, "sed -i '' s/x/y/ a.ts b.ts")
+  expect(await nodeOf('a.ts')).toMatchObject({ change: 'edited', state: 'read', seen: '10 lines' })
+  expect(await nodeOf('b.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: ONLY })
+})
+

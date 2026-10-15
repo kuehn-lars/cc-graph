@@ -1,7 +1,8 @@
 // Pure: what a shell command did to the working tree, from `git status --porcelain=v1 -z --untracked-files=all` before and after it (F07-R5, R6).
 import { normalize } from './path'
 
-export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited' }
+/** `named`: the command named the path (F07-R17), so the change is Claude's own. */
+export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited'; named?: boolean }
 
 /** Each path the status names, with its two status letters (`" M"`, `"??"`); a rename or copy names its new path, and its old path as deleted (`" D"`). */
 export function statusOf(stdout: string): Map<string, string> {
@@ -41,17 +42,18 @@ export function shellChanges(before: Map<string, string>, after: Map<string, str
   const at = (p: string) => normalize(`${root}/${p}`, cwd)
   const out: ShellChange[] = []
   const other = (p: string) => (named(p) ? 'edited' : 'blind')
+  const push = (path: string, change: ShellChange['change']) => out.push(named(path) && (change === 'created' || change === 'edited') ? { path, change, named: true } : { path, change })
   for (const [p, code] of after) {
     if (before.get(p) === code || worktree(p)) continue
-    out.push({ path: at(p), change: code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : other(at(p)) })
+    push(at(p), code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : other(at(p)))
   }
-  for (const [p, code] of before) if (!worktree(p) && code === '??' && !after.has(p) && diff !== 'first' && !diff.has(p)) out.push({ path: at(p), change: 'deleted' })
+  for (const [p, code] of before) if (!worktree(p) && code === '??' && !after.has(p) && diff !== 'first' && !diff.has(p)) push(at(p), 'deleted')
   if (diff !== 'first') for (const [p, letter] of diff) {
     if (worktree(p)) continue
     const was = before.get(p)
     if (letter === 'D' ? was?.includes('D') : was !== undefined) continue
     if (after.has(p)) continue // the status named it (R6)
-    out.push({ path: at(p), change: letter === 'D' ? 'deleted' : letter === 'A' ? 'created' : other(at(p)) })
+    push(at(p), letter === 'D' ? 'deleted' : letter === 'A' ? 'created' : other(at(p)))
   }
   return out
 }

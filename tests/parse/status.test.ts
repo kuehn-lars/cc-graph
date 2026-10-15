@@ -77,7 +77,7 @@ const appended = statusOf(out['git-status-appended'].stdout)
 test('F07-AC22 shellChanges: a modified file the command names is edited, one it never named stays blind', () => {
   const named = namedPaths('printf \'// probe\\n\' >> src/db/redis.ts', '/r')
   expect(Object.fromEntries(appended)).toEqual({ 'src/db/redis.ts': ' M' })
-  expect(shellChanges(clean, appended, '/r', '/r', undefined, named)).toEqual([{ path: 'src/db/redis.ts', change: 'edited' }])
+  expect(shellChanges(clean, appended, '/r', '/r', undefined, named)).toEqual([{ path: 'src/db/redis.ts', change: 'edited', named: true }])
   expect(shellChanges(clean, installed, '/r', '/r', undefined, namedPaths('npm pkg set description=probe', '/r'))).toContainEqual({ path: 'package.json', change: 'blind' })
 })
 

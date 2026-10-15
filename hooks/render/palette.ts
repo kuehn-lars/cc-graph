@@ -33,7 +33,7 @@ export const nowNode = (graph: Graph) => Object.values(graph.files).filter(n => 
 export function changeParts(n: FileNode): [string, Tone][] {
   switch (n.change) {
     case 'edited': return !n.added && !n.removed ? [['edited', TONE.edited]] : [[`+${n.added}`, TONE.created], [' ', TONE.text], [`−${n.removed}`, TONE.blind]]
-    case 'created': return [[`+${n.added} new`, TONE.created]]
+    case 'created': return [[n.added ? `+${n.added} new` : 'new', TONE.created]] // F07-R17: a command's creation has no counted lines
     case 'deleted': return [['deleted', TONE.blind]]
     case 'external': return [['changed', TONE.inactive]]
     case 'blind': return [['changed unseen', TONE.blind]]
