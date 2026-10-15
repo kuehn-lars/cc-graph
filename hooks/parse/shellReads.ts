@@ -14,15 +14,16 @@ const VALUE_LONG = ['--line-range', '--language', '--theme', '--highlight-line']
 /** An operand the shell expands to other words: nothing here is a path (as `dirAfter` refuses a `cd` to one). */
 const EXPANDED = /[$`~*?[{]/
 
-type Print = { cmd: string; files: string[]; flags: string[]; n?: string; script?: string; dir: string | null | undefined; stdout: boolean }
+type Printed = { cmd: string; files: string[]; flags: string[]; n?: string; script?: string; stdout: boolean }
+type Print = Printed & { dir: string | null | undefined }
 
 /** The printing command of a segment, its file operands and flags; null for any other command or one piped into another (Claude saw only what came out of the pipe). */
-function printOf({ words: w, redirs }: Segment, piped: boolean): Omit<Print, 'dir'> | null {
+function printOf({ words: w, redirs }: Segment, piped: boolean): Printed | null {
   let i = 0
   while (/^[A-Za-z_]\w*=/.test(w[i] ?? '')) i++
   const cmd = w[i] ?? ''
   if (piped || !PRINTERS.includes(cmd) || (cmd === 'sed' && w[i + 1] !== '-n')) return null
-  const out: Omit<Print, 'dir'> = { cmd, files: [], flags: [], stdout: true }
+  const out: Printed = { cmd, files: [], flags: [], stdout: true }
   let ended = false
   for (let j = i + (cmd === 'sed' ? 2 : 1); j < w.length; j++) {
     const a = w[j]!
@@ -44,7 +45,7 @@ function printOf({ words: w, redirs }: Segment, piped: boolean): Omit<Print, 'di
 }
 
 /** What a command's own form says Claude saw: `read` for the whole file, `partial` with the words F07-R19 gives. */
-function form(p: Omit<Print, 'dir'>, command: string, known: number | null): Pick<FileRead, 'state' | 'seen'> {
+function form(p: Printed, command: string, known: number | null): Pick<FileRead, 'state' | 'seen'> {
   const through = { state: 'partial', seen: `through \`${cut(command)}\`` } as const
   const only = p.flags.length === 1 && /^\d+$/.test(p.n ?? '')
   if (p.cmd === 'head') return only ? { state: 'partial', seen: `first ${p.n} lines` } : through
@@ -73,6 +74,7 @@ export function shellReads(command: string, readId: string, result: { stdout?: s
     else if (s.words.length && s.words[0] !== 'cd') others++
     dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
   })
+  // ponytail: only isError and interrupted are checked, so `cat nofile 2>/dev/null || true` (exit 0) records a read that never happened. Needs the exit code or stderr to know.
   const files = prints.filter(p => p.stdout && p.dir !== null)
   const single = files.length === 1 && prints.length === 1 && files[0]!.files.length === 1 && others === 0
   return files.flatMap(p => p.files.map(file => {
