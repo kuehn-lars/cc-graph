@@ -35,3 +35,16 @@ test('F07-R3 (derived) importersOf: paths are relative to the session folder, wh
 test('F07-R3 (derived) importersOf: a Python import is confirmed with the same rules', () => {
   expect(importersOf('pkg/b.py:1:from .a import x\n', 'pkg/a.py', '/r', '/r')).toEqual(['pkg/b.py'])
 })
+
+test('F07-AC28 (derived) importPattern: a changed index file is found by its folder\'s name; importersOf confirms `../auth` as src/auth/index.ts', () => {
+  expect(importPattern('src/auth/index.ts')).toContain('/auth(/index)?(\\.[A-Za-z]+)?[\'"]')
+  expect(importPattern('index.ts')).toContain('/index(\\.')
+  expect(importersOf("src/routes/index.ts:1:import { login } from '../auth'\n", 'src/auth/index.ts', '/r', '/r')).toEqual(['src/routes/index.ts'])
+  expect(importersOf("src/routes/x.ts:1:import { login } from '../auth/index'\n", 'src/auth/index.ts', '/r', '/r')).toEqual(['src/routes/x.ts'])
+  expect(importersOf('pkg/b.py:1:from auth import x\n', 'auth/__init__.py', '/r', '/r')).toEqual(['pkg/b.py'])
+})
+
+test('F07-AC29 (derived) importersOf: the last line of a multi-line import, `} from \'…\'`, is confirmed', () => {
+  expect(importersOf("src/api/users.ts:9:} from '../auth/login'\n", 'src/auth/login.ts', '/r', '/r')).toEqual(['src/api/users.ts'])
+  expect(importersOf("src/api/users.ts:9:} from '../auth/other'\n", 'src/auth/login.ts', '/r', '/r')).toEqual([])
+})

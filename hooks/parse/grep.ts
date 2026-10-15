@@ -7,12 +7,14 @@ export const PATHSPECS = ['*.ts', '*.tsx', '*.mts', '*.cts', '*.js', '*.jsx', '*
 const escape = (s: string) => s.replace(/[.^$*+?()[\]{}|\\]/g, '\\$&')
 
 /**
- * An extended regular expression for the lines that import a file named like `path` without its extension: a JavaScript or TypeScript import line (F06-R2) whose quoted specifier ends in `/name`, or a Python `from`/`import` line that holds the name.
- * Deliberately loose: `importersOf` confirms each hit. ponytail: one line only (a `from` on its own line is missed), and an `index` file is found by neither form; widen if a recording shows it matters.
+ * An extended regular expression for the lines that import a file named like `path` without its extension (a changed `index` or `__init__` is named by its folder): a JavaScript or TypeScript import line (F06-R2) whose quoted specifier ends in `/name`, or a Python `from`/`import` line that holds the name.
+ * Deliberately loose: `importersOf` confirms each hit. ponytail: one line at a time, so the names on the earlier lines of a multi-line import are not read.
  */
 export function importPattern(path: string): string {
-  const name = escape(/([^/]+?)(\.[^./]+)?$/.exec(path)![1]!)
-  return `(import|export|require|from)[^'"]*['"][^'"]*/${name}(\\.[A-Za-z]+)?['"]|^[[:space:]]*(from|import)([[:space:]].*)?[^[:alnum:]_]${name}([^[:alnum:]_]|$)`
+  const [, folder, base = ''] = /(?:([^/]+)\/)?([^/]+?)(?:\.[^./]+)?$/.exec(path)!
+  const index = folder !== undefined && (base === 'index' || base === '__init__')
+  const name = escape(index ? folder! : base)
+  return `(import|export|require|from)[^'"]*['"][^'"]*/${name}${index ? `(/${base})?` : ''}(\\.[A-Za-z]+)?['"]|^[[:space:]]*(from|import)([[:space:]].*)?[^[:alnum:]_]${name}([^[:alnum:]_]|$)`
 }
 
 /** The hits of `git grep -n`: `file:line:text`. */
@@ -32,7 +34,7 @@ export function importersOf(stdout: string, changed: string, root: string, cwd: 
     const abs = `${root}/${file}`
     const path = normalize(abs, cwd)
     if (worktreeOf(abs, cwd) || path === changed || out.includes(path)) continue
-    if (importsIn(text, path).some(s => candidatesFor(s, path, cwd).includes(changed))) out.push(path)
+    if (importsIn(/^\s*}/.test(text) ? `import ${text}` : text, path).some(s => candidatesFor(s, path, cwd).includes(changed))) out.push(path)
   }
   return out
 }
