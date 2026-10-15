@@ -71,6 +71,15 @@ run git-diff-merge-add . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD
 mkdir -p notes && printf 'b\n' > notes/b.md && git add notes/b.md && gc commit -qm b
 run git-diff-commit-untracked . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
 
+# A named change (F07-R17): a line appended to a tracked file
+work3="$(mktemp -d)/sample-app"
+cp -R "$app" "$work3"
+cd "$work3"
+git init -q && git add -A && git -c user.name=fixture -c user.email=fixture@example.com commit -qm init
+work="$work3"
+printf '// probe\n' >> src/db/redis.ts
+run git-status-appended . "$git_ro status --porcelain=v1 -z --untracked-files=all"
+
 # Outside a repository (F07-AC4)
 none="$(mktemp -d)"
 code=0; (cd "$none" && GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel) > "$out/git-rev-parse-outside.txt" 2>&1 || code=$?

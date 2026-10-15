@@ -84,12 +84,6 @@
     "cwd": ".",
     "exitCode": 0
   },
-  "git-rev-parse-outside": {
-    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
-    "cwd": "(not a repository)",
-    "exitCode": 128,
-    "stderr": true
-  },
   "cat-log-rg-n-error": {
     "command": "cat log.txt | rg -n error",
     "cwd": ".",
@@ -119,5 +113,16 @@
     "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
     "cwd": ".",
     "exitCode": 0
+  },
+  "git-status-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0
+  },
+  "git-rev-parse-outside": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
+    "cwd": "(not a repository)",
+    "exitCode": 128,
+    "stderr": true
   }
 }

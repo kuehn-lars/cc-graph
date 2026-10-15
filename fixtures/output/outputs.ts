@@ -102,13 +102,6 @@ export default {
     "exitCode": 0,
     "stdout": " M package-lock.json\u0000 M package.json\u0000R  src/db/store.ts\u0000src/db/redis.ts\u0000 D test/helpers.ts\u0000?? notes with space.md\u0000?? src/middleware/rateLimit.ts\u0000"
   },
-  "git-rev-parse-outside": {
-    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
-    "cwd": "(not a repository)",
-    "exitCode": 128,
-    "stderr": true,
-    "stdout": "fatal: not a git repository (or any of the parent directories): .git\n"
-  },
   "cat-log-rg-n-error": {
     "command": "cat log.txt | rg -n error",
     "cwd": ".",
@@ -144,5 +137,18 @@ export default {
     "cwd": ".",
     "exitCode": 0,
     "stdout": "A\u0000notes/b.md\u0000"
+  },
+  "git-status-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": " M src/db/redis.ts\u0000"
+  },
+  "git-rev-parse-outside": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
+    "cwd": "(not a repository)",
+    "exitCode": 128,
+    "stderr": true,
+    "stdout": "fatal: not a git repository (or any of the parent directories): .git\n"
   }
 }
