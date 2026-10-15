@@ -144,3 +144,19 @@ test('F07-R2 a change no command named searches nothing', async ($, on) => {
   await $.tool.call({ tool: 'Bash', command: 'npm run format' }); await clock.advance(100)
   expect(greps(seen)).toHaveLength(0)
 })
+
+test('NFR-R3 outside a repository an Edit, a writing Bash call and a shell read still land in the graph, and git is asked only once', async ($, on) => {
+  const clock = mock.clock(on)
+  const answer: any = engine(on, { tool: 'Edit', tool_use_id: 'x', input: {}, result: edited('src/auth/login.ts') })
+  on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
+  const seen: string[] = []
+  on('process.run', (_$: any, e: any) => (seen.push(e.argv[1]), { value: { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository', isStdoutTruncated: false, isStderrTruncated: false } }))
+  await session($, clock)
+  await editLogin($); await clock.advance(100)
+  Object.assign(answer, { result: { stdout: 'hi\n', stderr: '', interrupted: false }, text: 'hi\n' })
+  await $.tool.call({ tool: 'Bash', command: 'echo hi > a.txt && cat a.txt' }); await clock.advance(100)
+  expect(Object.keys((await graphOf())!.files)).toEqual(expect.arrayContaining(['a.txt', 'src/auth/login.ts']))
+  expect(await nodeOf('a.txt')).toMatchObject({ state: 'read' })
+  expect(seen).toEqual(['rev-parse']) // R1: once, at session start
+  expect(written.notes).toEqual(['Shell changes need git'])
+})
