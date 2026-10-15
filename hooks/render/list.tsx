@@ -43,7 +43,7 @@ export function edgeWords(graph: Graph) {
 function row(n: FileNode, columns: number, edge = '') {
   const head = `${GLYPH[n.state]} `
   const name = fileName(n.path)
-  const parts = [badge(n), n.mainLoop ? '' : 'agent', n.reason?.startsWith('in worktree') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen}`, edge].filter(Boolean)
+  const parts = [badge(n), n.mainLoop || !n.agents.length ? '' : 'agent', n.reason?.startsWith('in worktree') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen || 'never opened'}`, edge].filter(Boolean) // F15-R2: a ghost nobody touched is no subagent's
   const suffix = () => parts.map(p => `  ${p}`).join('')
   const room = () => columns - cols(head + suffix())
   while (parts.length && cols(n.path) > room() && cols(name) + 1 > room()) parts.pop()
