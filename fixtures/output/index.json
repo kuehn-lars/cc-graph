@@ -124,5 +124,10 @@
     "cwd": "(not a repository)",
     "exitCode": 128,
     "stderr": true
+  },
+  "eza-missing-then-rg-n-log": {
+    "command": "eza src src/middleware 2>&1; rg -n log src",
+    "cwd": ".",
+    "exitCode": 0
   }
 }

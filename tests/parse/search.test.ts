@@ -74,6 +74,13 @@ test('F02-AC18 hitsIn: the folder headers of an ls run after the search are no h
   expect(Object.keys(hits).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
 })
 
+test('F02-AC19 hitsIn: an error line of another segment, its path quoted, is no hit', () => {
+  const run = out['eza-missing-then-rg-n-log']
+  const hits = hitsIn(run.stdout, searchesIn(run.command)[0]!)
+  expect(Object.keys(hits)).not.toContain('"src/middleware"')
+  expect(Object.keys(hits).sort()).toEqual(['src/api/users.ts', 'src/auth/CLAUDE.md', 'src/auth/login.ts', 'src/config.ts', 'src/routes/index.ts'])
+})
+
 // DERIVED: the captured grep line with its text cut after `verify(password, user.passwordHash`; no capture holds a hit ending in a colon.
 test('F02-R2 hitsIn: a hit whose text ends in a colon is still a hit; only a line that is its path and the colon is skipped', () => {
   const run = out['grep-rn-verify-then-ls']

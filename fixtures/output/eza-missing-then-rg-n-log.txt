@@ -1,0 +1,23 @@
+"src/middleware": No such file or directory (os error 2)
+api
+auth
+config.ts
+db
+routes
+src/api/users.ts:2:import { bearerToken, currentUser, registerUser, userCount } from '../auth/login'
+src/routes/index.ts:3:import { bearerToken, currentUser, login, logout } from '../auth/login'
+src/routes/index.ts:28:  const result = await login(email, password)
+src/routes/index.ts:38:  await logout(token)
+src/routes/index.ts:50:  'POST /login': postLogin,
+src/routes/index.ts:51:  'POST /logout': postLogout,
+src/routes/index.ts:108:  log(req, reply.status, Date.now() - started)
+src/routes/index.ts:111:function log(req: IncomingMessage, status: number, ms: number): void {
+src/routes/index.ts:113:  console.log(`${req.method} ${req.url} ${status} ${ms}ms`)
+src/routes/index.ts:118:  server.listen(port, () => console.log(`Listening on http://127.0.0.1:${port}`))
+src/config.ts:8:  logLevel: 'debug' | 'info' | 'warn' | 'error'
+src/config.ts:26:function level(raw: string): Config['logLevel'] {
+src/config.ts:39:  logLevel: level(text('LOG_LEVEL', 'info')),
+src/auth/login.ts:1:// Login and logout: checks a password, then opens or closes a session.
+src/auth/login.ts:20:export async function login(email: string, password: string): Promise<LoginResult> {
+src/auth/login.ts:30:export async function logout(token: string): Promise<void> {
+src/auth/CLAUDE.md:3:Passwords are hashed with PBKDF2 and never logged.
