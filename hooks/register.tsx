@@ -238,6 +238,7 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd))
   bases.set(dir, now)
   if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}) })
+  for (const c of changes) if (c.named) queueImporters($, c.path) // F07-R2: a change the command named is Claude's own
 }
 
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.

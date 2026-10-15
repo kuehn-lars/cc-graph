@@ -8,8 +8,8 @@ const edit = reference.events.find(e => e.event === 'tool.call' && (e.input as a
 const edited = (path: string) => ({ ...(edit.result as any).result, filePath: `/w/${path}` })
 const found = out['git-grep-importers-login'].stdout
 
-/** The test's `git` beneath the mod: the root is /w, there is no HEAD, the status is clean and `grep` answers `grep`. Returns the argument lists it saw. */
-function git(on: any, grep: string, failing?: ($: any) => Promise<never>) {
+/** The test's `git` beneath the mod: the root is /w, there is no HEAD, each status the next of `statuses` (the last repeats; clean by default) and `grep` answers `grep`. Returns the argument lists it saw. */
+function git(on: any, grep: string, failing?: ($: any) => Promise<never>, statuses: string[] = ['']) {
   const seen: string[][] = []
   on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('process.run', (_$: any, e: any) => {
@@ -18,6 +18,7 @@ function git(on: any, grep: string, failing?: ($: any) => Promise<never>) {
     if (sub === 'grep' && failing) return failing(_$)
     if (sub === 'grep') return { value: { exitCode: grep ? 0 : 1, stdout: grep, stderr: '' } }
     if (sub === 'rev-parse' && arg === 'HEAD') return { value: { exitCode: 128, stdout: '', stderr: '' } }
+    if (sub === 'status') return { value: { exitCode: 0, stdout: statuses.length > 1 ? statuses.shift()! : statuses[0]!, stderr: '' } }
     return { value: { exitCode: 0, stdout: sub === 'rev-parse' ? '/w\n' : '', stderr: '' } }
   })
   return seen
@@ -122,4 +123,24 @@ test('F07-AC4 git cannot start: nothing reaches the transcript and the footer sa
   await editLogin($); await clock.advance(100)
   expect(written.notes).toEqual(['Shell changes need git'])
   expect(logs.filter(l => l.to !== 'debug')).toEqual([])
+})
+
+test('F07-AC34 sed -i on login.ts, a change the command names, searches for its importers: users.ts is a blind ghost', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: { stdout: '', stderr: '', interrupted: false } })
+  const seen = git(on, found, undefined, ['', '', ' M src/auth/login.ts\0'])
+  await session($, clock)
+  await $.tool.call({ tool: 'Bash', command: "sed -i '' 's/verify/verifyUser/' src/auth/login.ts" }); await clock.advance(100)
+  expect(greps(seen)).toHaveLength(1)
+  expect(await nodeOf('src/api/users.ts')).toMatchObject({ state: 'ghost' })
+  expect((await graphOf())?.edges).toContainEqual({ from: 'src/api/users.ts', to: 'src/auth/login.ts', kind: 'import', blind: true, guessed: false })
+})
+
+test('F07-R2 a change no command named searches nothing', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: { stdout: '', stderr: '', interrupted: false } })
+  const seen = git(on, found, undefined, ['', '', ' M src/auth/login.ts\0'])
+  await session($, clock)
+  await $.tool.call({ tool: 'Bash', command: 'npm run format' }); await clock.advance(100)
+  expect(greps(seen)).toHaveLength(0)
 })
