@@ -10,10 +10,10 @@ Requirements: All of F07; RS-2, RS-3; NFR-P6, S4, S5, R3.
 
 **Status:** ready-for-agent
 
-- [ ] RS-2, RS-3
+- [x] RS-2, RS-3
 - [ ] Manual check walked with the owner, in a terminal and in the desktop app
 - [ ] Spec status set to Implemented
-- [ ] `node scripts/trace.mjs --check` passes
-- [ ] CHANGELOG has an F07 entry
+- [x] `node scripts/trace.mjs --check` passes
+- [x] CHANGELOG has an F07 entry
 - [ ] Spec status set to Verified once CI is green
 - [ ] This `tickets/` folder is deleted

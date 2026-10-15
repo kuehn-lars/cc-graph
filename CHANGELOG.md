@@ -14,6 +14,10 @@ Versions follow semver. Each release names the Claude Code versions it was teste
 - F02, F07 where a command starts: Claude Code's `Bash` tool keeps a `cd` for the next call, so searches, reads and named changes resolve from `$.session.cwd()` read before the call (now on NFR-S1's allowlist), not from the session's directory (F02-AC20, F07-AC37, F02-R8).
 - F02 a here-document's lines are text, not commands: a body line beginning with `grep` no longer cancels the real search, and `cat << EOF` reads no file named `EOF` (F02-AC21, R1). An error line that quotes its path (`"src/middleware": No such file or directory`) is no hit (F02-AC19, R2).
 - F15 a subagent's shell change carries its id, so a file only a subagent touched stays subagent only; a ghost no agent touched no longer says "agent" in the list, and says "never opened" (F15-R1, R2).
+- F07 the `blindSpots` setting (`/config`, "Look for blind spots with git"): off, the mod runs no `git` at all and the list has no Blind spots section; shell reads still show (F07-AC26, F14-AC4, R12).
+- F07 outside edits: an `edited_text_file` attachment of the main loop marks the file `external`, "changed outside Claude; Claude was shown it", or keeps Claude's own change with that reason; it is never a blind spot. No session has raised one yet (F07-Q1), so the test's text is derived (F07-AC6, R7).
+- F07 renames and history: a `mv` or `git mv` carries what Claude had of a file to its new path; a patch applied with `git apply` or `patch` is Claude's own edit; a deletion that a `HEAD` move brings back, and a change `git reset --hard` discards, is cleared (F07-AC39..AC42).
+- RS-2 and RS-3 replay the reference session with `git` answered step by step; NFR-R3 has its own test.
 - Spike S4 step 11: in an interactive session on 2.1.300 the `Bash` result's `bashEditDiff`, `gitOperation` and `staleReadFileStateHint` keys are present but always undefined.
 
 ## 0.2.0 (2026-10-14)
