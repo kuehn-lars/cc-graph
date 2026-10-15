@@ -268,3 +268,18 @@ test('F07-R16 where git cannot run in the worktree, the working tree answers, an
   await $.tool.call({ tool: 'Bash', command: 'rm src/routes/index.ts', agentId: AGENT } as any); await clock.advance(50)
   expect(await nodeOf('src/routes/index.ts')).toMatchObject({ change: 'deleted', reason: 'deleted by `rm src/routes/index.ts`' })
 })
+
+test('F07-R13 a file a subagent wrote in its worktree and a later rm there removed is deleted "in worktree agent-<id>"', async ($, on) => {
+  const clock = mock.clock(on)
+  const answer = engine(on, { tool: 'Write', tool_use_id: 'x', input: {}, result: wrote(`.claude/worktrees/agent-${AGENT}/notes/draft.md`) })
+  const trees: Record<string, string | null> = { [WT]: '' } // read at each call, so the test changes it between them
+  git(on, [clean], '/w', [], [], trees)
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  trees[WT] = '?? notes/draft.md\0'
+  await $.tool.call({ tool: 'Write', file_path: `${WT}/notes/draft.md`, content: 'x', agentId: AGENT } as any); await clock.advance(50)
+  trees[WT] = ''
+  Object.assign(answer, { result: quiet })
+  await $.tool.call({ tool: 'Bash', command: 'rm notes/draft.md', agentId: AGENT } as any); await clock.advance(50)
+  expect(await nodeOf('notes/draft.md')).toMatchObject({ change: 'deleted', reason: `deleted by \`rm notes/draft.md\` in worktree agent-${AGENT}` })
+})

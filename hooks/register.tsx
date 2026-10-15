@@ -176,10 +176,10 @@ async function headDiff($: Pick<CoreEngineInterface, 'process'>, dir: string, fr
   const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd: dir, ...GIT })
   return r.exitCode === 0 ? nameStatusOf(r.stdout) : undefined
 }
-// Takes the working tree's baseline anew; a failing `git` keeps the old one.
-async function rebase($: Pick<CoreEngineInterface, 'process'>) {
-  const now = await status($)
-  if (now) bases.set(cwd, now)
+// Takes a tree's baseline anew (the working tree's, or a worktree's folder); a failing `git` keeps the old one.
+async function rebase($: Pick<CoreEngineInterface, 'process'>, dir = cwd) {
+  const now = await status($, dir)
+  if (now) bases.set(dir, now)
 }
 async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
   const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
@@ -190,14 +190,16 @@ async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
 }
 
 // F07-R13: Claude's own change goes into the baseline, so a later command that removes the file is seen. One refresh waits at a time; it reads `git` when it runs, so it takes the latest.
-// ponytail: the working tree only (a worktree's baseline is taken at its first command, R16); one flag. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
-let refreshQueued = false
-function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>) {
-  if (!root || refreshQueued) return
-  refreshQueued = true
+// A file under a worktree refreshes that worktree's baseline (R16); a worktree `git` cannot run in is dropped by the queue. ponytail: a Set of folders waiting. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
+const refreshQueued = new Set<string>()
+function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>, path: string) {
+  const worktree = worktreeOf(path, cwd)
+  const dir = worktree ? `${cwd}/.claude/worktrees/${worktree}` : cwd
+  if (!root || refreshQueued.has(dir)) return
+  refreshQueued.add(dir)
   enqueue($, async () => {
-    refreshQueued = false
-    await rebase($)
+    refreshQueued.delete(dir)
+    await rebase($, dir)
   })
 }
 
@@ -253,7 +255,7 @@ export const register: Register = (on, options) => {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
       if (action) await record($, action, e.agentId)
     }
-    if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($)
+    if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($, e.file_path ?? e.notebook_path)
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
     if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, () => shellJob($, e))
