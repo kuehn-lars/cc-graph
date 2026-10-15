@@ -65,7 +65,7 @@ function memoryTotal(notes: MemoryNote[]) {
 
 const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.tokens === null ? '?' : count(n.tokens)}`].filter(Boolean).join('  ')}`
 
-export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void) {
+export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void, showBlind = true) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   const edges = edgeWords(graph)
   const blind = blindSpots(graph)
@@ -83,9 +83,9 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       ))}
       {memory.length > 0 && <Text bold>{fit(memoryTotal(memory), columns)}</Text>}
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
-      <Text bold>Blind spots</Text>
-      {blind.length === 0 && <Text dimColor>No blind spots.</Text>}
-      {blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
+      {showBlind && <Text bold>Blind spots</Text>}
+      {showBlind && blind.length === 0 && <Text dimColor>No blind spots.</Text>}
+      {showBlind && blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
   )

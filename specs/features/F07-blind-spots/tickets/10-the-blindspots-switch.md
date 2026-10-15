@@ -8,8 +8,8 @@ Requirements: F07-R12; F14-R1, R2.
 
 **Touches:** `plugin.json`, the wiring (registration by setting).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F07-AC26, F14-AC4
-- [ ] `claude plugin validate` accepts the field
-- [ ] The check command passes
+- [x] F07-AC26, F14-AC4
+- [x] `claude plugin validate` accepts the field
+- [x] The check command passes

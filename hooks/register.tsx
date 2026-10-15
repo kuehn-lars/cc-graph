@@ -247,10 +247,13 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
 let maxNodes = 60
 // F06-R12, F14-R2: read once; off means no import is parsed.
 let importEdges = true
+// F07-R12, F14-R2: read once; off, `root` stays null, so no git job is ever queued, and the list has no Blind spots section. Shell reads need no git.
+let blindSpots = true
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   importEdges = options.importEdges !== false
+  blindSpots = options.blindSpots !== false
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
@@ -258,7 +261,7 @@ export const register: Register = (on, options) => {
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
     await refreshMemory($)
-    enqueue($, () => findRoot($))
+    if (blindSpots) enqueue($, () => findRoot($))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -376,7 +379,7 @@ export const register: Register = (on, options) => {
         </Box>
         {graphShown
           ? renderGraph(table, await readGraph($), await readLayout($), await readMemory($), await readFill($), notes, e.props.bodyColumns, rows, selected)
-          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path))}
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path), blindSpots)}
       </Box>
     )
   })
