@@ -28,7 +28,7 @@ A feature folder may also hold `tickets/`: one file per vertical slice, numbered
 | [F04](features/F04-memory-layer/spec.md) | Memory layer | v0.1 | Verified |
 | [F05](features/F05-thinking-layer/spec.md) | Thinking layer | v0.4 | Review |
 | [F06](features/F06-import-edges/spec.md) | Import edges | v0.2 | Verified |
-| [F07](features/F07-blind-spots/spec.md) | Blind spots | v0.3 | Approved |
+| [F07](features/F07-blind-spots/spec.md) | Blind spots, shell reads and shell changes | v0.3 | Approved |
 | [F08](features/F08-pane-list-view/spec.md) | Pane, list view and key map | v0.1 | Verified |
 | [F09](features/F09-terminal-graph/spec.md) | Terminal graph and layout | v0.2 | Verified |
 | [F10](features/F10-desktop-graph/spec.md) | Desktop graph and pointer selection | v0.5 | Review |
