@@ -1,5 +1,5 @@
 // Pure: the segments of a shell command and the folder each runs in (F02-R1, R8; F07-R17, R19).
-import { isAbs } from './path'
+import { isAbs, normalize } from './path'
 
 /** `redirs`: indices of the unquoted words that are redirections (`2>&1`, `>file`). */
 export type Segment = { words: string[]; sep: string; redirs: Set<number> }
@@ -52,4 +52,16 @@ export function dirAfter(dir: string | null | undefined, s: Segment, next: strin
   if (cmd !== 'cd') return dir
   if (s.words.length !== 2 || next !== '&&' || /[$`~*?[{\\]|^-/.test(path)) return null
   return isAbs(path) ? path : dir === null ? null : dir === undefined ? path : `${dir}/${path}`
+}
+
+/** F02-R8: the node path of `path` as a command run in `dir` names it (`undefined`: the session's `cwd`; a path: that of the `cd … &&` before it). */
+export function resolve(path: string, dir: string | undefined, cwd: string): string {
+  const join = (...p: (string | undefined)[]) => p.filter(Boolean).join('/') // cwd is '' before the session starts
+  return normalize(isAbs(path) ? path : join(dir && isAbs(dir) ? dir : join(cwd, dir), path), cwd)
+}
+
+/** The command as a reason names it: its first line, cut to 60 characters. */
+export const cut = (command: string) => {
+  const line = command.split('\n')[0]!
+  return line.length > 60 ? `${line.slice(0, 59)}…` : line
 }

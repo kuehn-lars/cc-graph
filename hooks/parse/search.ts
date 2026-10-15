@@ -1,7 +1,6 @@
 // Pure: a Bash command that holds a search, and the hits in its output (F02-R1, R2, R9).
 import type { Searched } from '../model/searched'
-import { isAbs, normalize } from './path'
-import { dirAfter, segments, type Segment } from './shell'
+import { dirAfter, resolve, segments, type Segment } from './shell'
 
 /** `dir`: where the search ran. Absent: the session's directory; a path: that of the `cd … &&` before it (F02-R8); `null`: unknown. */
 export type Search = { tool: string; flags: string[]; operands: string[]; dir?: string | null }
@@ -108,10 +107,7 @@ const preview = (text: string) => text.split('\n').filter(l => !/^(<\/?persisted
 export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
   const [search, ...more] = searchesIn(command)
   if (!search || more.length || search.dir === null || result.interrupted) return null // F02-R10: two searches' outputs run together
-  // F02-R8: a relative hit is under the search's directory, which is under the session's unless absolute.
-  const join = (...p: (string | undefined)[]) => p.filter(Boolean).join('/') // cwd is '' before the session starts
-  const dir = search.dir && isAbs(search.dir) ? search.dir : join(cwd, search.dir)
   const files: Searched['files'] = {}
-  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[normalize(isAbs(path) ? path : join(dir, path), cwd)] = h
+  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[resolve(path, search.dir, cwd)] = h // F02-R8
   return Object.keys(files).length ? { type: 'searched', readId, files } : null
 }
