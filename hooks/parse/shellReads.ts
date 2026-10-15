@@ -5,6 +5,7 @@ import { countLines, estimateTokens, plural } from './measure'
 import { cut, dirAfter, resolve, segments, type Segment } from './shell'
 
 const PRINTERS = ['cat', 'bat', 'nl', 'head', 'tail', 'sed']
+const FILTERS = ['head', 'tail', 'sed'] // `sed -n` only: printOf refuses any other sed
 
 /** Short flags that take a value (`head -n 5`, `bat -r 1:5`), so the value is no file. */
 // ponytail: a fixed list, and long flags only when written `--flag=value` or one of VALUE_LONG; a value flag missing here leaves its value as an operand. Add when seen.
@@ -15,14 +16,15 @@ const VALUE_LONG = ['--line-range', '--language', '--theme', '--highlight-line']
 const EXPANDED = /[$`~*?[{]/
 
 type Printed = { cmd: string; files: string[]; flags: string[]; n?: string; script?: string; stdout: boolean }
-type Print = Printed & { dir: string | null | undefined }
+/** `filter`: the `head`, `tail` or `sed -n` the print is piped into, which says what Claude saw of it. */
+type Print = Printed & { dir: string | null | undefined; filter?: Printed }
 
-/** The printing command of a segment, its file operands and flags; null for any other command or one piped into another (Claude saw only what came out of the pipe). */
-function printOf({ words: w, redirs }: Segment, piped: boolean): Printed | null {
+/** The printing command of a segment, its file operands and flags; null for any other command. */
+function printOf({ words: w, redirs }: Segment): Printed | null {
   let i = 0
   while (/^[A-Za-z_]\w*=/.test(w[i] ?? '')) i++
   const cmd = w[i] ?? ''
-  if (piped || !PRINTERS.includes(cmd) || (cmd === 'sed' && w[i + 1] !== '-n')) return null
+  if (!PRINTERS.includes(cmd) || (cmd === 'sed' && w[i + 1] !== '-n')) return null
   const out: Printed = { cmd, files: [], flags: [], stdout: true }
   let ended = false
   for (let j = i + (cmd === 'sed' ? 2 : 1); j < w.length; j++) {
@@ -33,26 +35,27 @@ function printOf({ words: w, redirs }: Segment, piped: boolean): Printed | null 
       continue
     }
     if (!ended && a === '--') { ended = true; continue }
+    if (cmd === 'sed' && out.script === undefined && (ended || a[0] !== '-' || a.length < 2)) { out.script = a; continue } // the script, whatever it holds, is no file
     if (ended || a.length < 2 || a[0] !== '-') { a !== '-' && a !== '&' && !EXPANDED.test(a) && out.files.push(a); continue } // `-` is standard input, a lone `&` backgrounds the command
     out.flags.push(a)
+    if ((cmd === 'head' || cmd === 'tail') && /^-\d+$/.test(a)) { out.n = a.slice(1); continue } // `head -50`
     const k = a[1] === '-' ? -1 : [...a.slice(1)].findIndex(c => (VALUE_SHORT[cmd] ?? '').includes(c))
     const takes = k >= 0 ? a.length === k + 2 : VALUE_LONG.includes(a)
     if (k >= 0 && a[1 + k] === 'n') out.n = a.length > k + 2 ? a.slice(k + 2) : w[j + 1]
     if (takes) j++
   }
-  if (cmd === 'sed') out.script = out.files.shift()
   return out
 }
 
 /** What a command's own form says Claude saw: `read` for the whole file, `partial` with the words F07-R19 gives. */
 function form(p: Printed, command: string, known: number | null): Pick<FileRead, 'state' | 'seen'> {
   const through = { state: 'partial', seen: `through \`${cut(command)}\`` } as const
-  const only = p.flags.length === 1 && /^\d+$/.test(p.n ?? '')
-  if (p.cmd === 'head') return only ? { state: 'partial', seen: `first ${p.n} lines` } : through
-  if (p.cmd === 'tail') return only ? { state: 'partial', seen: `last ${p.n} lines` } : through
+  const n = p.flags.length === 0 ? '10' : p.flags.length === 1 && /^\d+$/.test(p.n ?? '') ? p.n : null // `head` alone prints 10
+  if (p.cmd === 'head') return n ? { state: 'partial', seen: `first ${n} lines` } : through
+  if (p.cmd === 'tail') return n ? { state: 'partial', seen: `last ${n} lines` } : through
   if (p.cmd === 'sed') {
-    const range = /^(\d+),(\d+)p$/.exec(p.script ?? '')
-    return range ? { state: 'partial', seen: `lines ${range[1]} to ${range[2]}` } : through
+    const [, a, b] = /^(\d+)(?:,(\d+|\$))?p$/.exec(p.script ?? '') ?? []
+    return !a ? through : { state: 'partial', seen: !b ? `line ${a}` : b === '$' ? `lines ${a} to the end` : `lines ${a} to ${b}` }
   }
   if (p.cmd === 'bat' && p.flags.some(f => f === '-r' || f.startsWith('--line-range'))) return through
   return known === null ? { state: 'read', seen: through.seen } : { state: 'read', seen: plural(known, 'line') }
@@ -68,18 +71,25 @@ export function shellReads(command: string, readId: string, result: { stdout?: s
   let dir: string | null | undefined
   const prints: Print[] = []
   let others = 0
-  segs.forEach((s, i) => {
-    const p = printOf(s, segs[i + 1]?.sep === '|')
-    if (p) prints.push({ ...p, dir })
+  for (let i = 0; i < segs.length; i++) {
+    const s = segs[i]!
+    const p = printOf(s)
+    const next = segs[i + 1]
+    // A print piped on is read only through `head`, `tail` or `sed -n` that names no file and is piped nowhere: Claude saw what came out of the pipe.
+    const f = p && next?.sep === '|' ? printOf(next) : null
+    const filter = f && FILTERS.includes(f.cmd) && !f.files.length && segs[i + 2]?.sep !== '|' ? f : undefined
+    if (p && (next?.sep !== '|' || filter)) prints.push({ ...p, dir, filter })
     else if (s.words.length && s.words[0] !== 'cd') others++
-    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
-  })
+    dir = dirAfter(dir, s, next?.sep ?? '')
+    if (filter) dir = dirAfter(dir, next!, segs[(i += 1) + 1]?.sep ?? '') // the filter is part of this read
+  }
   // ponytail: only isError and interrupted are checked, so `cat nofile 2>/dev/null || true` (exit 0) records a read that never happened. Needs the exit code or stderr to know.
   const files = prints.filter(p => p.stdout && p.dir !== null)
   const single = files.length === 1 && prints.length === 1 && files[0]!.files.length === 1 && others === 0
   return files.flatMap(p => p.files.map(file => {
     const path = resolve(file, p.dir as string | undefined, cwd)
-    const seen = form(p, command, single && !result.persistedOutputPath ? countLines(result.stdout) : null)
+    const seen = !p.filter ? form(p, command, single && !result.persistedOutputPath ? countLines(result.stdout) : null)
+      : p.files.length > 1 ? { state: 'partial' as const, seen: `through \`${cut(command)}\`` } : form(p.filter, command, null)
     return {
       type: 'fileRead', path, readId, tokens: single ? estimateTokens(text ?? '') : null,
       ...seen, ...(result.persistedOutputPath && { state: 'partial', seen: 'preview only' }),

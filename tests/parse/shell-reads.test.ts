@@ -28,8 +28,26 @@ test('F07-AC25 a piped cat reads nothing, and cat reads again when only its stde
 test('F07-R19 head and tail say how many lines; any other form says the command', () => {
   expect(reads('head -n 5 src/a.ts')).toEqual(one('src/a.ts', 'partial', 'first 5 lines', expect.any(Number)))
   expect(reads('tail -n 3 src/a.ts')).toEqual(one('src/a.ts', 'partial', 'last 3 lines', expect.any(Number)))
-  expect(reads('head src/a.ts')).toEqual(one('src/a.ts', 'partial', 'through `head src/a.ts`', expect.any(Number)))
-  expect(reads("sed -n '5p' src/a.ts")).toEqual(one('src/a.ts', 'partial', "through `sed -n '5p' src/a.ts`", expect.any(Number)))
+  expect(reads('tail -n +3 src/a.ts')).toEqual(one('src/a.ts', 'partial', 'through `tail -n +3 src/a.ts`', expect.any(Number)))
+  expect(reads("sed -n '/a/,/b/p' src/a.ts")).toEqual(one('src/a.ts', 'partial', "through `sed -n '/a/,/b/p' src/a.ts`", expect.any(Number)))
+})
+
+test('F07-AC32 head -50, bare head and tail -20 say their lines; sed -n with $ or one line says so too', () => {
+  expect(reads('head -50 src/db/redis.ts')).toEqual(one('src/db/redis.ts', 'partial', 'first 50 lines', expect.any(Number)))
+  expect(reads('head src/db/redis.ts')).toEqual(one('src/db/redis.ts', 'partial', 'first 10 lines', expect.any(Number)))
+  expect(reads('tail -20 src/db/redis.ts')).toEqual(one('src/db/redis.ts', 'partial', 'last 20 lines', expect.any(Number)))
+  expect(reads('tail src/db/redis.ts')).toEqual(one('src/db/redis.ts', 'partial', 'last 10 lines', expect.any(Number)))
+  expect(reads("sed -n '10,$p' src/db/redis.ts")).toEqual(one('src/db/redis.ts', 'partial', 'lines 10 to the end', expect.any(Number)))
+  expect(reads("sed -n '5p' src/db/redis.ts")).toEqual(one('src/db/redis.ts', 'partial', 'line 5', expect.any(Number)))
+  expect(reads("sed -n -e '1,5p' src/db/redis.ts")).toEqual(one('src/db/redis.ts', 'partial', 'lines 1 to 5', expect.any(Number)))
+})
+
+test('F07-AC33 a print piped into head, tail or sed -n reads its file partial, with the filter\'s words and tokens from the output', () => {
+  expect(reads('cat src/api/users.ts | head -10')).toEqual(one('src/api/users.ts', 'partial', 'first 10 lines', Math.ceil(cat.text.length / 4)))
+  expect(reads("nl -ba src/config.ts | sed -n '1,40p'")).toEqual(one('src/config.ts', 'partial', 'lines 1 to 40', expect.any(Number)))
+  expect(reads('cat -n src/a.ts | tail -n 5')).toEqual(one('src/a.ts', 'partial', 'last 5 lines', expect.any(Number)))
+  expect(reads('cat src/a.ts src/b.ts | head -5').map(r => r.seen)).toEqual(['through `cat src/a.ts src/b.ts | head -5`', 'through `cat src/a.ts src/b.ts | head -5`'])
+  for (const c of ['cat src/a.ts | grep x', 'cat src/a.ts | head -5 | grep x', 'cat src/a.ts | head -5 src/b.ts', 'cat src/a.ts | wc -l']) expect(reads(c).map(r => r.path)).toEqual(c.endsWith('src/b.ts') ? ['src/b.ts'] : [])
 })
 
 test('F07-R19 bat, nl and flags: the file is the operand, not the flag or its value', () => {
