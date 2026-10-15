@@ -84,6 +84,7 @@ export function resolve(path: string, dir: string | undefined, cwd: string): str
 export function namedPaths(command: string, cwd: string, start?: string): (path: string) => boolean {
   const names: string[] = []
   const segs = segments(command)
+  if (segs.some(s => s.words[0] === 'patch' || s.words.slice(0, 2).join(' ') === 'git apply')) return () => true // Claude wrote or chose the patch
   let dir: string | null | undefined = start
   segs.forEach((s, i) => {
     if (dir !== null) for (const w of s.words) {

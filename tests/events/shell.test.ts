@@ -369,3 +369,11 @@ test('F07-AC37 after an earlier cd src, sed -i on config.ts names src/config.ts:
   await session($, clock, "sed -i '' s/a/b/ config.ts")
   expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', state: 'partial' })
 })
+
+test('F07-AC40 a patch a command applies names the files it changes: edited, not blind', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [clean, clean, ' M src/config.ts\0'])
+  await session($, clock, 'git apply fix.patch')
+  expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', state: 'partial' })
+})
