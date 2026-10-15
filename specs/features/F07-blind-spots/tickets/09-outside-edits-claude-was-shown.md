@@ -10,7 +10,7 @@ Requirements: F07-R7.
 
 **Touches:** `parse` (attachment), `model`, the wiring (`prompt.attachment` with `type: 'edited_text_file'`).
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] F07-AC6 (derived fixture)
-- [ ] The check command passes
+- [x] F07-AC6 (derived fixture)
+- [x] The check command passes

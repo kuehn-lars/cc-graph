@@ -2,6 +2,7 @@
 import type { Graph } from '../../types'
 import { batch, type Batch } from './batch'
 import { compacted, type Compacted } from './compacted'
+import { external, type External } from './external'
 import { fileEdited, type FileEdited } from './fileEdited'
 import { fileRead, fileUnchanged, type FileRead, type FileUnchanged } from './fileRead'
 import { fileWritten, type FileWritten } from './fileWritten'
@@ -13,7 +14,7 @@ import { shellChanged, type ShellChanged } from './shellChanged'
 
 // F15-R1: the actions that name a file (a Batch holds them), and so carry the calling agent's id.
 export type FileAction = FileRead | FileUnchanged | FileEdited | FileWritten | Mention | Searched | Batch
-export type Action = FileAction | Compacted | Reattached | ShellChanged | Importers
+export type Action = FileAction | Compacted | Reattached | ShellChanged | Importers | External
 
 export const emptyGraph: Graph = { seq: 0, files: {}, edges: [], decisions: [], compactions: [] }
 
@@ -31,5 +32,6 @@ export function reduce(g: Graph | undefined, a: Action, turn: number): Graph {
     case 'reattached': return reattached(graph, a)
     case 'shellChanged': return shellChanged(graph, a, turn)
     case 'importers': return importers(graph, a, turn)
+    case 'external': return external(graph, a, turn)
   }
 }

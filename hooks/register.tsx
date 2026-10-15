@@ -6,7 +6,7 @@ import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote } from './model/notes'
 import { editAction, notebookEditAction } from './parse/fileEdited'
-import { reattachedAction } from './parse/attachment'
+import { externalAction, reattachedAction } from './parse/attachment'
 import { PATHSPECS, importPattern, importersOf } from './parse/grep'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
@@ -329,6 +329,13 @@ export const register: Register = (on, options) => {
     const out = await next(e)
     const action = e.agentId ? null : reattachedAction(e.text, cwd)
     if (action) await apply($, action)
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F07-R7: a main-loop file changed outside Claude that Claude Code showed it. Not a blind spot. Needs no git.
+  on('prompt.attachment', { type: 'edited_text_file' }, async ($, e, next) => {
+    const out = await next(e)
+    if (!e.agentId) await apply($, externalAction(e.text, cwd))
     return out
   }).catch(($, e, next) => next(e))
 
