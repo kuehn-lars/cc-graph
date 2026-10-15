@@ -2,19 +2,20 @@ import out from '../../fixtures/output/outputs'
 import reference from '../../fixtures/sessions/reference'
 import readWhole from '../../fixtures/tool-results/read-whole'
 import { expect, mock, test } from 'claude-code/testing'
-import { engine, graphOf, nodeOf, start, turn } from './kit'
+import { engine, graphOf, nodeOf, start, turn, written } from './kit'
 
 const edit = reference.events.find(e => e.event === 'tool.call' && (e.input as any).tool === 'Edit' && (e.result as any).result?.filePath)!
 const edited = (path: string) => ({ ...(edit.result as any).result, filePath: `/w/${path}` })
 const found = out['git-grep-importers-login'].stdout
 
 /** The test's `git` beneath the mod: the root is /w, there is no HEAD, the status is clean and `grep` answers `grep`. Returns the argument lists it saw. */
-function git(on: any, grep: string) {
+function git(on: any, grep: string, failing?: ($: any) => Promise<never>) {
   const seen: string[][] = []
   on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
   on('process.run', (_$: any, e: any) => {
     seen.push([...e.argv])
     const [, sub, arg] = e.argv
+    if (sub === 'grep' && failing) return failing(_$)
     if (sub === 'grep') return { value: { exitCode: grep ? 0 : 1, stdout: grep, stderr: '' } }
     if (sub === 'rev-parse' && arg === 'HEAD') return { value: { exitCode: 128, stdout: '', stderr: '' } }
     return { value: { exitCode: 0, stdout: sub === 'rev-parse' ? '/w\n' : '', stderr: '' } }
@@ -86,4 +87,39 @@ test('F07-AC11 reading the ghost clears the blind edge', async ($, on) => {
   await $.tool.call({ tool: 'Read', file_path: '/w/src/api/users.ts' })
   expect(await nodeOf('src/api/users.ts')).toMatchObject({ state: 'read' })
   expect((await graphOf())?.edges.find(e => e.from === 'src/api/users.ts' && e.to === 'src/auth/login.ts')).toMatchObject({ blind: false })
+})
+
+// F07-R9: a git job that fails or runs past its timeout is dropped. The engine enforces `timeoutMs` and rejects the `process.run`; the stand-in rejects the same way. (Waiting out 5 seconds on the mocked clock would hold the queue's own timer, which the clock runs to its end before it moves on.)
+const timedOut = async (): Promise<never> => { throw new Error('timed out after 5000ms') }
+
+test('F07-AC5 (derived) a git grep past 5 seconds is dropped: the Edit result is unaffected, the debug log has the reason, the footer says so once', async ($, on) => {
+  const clock = mock.clock(on)
+  const answer = engine(on, { tool: 'Edit', tool_use_id: 'x', input: {}, result: edited('src/auth/login.ts') })
+  const logs: { text: string; to: string }[] = []
+  on('ui.log', (_$: any, e: any) => (logs.push({ text: e.text, to: e.to }), { value: undefined }))
+  git(on, found, timedOut)
+  await session($, clock)
+  const out = await editLogin($)
+  expect(out.result).toEqual(answer.result)
+  await clock.advance(100)
+  expect(await nodeOf('src/api/users.ts')).toBeUndefined()
+  expect(written.notes).toEqual(['Blind-spot search timed out'])
+  expect(logs).toEqual([{ text: expect.stringMatching(/^git job dropped: /), to: 'debug' }]) // the reason is the engine's own text for the rejection
+  await turn($, 't2'); await clock.advance(50)
+  await editLogin($); await clock.advance(100)
+  expect(written.notes).toEqual(['Blind-spot search timed out']) // once per conversation
+  expect(logs.every(l => l.to === 'debug')).toBe(true)
+})
+
+test('F07-AC4 git cannot start: nothing reaches the transcript and the footer says "Shell changes need git"', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Edit', tool_use_id: 'x', input: {}, result: edited('src/auth/login.ts') })
+  const logs: any[] = []
+  on('ui.log', (_$: any, e: any) => (logs.push(e), { value: undefined }))
+  on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
+  on('process.run', () => { throw new Error('spawn git ENOENT') })
+  await session($, clock)
+  await editLogin($); await clock.advance(100)
+  expect(written.notes).toEqual(['Shell changes need git'])
+  expect(logs.filter(l => l.to !== 'debug')).toEqual([])
 })

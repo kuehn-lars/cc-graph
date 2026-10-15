@@ -62,6 +62,15 @@ function enqueue($: Pick<CoreEngineInterface, 'clock'>, job: () => Promise<void>
   })
 }
 
+// F07-R9: a `git` job that fails or runs past its timeout is dropped; the reason goes to the debug log and the footer says so once.
+const TIMED_OUT = 'Blind-spot search timed out'
+const gitJob = ($: StateDollar & Pick<CoreEngineInterface, 'ui'>, job: () => Promise<void>) => async () => {
+  await job().catch(async (err: unknown) => {
+    $.ui.log(`git job dropped: ${err instanceof Error ? err.message : String(err)}`, { to: 'debug' })
+    await update($, NOTES, ns => ((ns ?? []).includes(TIMED_OUT) ? ns ?? [] : [...(ns ?? []), TIMED_OUT]))
+  })
+}
+
 // F09-R4: at most one layout pass waits in the queue; it reads the graph when it runs, so it lays out the latest. A graph that changed shape while the pass ran (a Read, or /clear) queues the next.
 let layoutQueued = false
 const queueLayout = ($: StateDollar & Pick<CoreEngineInterface, 'clock'>) => {
@@ -194,15 +203,15 @@ async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
 // F07-R13: Claude's own change goes into the baseline, so a later command that removes the file is seen. One refresh waits at a time; it reads `git` when it runs, so it takes the latest.
 // A file under a worktree refreshes that worktree's baseline (R16); a worktree `git` cannot run in is dropped by the queue. ponytail: a Set of folders waiting. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
 const refreshQueued = new Set<string>()
-function queueRefresh($: Pick<CoreEngineInterface, 'clock' | 'process'>, path: string) {
+function queueRefresh($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'process' | 'ui'>, path: string) {
   const worktree = worktreeOf(path, cwd)
   const dir = worktree ? `${cwd}/.claude/worktrees/${worktree}` : cwd
   if (!root || refreshQueued.has(dir)) return
   refreshQueued.add(dir)
-  enqueue($, async () => {
+  enqueue($, gitJob($, async () => {
     refreshQueued.delete(dir)
     await rebase($, dir)
-  })
+  }))
 }
 
 // F07-R2, R3, R4: the files that import a path Claude changed and were never opened, found by `git grep` and confirmed with F06's rules. `grep` exits 1 when nothing matches.
@@ -210,11 +219,11 @@ const searched = new Set<string>() // paths searched this main-loop turn, cleare
 function queueImporters($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, path: string) {
   if (!root || searched.has(path)) return
   searched.add(path)
-  enqueue($, async () => {
+  enqueue($, gitJob($, async () => {
     const r = await $.process.run(['git', 'grep', '-n', '-I', '--untracked', '-E', '-e', importPattern(path), '--', ...PATHSPECS], { cwd: root!, ...GIT })
     const importers = r.exitCode === 0 ? importersOf(r.stdout, path, root!, cwd) : []
     if (importers.length) await apply($, { type: 'importers', path, importers })
-  })
+  }))
 }
 
 // F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
@@ -260,7 +269,7 @@ export const register: Register = (on, options) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
     searched.clear()
-    if (root) enqueue($, () => rebase($)) // F07-R5: what the person changed between turns is not the next command's doing
+    if (root) enqueue($, gitJob($, () => rebase($))) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
 
@@ -274,7 +283,7 @@ export const register: Register = (on, options) => {
     if (!out.deny && !out.isError && /^(Edit|Write)$/.test(e.tool)) queueImporters($, normalize(e.file_path, cwd)) // F07-R2
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
     // F07-R18: a call the engine held read-only changed no file.
-    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, () => shellJob($, e))
+    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, gitJob($, () => shellJob($, e)))
     return out
   }).catch(($, e, next) => next(e))
 

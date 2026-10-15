@@ -10,5 +10,5 @@ Requirements: F07-R9 (R1 as shipped).
 
 **Status:** ready-for-agent
 
-- [ ] F07-AC4, AC5
-- [ ] The check command passes
+- [x] F07-AC4, AC5
+- [x] The check command passes
