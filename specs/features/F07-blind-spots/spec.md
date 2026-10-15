@@ -36,7 +36,7 @@ What Claude does through the shell counts as much as what it does through its to
 ## Requirements
 
 - **F07-R1** When `session.start` fires, the mod enqueues `git rev-parse --show-toplevel`. If `git` cannot start or exits non-zero, then F07 is off for the conversation and the footer says "Shell changes need git" once.
-- **F07-R2** When a file gets `change` `edited` or `created` (F01), the mod enqueues, at most once per path per main-loop turn, `git grep -n -I --untracked -E -e <pattern> -- <pathspecs>` in the repository root with a 5 second timeout, where the pattern matches an import line (F06-R2 forms) whose quoted specifier ends in the file's name without extension, and the pathspecs cover the JavaScript, TypeScript and Python extensions.
+- **F07-R2** When a file gets `change` `edited` or `created` (F01), the mod enqueues, at most once per path per main-loop turn, `git grep -n -I --untracked -E -e <pattern> -- <pathspecs>` in the repository root with a 5 second timeout, where the pattern matches an import line (F06-R2 forms) whose quoted specifier ends in the file's name without extension (for `index` and `__init__`, in the name of its folder, with or without `/index`), and the pathspecs cover the JavaScript, TypeScript and Python extensions. The line is one line: the last line of a multi-line import, `} from '…'`, counts, and the names listed on its earlier lines are not read.
 - **F07-R3** The mod confirms each hit by resolving its specifier from the hit's file with F06's rules. Only hits that resolve to the changed path count.
 - **F07-R4** When a confirmed importer has no node, the mod adds it as a `ghost` with an import edge to the changed file. An edge from a `ghost` to a changed file is `blind`. When the ghost leaves the `ghost` state, the mod clears `blind` on its edges.
 - **F07-R5** The mod keeps a baseline: the paths `git status --porcelain=v1 -z --untracked-files=all` reports as changed or untracked, taken at `session.start`, at each main-loop `turn.start`, and after each `Bash` call.
@@ -89,6 +89,8 @@ What Claude does through the shell counts as much as what it does through its to
 - **F07-AC25** Given `sed -n '1,5p' src/config.ts`, then `src/config.ts` is `partial` with `seen` "lines 1 to 5"; given `cat src/config.ts | grep port`, then no read of `src/config.ts` is recorded.
 - **F07-AC26** Given `blindSpots: false`, when Claude edits `login.ts` and runs `npm pkg set description=probe` and `cat src/auth/login.ts`, then no `process.run` is raised, the footer has no Blind spots section, and `src/auth/login.ts` has state `read`.
 - **F07-AC27** Given a repository without commits and `?? notes/b.md` in the baseline, when `git add notes/b.md && git commit -qm b` makes the first commit, then no `git diff` runs and `notes/b.md` is not `deleted`.
+- **F07-AC28** Given `src/auth/index.ts` is edited and `src/routes/index.ts` has `import { login } from '../auth'`, then `src/routes/index.ts` is a `ghost` with a `blind` edge to `src/auth/index.ts`.
+- **F07-AC29** Given `src/auth/login.ts` is edited and `git grep` reports `src/api/users.ts:9:} from '../auth/login'`, then `src/api/users.ts` is a `ghost` with a `blind` edge to it.
 
 ## Implementation decisions
 
@@ -177,3 +179,4 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 - 2026-10-15 R19 says an interrupted call reads nothing, as F02-R7 does for a search. Found in review of ticket 02; the code already did.
 - 2026-10-15 R14 and AC27: the first commit of a repository has no old `HEAD` to diff, so untracked paths that leave the status then count as committed, not deleted. Found reviewing ticket 04; fixed at the owner's request, and the status stays Approved.
 - 2026-10-15 R13 names the worktree of a subagent's `Write` or `Edit`, and R16 says a fallback to the working tree carries no worktree ending and that F15-R9's null `reason` is for the tools' edits. Found in review of ticket 06; the code already did the second.
+- 2026-10-15 R2 names two forms the first build missed: a changed `index` or `__init__` file, found by its folder's name, and the last line of a multi-line import. AC28 and AC29 added. Found implementing ticket 07; the status stays Approved, to be confirmed with the review.
