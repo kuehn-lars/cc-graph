@@ -4,7 +4,7 @@ import { isAbs, normalize } from './path'
 /** `redirs`: indices of the unquoted words that are redirections (`2>&1`, `>file`). */
 export type Segment = { words: string[]; sep: string; redirs: Set<number> }
 
-/** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `sep`: the separator before the segment. */
+/** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `sep`: the separator before the segment. A here-document (`<<EOF`, `<<-'EOF'`) is one redirection word, and its lines up to the delimiter are text, not segments (F02-R1). */
 export function segments(command: string): Segment[] {
   const out: Segment[] = []
   let words: string[] = []
@@ -14,6 +14,7 @@ export function segments(command: string): Segment[] {
   let sep = ''
   let quoted = false
   let redirs = new Set<number>()
+  const heredocs: { delim: string; strip: boolean }[] = [] // waiting for the end of the line
   const word = () => {
     if (has) (!quoted && /^(\d*|&)(>>?|<)/.test(cur) && redirs.add(words.length), words.push(cur))
     cur = ''
@@ -27,6 +28,16 @@ export function segments(command: string): Segment[] {
       if (c === '"') quote = ''
       else if (c === '\\' && '"\\$`'.includes(command[i + 1] ?? ' ')) cur += command[++i]
       else cur += c
+    } else if (c === '<' && command[i + 1] === '<' && command[i + 2] !== '<') {
+      word()
+      const strip = command[i + 2] === '-'
+      i += strip ? 3 : 2
+      while (command[i] === ' ' || command[i] === '\t') i++
+      let delim = ''
+      for (; i < command.length && !/[\s;|&<>()]/.test(command[i]!); i++) if (command[i] !== "'" && command[i] !== '"' && command[i] !== '\\') delim += command[i]
+      i--
+      redirs.add(words.length), words.push(`<<${delim}`)
+      heredocs.push({ delim, strip })
     } else if (c === '\\') (cur += command[++i] ?? ''), (has = true), (quoted = true)
     else if (c === "'" || c === '"') (quote = c), (has = true), (quoted = true)
     else if (c === ';' || c === '|' || c === '\n' || (c === '&' && command[i + 1] === '&')) {
@@ -36,6 +47,14 @@ export function segments(command: string): Segment[] {
       redirs = new Set()
       sep = c
       if (c !== ';' && c !== '\n' && command[i + 1] === c) (sep += c), i++
+      if (c === '\n') for (const { delim, strip } of heredocs.splice(0)) { // the body: every line up to the one that is the delimiter
+        for (;;) {
+          const end = command.indexOf('\n', i + 1)
+          const line = command.slice(i + 1, end < 0 ? command.length : end)
+          i = end < 0 ? command.length : end
+          if ((strip ? line.replace(/^\t+/, '') : line) === delim || end < 0) break
+        }
+      }
     } else if (/\s/.test(c)) word()
     else (cur += c), (has = true)
   }
@@ -68,6 +87,7 @@ export function namedPaths(command: string, cwd: string, start?: string): (path:
   let dir: string | null | undefined = start
   segs.forEach((s, i) => {
     if (dir !== null) for (const w of s.words) {
+      if (w.startsWith('<<')) continue // a here-document's delimiter names nothing
       const word = w.replace(/^(\d*|&)(>>?|<)/, '')
       // A path-like part of a word: `open('src/gen.ts', 'w')` in a `python3 -c` names src/gen.ts.
       const parts = word.split(/[\s'"()[\]{},=:;]+/).filter(p => p !== word && /[/.]/.test(p))

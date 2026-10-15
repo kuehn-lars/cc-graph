@@ -92,3 +92,8 @@ test('F07-AC38 a for loop reads each of its words through $f; the expanded words
   expect(reads('for f in a.ts; do cat "$g"; done')).toEqual([])
   expect(reads('for f in src/a.ts src/b.ts; do head -n 5 $f; done').map(r => r.seen)).toEqual(['first 5 lines', 'first 5 lines'])
 })
+
+test('F07-R19 a here-document is text: its lines read nothing, and its delimiter is no file', () => {
+  expect(reads("cat > notes.md <<'EOF'\nhead -n 5 src/a.ts\nEOF\ncat src/b.ts").map(r => r.path)).toEqual(['src/b.ts'])
+  expect(reads('cat << EOF\nhello\nEOF')).toEqual([])
+})

@@ -204,3 +204,9 @@ test('F02-R3 searchesIn: a value flag or redirection with a path still reads the
   expect(searchesIn('cat f | rg -t ts verify src/a.ts')).toHaveLength(1)
   expect(searchesIn('cat f | rg -e a src 2>&1')).toHaveLength(1)
 })
+
+test('F02-AC21 searchesIn: a here-document line that begins with grep is no second search', () => {
+  const searches = searchesIn("cat > notes.md <<'EOF'\ngrep -n x src\nEOF\nrg -n verify src")
+  expect(searches.map(s => s.tool)).toEqual(['rg'])
+  expect(searchesIn('cat > a.md <<-END\n\tgrep -n x src\n\tEND\nrg -n verify src').map(s => s.tool)).toEqual(['rg'])
+})
