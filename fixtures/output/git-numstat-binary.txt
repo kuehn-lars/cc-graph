@@ -1,0 +1,1 @@
+-	-	/dev/null => logo.bin

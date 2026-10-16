@@ -26,14 +26,15 @@ function reverted(g: Graph, path: string, turn: number, agentId?: string): Graph
  * A new node, or a ghost, becomes `unread`: Claude has not seen what the command wrote. One the command named is Claude's own (`own`).
  */
 export const shellChanged = (g: Graph, a: ShellChanged, turn: number): Graph =>
-  a.changes.reduce((g, { path, change, named, from, history }) => {
+  a.changes.reduce((g, { path, change, named, from, history, added, removed }) => {
     const old = g.files[path]?.change ?? null
     if (change === 'reverted' || (history && change === 'created' && old === 'deleted')) return reverted(g, path, turn, a.agentId) // F07-R14: brought back from history
     const keep = change === 'created' ? old !== null && old !== 'deleted' : change !== 'deleted' && (old === 'edited' || old === 'created')
-    if (keep) return g
+    if (keep) return added !== undefined && old === 'created' ? touch(g, path, turn, () => ({ added }), a.agentId) : g // F07-R23: a created file's new length
     return touch(g, path, turn, o => ({
       ...(named ? own(o, from ? g.files[from] : undefined) : !o || o.state === 'ghost' ? { state: 'unread' as const, tokens: null, seen: 'never read' } : {}),
       change,
+      ...(added !== undefined && (change === 'created' ? { added } : change === 'edited' && { added, removed })), // F07-R23
       reason: `${change === 'blind' || change === 'edited' ? 'changed' : change} by \`${cut(a.command)}\`${a.worktree ? ` in worktree ${a.worktree}` : ''}`, // F07-R16
     }), a.agentId)
   }, g)

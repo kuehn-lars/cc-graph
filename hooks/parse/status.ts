@@ -1,8 +1,8 @@
 // Pure: what a shell command did to the working tree, from `git status --porcelain=v1 -z --untracked-files=all` before and after it (F07-R5, R6).
 import { normalize } from './path'
 
-/** `named`: the command named the path (F07-R17), so the change is Claude's own. `reverted`: a tracked change undone (F07-R6). `from`: the path a `mv` moved here (F07-R17). `history`: the `HEAD` diff names it (F07-R14). */
-export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited' | 'reverted'; named?: boolean; from?: string; history?: boolean }
+/** `named`: the command named the path (F07-R17), so the change is Claude's own. `reverted`: a tracked change undone (F07-R6). `from`: the path a `mv` moved here (F07-R17). `history`: the `HEAD` diff names it (F07-R14). `count`: git's path for it, when its lines can be counted (F07-R23): untracked after the command, or a tracked edit the baseline did not hold. `added`, `removed`: the lines counted. */
+export type ShellChange = { path: string; change: 'created' | 'deleted' | 'blind' | 'edited' | 'reverted'; named?: boolean; from?: string; history?: boolean; count?: { path: string; untracked: boolean }; added?: number; removed?: number }
 
 /** Each path the status names, with its two status letters (`" M"`, `"??"`); a rename or copy names its new path, and its old path as deleted (`" D"`). */
 export function statusOf(stdout: string): Map<string, string> {
@@ -44,12 +44,14 @@ export function shellChanges(before: Map<string, string>, after: Map<string, str
   const at = (p: string) => normalize(`${root}/${p}`, cwd)
   const out: ShellChange[] = []
   const other = (p: string) => (named(p) ? 'edited' : 'blind')
-  const push = (path: string, change: ShellChange['change'], history = false) =>
-    out.push({ path, change, ...(named(path) && (change === 'created' || change === 'edited') && { named: true }), ...(history && { history }) })
+  const push = (path: string, change: ShellChange['change'], history = false, count?: ShellChange['count']) =>
+    out.push({ path, change, ...(named(path) && (change === 'created' || change === 'edited') && { named: true }), ...(history && { history }), ...(count && { count }) })
   for (const [p, code] of after) {
-    if (before.get(p) === code && !worktree(p) && written.has(at(p))) push(at(p), 'edited')
+    const untracked = code === '??' ? { path: p, untracked: true } : undefined
+    if (before.get(p) === code && !worktree(p) && written.has(at(p))) push(at(p), 'edited', false, untracked)
     if (before.get(p) === code || worktree(p)) continue
-    push(at(p), code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : other(at(p)))
+    const change = code.includes('D') ? 'deleted' : code === '??' || code[0] === 'R' || code[0] === 'A' ? 'created' : other(at(p))
+    push(at(p), change, false, untracked ?? (change === 'edited' && !before.has(p) ? { path: p, untracked: false } : undefined))
   }
   for (const [p, code] of before) {
     if (worktree(p) || after.has(p)) continue
@@ -63,6 +65,12 @@ export function shellChanges(before: Map<string, string>, after: Map<string, str
     push(at(p), letter === 'D' ? 'deleted' : letter === 'A' ? 'created' : other(at(p)), true)
   }
   return out
+}
+
+/** F07-R23: the two numbers `git diff --numstat` prints, the lines added and removed; null for a binary file (`-`) or no output. */
+export const linesOf = (stdout: string): { added: number; removed: number } | null => {
+  const m = /^(\d+)\t(\d+)\t/.exec(stdout)
+  return m ? { added: Number(m[1]), removed: Number(m[2]) } : null
 }
 
 /** F07-R20: what changed between two baselines with no command of Claude's between them (a turn's start): a `D` deleted, any other new or changed letters external. */

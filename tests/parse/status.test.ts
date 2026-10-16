@@ -1,7 +1,7 @@
 import { expect, test } from 'claude-code/testing'
 import out from '../../fixtures/output/outputs'
 import { namedPaths } from '../../hooks/parse/shell'
-import { nameStatusOf, shellChanges, statusOf } from '../../hooks/parse/status'
+import { linesOf, nameStatusOf, shellChanges, statusOf } from '../../hooks/parse/status'
 
 const clean = statusOf(out['git-status-clean'].stdout)
 const installed = statusOf(out['git-status-after-npm-install'].stdout) // npm install, and a file Claude wrote
@@ -17,14 +17,14 @@ test('F07-R5 statusOf: each path with its letters; a rename names its new path a
 
 test('F07-AC2 / AC12 shellChanges: npm install changed two tracked files; an untracked file is created', () => {
   expect(shellChanges(clean, installed, '/r', '/r')).toEqual([
-    { path: 'package-lock.json', change: 'blind' }, { path: 'package.json', change: 'blind' }, { path: 'src/middleware/rateLimit.ts', change: 'created' },
+    { path: 'package-lock.json', change: 'blind' }, { path: 'package.json', change: 'blind' }, { path: 'src/middleware/rateLimit.ts', change: 'created', count: { path: 'src/middleware/rateLimit.ts', untracked: true } },
   ])
 })
 
 test('F07-AC13 shellChanges: an rm and a rename\'s old path are deleted, its new path created; what did not change is left out', () => {
   expect(shellChanges(installed, variety, '/r', '/r')).toEqual([
     { path: 'src/db/store.ts', change: 'created' }, { path: 'src/db/redis.ts', change: 'deleted' },
-    { path: 'test/helpers.ts', change: 'deleted' }, { path: 'notes with space.md', change: 'created' },
+    { path: 'test/helpers.ts', change: 'deleted' }, { path: 'notes with space.md', change: 'created', count: { path: 'notes with space.md', untracked: true } },
   ])
 })
 
@@ -33,7 +33,7 @@ test('F07-AC14 shellChanges: an untracked file gone is deleted; a path that left
 })
 
 test('F07-R6 shellChanges: paths are relative to the session\'s folder, which may be under the root', () => {
-  expect(shellChanges(clean, installed, '/r', '/r/src')).toContainEqual({ path: 'middleware/rateLimit.ts', change: 'created' })
+  expect(shellChanges(clean, installed, '/r', '/r/src')).toContainEqual({ path: 'middleware/rateLimit.ts', change: 'created', count: { path: 'src/middleware/rateLimit.ts', untracked: true } }) // F07-R23: git's path stays the root's
 })
 
 // F07-R14: `git diff --name-status -z --no-renames` between two commits, as captured.
@@ -77,7 +77,7 @@ const appended = statusOf(out['git-status-appended'].stdout)
 test('F07-AC22 shellChanges: a modified file the command names is edited, one it never named stays blind', () => {
   const named = namedPaths('printf \'// probe\\n\' >> src/db/redis.ts', '/r')
   expect(Object.fromEntries(appended)).toEqual({ 'src/db/redis.ts': ' M' })
-  expect(shellChanges(clean, appended, '/r', '/r', undefined, named)).toEqual([{ path: 'src/db/redis.ts', change: 'edited', named: true }])
+  expect(shellChanges(clean, appended, '/r', '/r', undefined, named)).toEqual([{ path: 'src/db/redis.ts', change: 'edited', named: true, count: { path: 'src/db/redis.ts', untracked: false } }])
   expect(shellChanges(clean, installed, '/r', '/r', undefined, namedPaths('npm pkg set description=probe', '/r'))).toContainEqual({ path: 'package.json', change: 'blind' })
 })
 
@@ -103,8 +103,15 @@ test('F07-R15 shellChanges skips a path under .claude/worktrees/ in the status, 
 test('F07-AC36 namedPaths: a path-like part of a word names its file; a bare word inside a string does not', () => {
   const created = new Map([['src/gen.ts', '??']])
   const command = 'python3 -c "open(\\"src/gen.ts\\",\\"w\\").write(\\"export const g = 1\\\\n\\")"' // as Claude ran it in a real session
-  expect(shellChanges(clean, created, '/r', '/r', undefined, namedPaths(command, '/r'))).toEqual([{ path: 'src/gen.ts', change: 'created', named: true }])
+  expect(shellChanges(clean, created, '/r', '/r', undefined, namedPaths(command, '/r'))).toEqual([{ path: 'src/gen.ts', change: 'created', named: true, count: { path: 'src/gen.ts', untracked: true } }])
   expect(namedPaths("node -e \"require('fs').writeFileSync('src/a.ts', 'x')\"", '/r')('src/a.ts')).toBe(true)
   const changed = new Map([['src/config.ts', ' M']])
   expect(shellChanges(clean, changed, '/r', '/r', undefined, namedPaths('npx prettier --write --log-level=warn . && echo "built src"', '/r'))).toEqual([{ path: 'src/config.ts', change: 'blind' }])
+})
+
+test('F07-R23 linesOf: the lines git diff --numstat counts, added and removed; none for a binary file or no output', () => {
+  expect(linesOf(out['git-numstat-new'].stdout)).toEqual({ added: 3, removed: 0 })
+  expect(linesOf(out['git-numstat-tracked'].stdout)).toEqual({ added: 1, removed: 0 })
+  expect(linesOf(out['git-numstat-binary'].stdout)).toBeNull()
+  expect(linesOf('')).toBeNull()
 })

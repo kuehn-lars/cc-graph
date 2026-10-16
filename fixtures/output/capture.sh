@@ -81,6 +81,15 @@ git init -q && git add -A && git -c user.name=fixture -c user.email=fixture@exam
 work="$work3"
 printf '// probe\n' >> src/db/redis.ts
 run git-status-appended . "$git_ro status --porcelain=v1 -z --untracked-files=all"
+run git-numstat-tracked . "$git_ro diff --numstat -- src/db/redis.ts"
+
+# Lines of a new file (F07-R23): a heredoc, then a line appended, then a binary file
+printf 'export const a = 1\nexport const b = 2\nexport const c = 3\n' > src/util.ts
+run git-numstat-new . "$git_ro diff --numstat --no-index -- /dev/null src/util.ts"
+printf 'x\n' >> src/util.ts
+run git-numstat-appended . "$git_ro diff --numstat --no-index -- /dev/null src/util.ts"
+printf '\0\1\2' > logo.bin
+run git-numstat-binary . "$git_ro diff --numstat --no-index -- /dev/null logo.bin"
 
 # Outside a repository (F07-AC4)
 none="$(mktemp -d)"

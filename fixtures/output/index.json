@@ -129,5 +129,25 @@
     "command": "eza src src/middleware 2>&1; rg -n log src",
     "cwd": ".",
     "exitCode": 0
+  },
+  "git-numstat-new": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1
+  },
+  "git-numstat-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1
+  },
+  "git-numstat-binary": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null logo.bin",
+    "cwd": ".",
+    "exitCode": 1
+  },
+  "git-numstat-tracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat -- src/db/redis.ts",
+    "cwd": ".",
+    "exitCode": 0
   }
 }

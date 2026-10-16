@@ -2,7 +2,7 @@ import out from '../../fixtures/output/outputs'
 import reference from '../../fixtures/sessions/reference'
 import { expect, mock, test } from 'claude-code/testing'
 import { node } from '../ui/kit'
-import { engine, nodeOf, seedGraph, start, turn, written } from './kit'
+import { engine, nodeOf, seedGraph, start, turn, writes, written } from './kit'
 
 const step = (tool: string) => reference.events.find(e => e.event === 'tool.call' && (e.input as any).tool === tool && (e.result as any).result?.filePath)!
 
@@ -14,9 +14,9 @@ const npm = 'npm install --no-audit --no-fund --loglevel=error rate-limiter-flex
 const cwds: string[] = [] // the cwd of each process.run the last git() stand-in saw, in step with its result
 /**
  * The test's `git` beneath the mod: `rev-parse --show-toplevel` answers `root` (or fails), each `status` the next of `statuses`, each `rev-parse HEAD` the next of `heads` (none: no commits), each `diff` the next of `diffs` (the last of each repeats).
- * `trees` answers `status` by cwd (a worktree); null: git cannot run there. Returns the argument lists it saw; `cwds` holds the cwd of each.
+ * `trees` answers `status` by cwd (a worktree); null: git cannot run there. `numstats` answers `diff --numstat` by path, exiting 1 as git does when a file differs from /dev/null (F07-R23). Returns the argument lists it saw; `cwds` holds the cwd of each.
  */
-function git(on: any, statuses: string[], root: string | null = '/w', heads: string[] = [], diffs: string[] = [], trees: Record<string, string | null> = {}) {
+function git(on: any, statuses: string[], root: string | null = '/w', heads: string[] = [], diffs: string[] = [], trees: Record<string, string | null> = {}, numstats: Record<string, string> = {}) {
   const seen: string[][] = []
   cwds.length = 0
   const next = (xs: string[]) => (xs.length > 1 ? xs.shift()! : xs[0] ?? '')
@@ -27,6 +27,7 @@ function git(on: any, statuses: string[], root: string | null = '/w', heads: str
     if (e.argv[1] === 'rev-parse' && e.argv[2] === 'HEAD')
       return { value: heads.length ? { exitCode: 0, stdout: `${next(heads)}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: ambiguous argument HEAD' } }
     if (e.argv[1] === 'rev-parse') return { value: root ? { exitCode: 0, stdout: `${root}\n`, stderr: '' } : { exitCode: 128, stdout: '', stderr: 'fatal: not a git repository' } }
+    if (e.argv[2] === '--numstat') return { value: { exitCode: 1, stdout: numstats[e.argv.at(-1)] ?? '', stderr: '' } }
     if (e.argv[1] === 'diff') return { value: { exitCode: 0, stdout: next(diffs), stderr: '' } }
     if (e.argv[1] === 'grep') return { value: { exitCode: 1, stdout: '', stderr: '' } } // F07-R2: no importers
     if (e.init?.cwd in trees) { // F07-R16: a worktree answers for itself
@@ -218,13 +219,13 @@ test('F07-AC27 the first commit of a repository (no HEAD before): no diff runs, 
   expect(seen.filter(a => a[1] === 'diff')).toEqual([])
 })
 
-test('F07-AC22 a file the command appended to is edited, "changed by `printf …`", with no counted lines; package.json under npm pkg set stays blind', async ($, on) => {
+test('F07-AC22 a file the command appended to is edited, "changed by `printf …`"; package.json under npm pkg set stays blind', async ($, on) => {
   const clock = mock.clock(on)
   engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
   const command = "printf '// probe\\n' >> src/db/redis.ts"
   git(on, [clean, clean, out['git-status-appended'].stdout])
   await session($, clock, command)
-  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: 'only what the command changed', added: 0, removed: 0, reason: `changed by \`${command}\`` })
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', state: 'partial', seen: 'only what the command changed', reason: `changed by \`${command}\`` })
 })
 
 test('F07-AC22 a change the command does not name stays blind', async ($, on) => {
@@ -488,4 +489,54 @@ test('F07-AC46 without git, printf >> of a file with a node makes it edited; a f
   expect(await nodeOf('src/routes/index.ts')).toMatchObject({ change: 'edited', state: 'read' })
   expect(await nodeOf('other.ts')).toBeUndefined()
   expect(await nodeOf('/dev/null')).toBeUndefined()
+})
+
+const numstats = (seen: string[][]) => seen.filter(a => a[2] === '--numstat')
+const cwdsOf = (seen: string[][]) => seen.map((a, i) => [a, cwds[i]] as const).filter(([a]) => a[2] === '--numstat').map(([, c]) => c)
+
+test('F07-AC47 a file a heredoc created takes its lines as added, in the same write of graph as its change', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const seen = git(on, [clean, clean, '?? src/util.ts\0'], '/w', [], [], {}, { 'src/util.ts': out['git-numstat-new'].stdout })
+  const command = "cat > src/util.ts <<'EOF'\nexport const a = 1\nexport const b = 2\nexport const c = 3\nEOF"
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  const before = writes.filter(k => k === 'graph').length
+  await $.tool.call({ tool: 'Bash', command }); await clock.advance(50)
+  expect(await nodeOf('src/util.ts')).toMatchObject({ change: 'created', added: 3 })
+  expect(writes.filter(k => k === 'graph').length - before).toBe(1)
+  expect(numstats(seen)).toEqual([['git', 'diff', '--numstat', '--no-index', '--', '/dev/null', 'src/util.ts']])
+  expect(cwdsOf(seen)).toEqual(['/w']) // the root, where git's paths start
+})
+
+test('F07-AC48 a line appended to a created, untracked file sets added to its new length', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/util.ts': node('src/util.ts', 1, { change: 'created', added: 3, state: 'partial', seen: ONLY }) }, edges: [], decisions: [], compactions: [] })
+  git(on, ['?? src/util.ts\0'], '/w', [], [], {}, { 'src/util.ts': out['git-numstat-appended'].stdout })
+  await session($, clock, "printf 'x\\n' >> src/util.ts")
+  expect(await nodeOf('src/util.ts')).toMatchObject({ change: 'created', added: 4 })
+})
+
+test('F07-AC49 a binary file a command created keeps added 0; 21 new files ask for at most 20 counts', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  // derived: the 21 files have no numstat of their own, so the stand-in prints nothing for them
+  const many = Array.from({ length: 21 }, (_, i) => `?? gen/f${i}.ts\0`).join('')
+  const seen = git(on, [clean, clean, '?? logo.bin\0', many], '/w', [], [], {}, { 'logo.bin': out['git-numstat-binary'].stdout })
+  await session($, clock, "printf '\\0\\1\\2' > logo.bin")
+  expect(await nodeOf('logo.bin')).toMatchObject({ change: 'created', added: 0 })
+  await $.tool.call({ tool: 'Bash', command: 'npm run codegen' }); await clock.advance(50)
+  expect(numstats(seen).length).toBe(1 + 20)
+})
+
+test('F07-AC50 a tracked file a command rewrote, unchanged in the baseline, is edited with the lines git counts; one changed before is not counted', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const seen = git(on, [clean, clean, out['git-status-appended'].stdout, out['git-status-appended'].stdout], '/w', [], [], {}, { 'src/db/redis.ts': out['git-numstat-tracked'].stdout })
+  await session($, clock, "printf '// probe\\n' >> src/db/redis.ts")
+  expect(await nodeOf('src/db/redis.ts')).toMatchObject({ change: 'edited', added: 1, removed: 0 })
+  expect(numstats(seen)).toEqual([['git', 'diff', '--numstat', '--', 'src/db/redis.ts']])
+  await $.tool.call({ tool: 'Bash', command: "printf '// again\\n' >> src/db/redis.ts" }); await clock.advance(50)
+  expect(numstats(seen).length).toBe(1) // the baseline held it: git's count would not be this command's alone
 })

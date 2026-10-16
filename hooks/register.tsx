@@ -17,7 +17,7 @@ import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
 import { moves, namedPaths, removals, stashes, writes } from './parse/shell'
-import { nameStatusOf, outsideChanges, shellChanges, statusOf } from './parse/status'
+import { linesOf, nameStatusOf, outsideChanges, shellChanges, statusOf, type ShellChange } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -197,6 +197,22 @@ async function headDiff($: Pick<CoreEngineInterface, 'process'>, dir: string, fr
   const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd: dir, ...GIT })
   return r.exitCode === 0 ? nameStatusOf(r.stdout) : undefined
 }
+// F07-R23: the lines of a file a command created (against /dev/null), or of a tracked edit the baseline did not hold (against the index), run where git's paths start (`top`: the root, or a worktree's folder).
+// The model keeps an untracked edit's count only on a node that is `created`. A failed run counts nothing, and its reason goes to the debug log (R9).
+// ponytail: at most 20 counts per call, one git process each; one `git diff --numstat` over all of them if commands that write many files matter.
+const MAX_COUNTS = 20
+async function withLines($: Pick<CoreEngineInterface, 'process' | 'ui'>, top: string, changes: ShellChange[]) {
+  let n = 0
+  const out: ShellChange[] = []
+  for (const c of changes) {
+    if (!c.count || (c.change !== 'created' && c.change !== 'edited') || n++ >= MAX_COUNTS) { out.push(c); continue }
+    const argv = c.count!.untracked ? ['git', 'diff', '--numstat', '--no-index', '--', '/dev/null', c.count!.path] : ['git', 'diff', '--numstat', '--', c.count!.path]
+    const r = await $.process.run(argv, { cwd: top, ...GIT }).catch((err: unknown) => ($.ui.log(`git count dropped: ${err instanceof Error ? err.message : String(err)}`, { to: 'debug' }), null))
+    const lines = r ? linesOf(r.stdout) : null // --no-index exits 1 when the file is not empty
+    out.push(lines ? { ...c, ...lines } : c)
+  }
+  return out
+}
 // Takes a tree's baseline anew (the working tree's, or a worktree's folder); a failing `git` keeps the old one.
 async function rebase($: Pick<CoreEngineInterface, 'process'>, dir = cwd) {
   const now = await status($, dir)
@@ -247,8 +263,9 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
   const reverts = !stashes(e.command) && (before.head === now.head || diff !== undefined) // F07-R6: `git stash pop` brings a stashed change back; a failed diff cannot tell a commit
   const moved = moves(e.command, cwd, start) // F07-R17: a mv's new path takes what Claude had of the old one
-  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts, new Set(writes(e.command, cwd, start))).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
+  const found = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts, new Set(writes(e.command, cwd, start))).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
   bases.set(dir, now)
+  const changes = await withLines($, inWt ? dir : root!, found)
   if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}), ...(e.agentId ? { agentId: e.agentId } : {}) }) // F15-R1
   if (changes.length && e.agentId) await nameAgent($, e.agentId)
   for (const c of changes) if (c.named) queueImporters($, c.path) // F07-R2: a change the command named is Claude's own

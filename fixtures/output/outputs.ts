@@ -156,5 +156,29 @@ export default {
     "cwd": ".",
     "exitCode": 0,
     "stdout": "\"src/middleware\": No such file or directory (os error 2)\napi\nauth\nconfig.ts\ndb\nroutes\nsrc/api/users.ts:2:import { bearerToken, currentUser, registerUser, userCount } from '../auth/login'\nsrc/routes/index.ts:3:import { bearerToken, currentUser, login, logout } from '../auth/login'\nsrc/routes/index.ts:28:  const result = await login(email, password)\nsrc/routes/index.ts:38:  await logout(token)\nsrc/routes/index.ts:50:  'POST /login': postLogin,\nsrc/routes/index.ts:51:  'POST /logout': postLogout,\nsrc/routes/index.ts:108:  log(req, reply.status, Date.now() - started)\nsrc/routes/index.ts:111:function log(req: IncomingMessage, status: number, ms: number): void {\nsrc/routes/index.ts:113:  console.log(`${req.method} ${req.url} ${status} ${ms}ms`)\nsrc/routes/index.ts:118:  server.listen(port, () => console.log(`Listening on http://127.0.0.1:${port}`))\nsrc/config.ts:8:  logLevel: 'debug' | 'info' | 'warn' | 'error'\nsrc/config.ts:26:function level(raw: string): Config['logLevel'] {\nsrc/config.ts:39:  logLevel: level(text('LOG_LEVEL', 'info')),\nsrc/auth/login.ts:1:// Login and logout: checks a password, then opens or closes a session.\nsrc/auth/login.ts:20:export async function login(email: string, password: string): Promise<LoginResult> {\nsrc/auth/login.ts:30:export async function logout(token: string): Promise<void> {\nsrc/auth/CLAUDE.md:3:Passwords are hashed with PBKDF2 and never logged.\n"
+  },
+  "git-numstat-new": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "3\t0\t/dev/null => src/util.ts\n"
+  },
+  "git-numstat-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "4\t0\t/dev/null => src/util.ts\n"
+  },
+  "git-numstat-binary": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null logo.bin",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "-\t-\t/dev/null => logo.bin\n"
+  },
+  "git-numstat-tracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat -- src/db/redis.ts",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "1\t0\tsrc/db/redis.ts\n"
   }
 }
