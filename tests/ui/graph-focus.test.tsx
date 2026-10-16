@@ -131,3 +131,13 @@ for (const [columns, line] of [
     expect(await now(await mount($, 'terminal', columns, 30))).toBe(line)
   })
 
+
+test('F09-AC46 a long reason keeps its worktree ending and cuts its command with "…"', async ($, on) => {
+  ui(on)
+  const reason = 'deleted by `rm src/routes/index.ts && test -e src/routes/index.ts && echo GONE` in worktree agent-acf6cc8b99268ed6a'
+  viewLaidOut(on, [node('src/routes/index.ts', 1, { state: 'unread', change: 'deleted', reason, seen: 'never read', tokens: null })], [], {})
+  await start($)
+  const line = (await now(await mount($, 'terminal', 100, 30)))!
+  expect([...line].length).toBeLessThanOrEqual(100)
+  expect(line).toMatch(/^⏺ now {2}src\/routes\/index\.ts {2}deleted {2}· deleted by `rm src\/.*…` in worktree agent-acf6cc8b99268ed6a$/)
+})

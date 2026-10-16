@@ -40,7 +40,13 @@ function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number, s
   let change = parts.length ? `  ${parts.map(([t]) => t).join('')}` : ''
   const details = [n.reason, n.seen || (n.state === 'ghost' ? 'never opened' : ''), edge].filter((d): d is string => !!d)
   const words = () => (details.length ? `  · ${details.join(' · ')}` : '')
-  while (details.length && cols(head + n.path + change + words()) > columns) details.pop() // the details leave before the path gives way
+  // The details leave before the path gives way; the reason, last, first shortens the command between its backticks, so a worktree's name stays.
+  while (details.length && cols(head + n.path + change + words()) > columns) {
+    const m = details.length === 1 && details[0] === n.reason ? /^([^`]*`)(.*)(`[^`]*)$/s.exec(details[0]) : null
+    const keep = m ? [...m[2]!].length - (cols(head + n.path + change + words()) - columns) - 1 : 0
+    if (m && keep > 0) details[0] = `${m[1]}${[...m[2]!].slice(0, keep).join('')}…${m[3]}`
+    else details.pop()
+  }
   if (cols(head + fileName(n.path) + change) > columns) change = ''
   const room = columns - cols(head + change + words())
   const path = cols(n.path) <= room ? n.path : `…${tail(n.path, room - 1)}` // ponytail: a file name wider than the pane loses its start too
