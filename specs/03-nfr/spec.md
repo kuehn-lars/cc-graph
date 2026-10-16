@@ -17,7 +17,7 @@ CC Graph must be invisible in cost. It adds no noticeable latency to tool calls 
 | NFR-P3 | A `ui.render` of 60 nodes and 120 edges builds its tree in under 50 ms, on each surface | Benchmark through `$.ui.mount` | v0.2 |
 | NFR-P4 | Layout and `git` never run inside `ui.render` or on a hook's return path. Redraws come from `$.state` writes and the engine's own redraw rate | Event test: a `tool.call` that changes a file returns before any `process.run` is raised; code review | v0.2 |
 | NFR-P5 | All of CC Graph's `$.state` stays under 1 MB of JSON after the 500-call fixture | Size test | v0.1 |
-| NFR-P6 | `git` runs one process at a time, at most once per changed path per turn for `grep`, once per turn, per `Bash` call that is not read-only, and per burst of Claude's own changes for `status` (each with one `rev-parse HEAD`, and one `diff` when `HEAD` moved), each with a 5 second timeout | F07 tests counting `process.run` | v0.3 |
+| NFR-P6 | `git` runs one process at a time, at most once per changed path per turn for `grep`, once per turn, per `Bash` call that is not read-only, and per burst of Claude's own changes for `status` (each with one `rev-parse HEAD`, and one `diff` when `HEAD` moved), and per file a `Bash` call creates or changes for `diff --numstat` (F07-R23, at most 20 per call), each with a 5 second timeout | F07 tests counting `process.run` | v0.3 |
 
 ## Privacy and security
 
@@ -29,7 +29,7 @@ CC Graph handles the most sensitive things in a session: file contents in tool r
 | NFR-S2 | Thinking text and file contents are never written anywhere but `$.state`, and thinking is cut to 400 characters a note | NFR-S1 plus F05-AC3 | v0.4 |
 | NFR-S3 | No telemetry: no hook on `telemetry.*`, and no data leaves through any `$` call | `check-calls.mjs` reads the `hooks:` line | v0.1 |
 | NFR-S4 | `$.process.run` runs only `git` and the person's configured editor command, always as an argument list, never through a shell. Values substituted into the editor command never split into extra arguments | Source scan for `process.run` call sites; F14-AC6 | v0.3 |
-| NFR-S5 | `git` runs read-only: `rev-parse`, `status`, `grep`, `diff --name-status`, with `GIT_OPTIONAL_LOCKS=0` so it never takes the index lock. (Claude Code also runs `git` from mods with repository hooks off.) | Source scan of the `git` argument lists | v0.3 |
+| NFR-S5 | `git` runs read-only: `rev-parse`, `status`, `grep`, `diff --name-status`, `diff --numstat`, with `GIT_OPTIONAL_LOCKS=0` so it never takes the index lock. (Claude Code also runs `git` from mods with repository hooks off.) | Source scan of the `git` argument lists | v0.3 |
 | NFR-S6 | `$.model.fork` is called only from the "Ask why" press handler; no other model call exists. `$.session.usage` is never called with `breakdown: 'full'`, which sends one token-count request per file | Source scan; F11-AC4; F04-AC3 | v0.1 |
 
 ### Threat model
@@ -79,3 +79,4 @@ CC Graph handles the most sensitive things in a session: file contents in tool r
 - 2026-10-15 NFR-S1 adds `$.ui.log`, only to the debug log: F07-R9 says a failed `git` job writes its reason there, and no allowed method does. Found implementing F07 ticket 08; proposed, the owner approves with the review.
 - 2026-10-15 NFR-S1 adds `$.session.cwd`: Claude Code's `Bash` tool keeps a `cd` for the next call, so F02-R8 reads where a command starts. It reads a path only. Found testing real sessions at the owner's request; proposed, the owner approves with the review.
 - 2026-10-16 NFR-S1's `$.ui.log` and `$.session.cwd` approved by the owner.
+- 2026-10-16 NFR-S5 adds `diff --numstat` and NFR-P6 counts it, for F07-R23 (lines of a file a command creates or changes). Asked for by the owner.
