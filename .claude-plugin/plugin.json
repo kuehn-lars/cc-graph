@@ -23,6 +23,12 @@
       "title": "Show file imports",
       "description": "Link a file to the files it imports. Off, the graph holds only the files Claude touched.",
       "default": true
+    },
+    "blindSpots": {
+      "type": "boolean",
+      "title": "Look for blind spots with git",
+      "description": "Run read-only git to find files a shell command changed and importers Claude never opened. Off, shell reads still show.",
+      "default": true
     }
   }
 }

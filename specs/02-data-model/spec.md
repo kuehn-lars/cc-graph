@@ -36,7 +36,7 @@ export type FileNode = {
   tokens: number | null      // ≈ size of what is in context; null when unknown (P5)
   seen: string               // what Claude saw, in words: "lines 1 to 40 of 120"
   hits: number               // search hits counted (F02)
-  added: number              // lines added by Claude's edits and writes
+  added: number              // lines added by Claude's edits and writes; a file a command created: its lines; a file a command changed: git's count (F07-R23)
   removed: number            // lines removed by them
   line: number | null        // first line of the latest change, for "open in editor" (F11)
   readId: string | null      // tool_use_id of the read, or a search node's latest search, that put it in context (F01, F02, F03)
@@ -149,7 +149,9 @@ declare module 'claude-code' {
 | Search hit | `read`, `partial`, `search` | unchanged, hits added (a `search` node's tokens too) | F02 |
 | Main-loop compaction that stands | `read`, `partial`, `search` touched by the main loop, whose read was not kept | `compacted` | F03, F15 |
 | Shell change seen by `git` | new, `ghost` | `unread` | F07 |
-| Shell change seen by `git` | any other | unchanged; `change` `created`, `deleted` or `blind` (F07-R6) | F07 |
+| Shell change seen by `git` | any other | unchanged; `change` `created`, `deleted` or `blind` (F07-R6), `edited` when the command names the file (F07-R17) | F07 |
+| Shell read: `cat`, `bat`, `nl` of a whole file | any | `read` | F07-R19 |
+| Shell read: `head`, `tail`, `sed -n`, or a persisted output | any but `read` | `partial` | F07-R19 |
 | Import found; decision names a file; `@` mention of a PDF by reference | new | `ghost` | F06, F07, F12, F01 |
 | `/clear`, `/resume`, `/branch` | any | removed (the graph starts empty) | F03 |
 
@@ -198,3 +200,5 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 - 2026-10-13 F09 redesign: the terminal graph draws braille shapes, not the list glyph in one cell. Approved by the owner.
 - 2026-10-13 F09 second redesign: the terminal graph draws boxes holding the list glyph, not braille shapes.
 - 2026-10-13 F07 shell changes pulled into v0.2: `deleted` joins the changes, and a file a shell command created is `created` (F07-R6, I2).
+- 2026-10-15 F07 back to Review: shell reads give `read` and `partial` as F01's reads do (F07-R19), and a shell change the command names is `edited`, not `blind` (F07-R17). Approved by the owner.
+- 2026-10-16 F07-R23: `added` of a file a shell command created holds the lines it has, and `added` and `removed` of a clean tracked file a command changed are git's count.

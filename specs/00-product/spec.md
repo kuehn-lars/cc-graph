@@ -210,7 +210,7 @@ The largest risk is the Mods API itself: it is early access and moves between re
 | Wrapping `turn.step` slows streaming | Claude feels slower | NFR-P2 benchmark; with capture off the hook is not registered | NFR-P2, F14 |
 | Token estimates are rough | The meter misleads | Always "≈", the engine's window fill beside it | F03-R5 |
 | Search output formats vary | Missed or false search nodes | A fixed list of supported forms, fixtures captured from real output, unknown lines skipped | F02 |
-| Shell changes to an already-dirty file are missed | A blind spot stays hidden | Known limit of the `git status` baseline, said in the spec; spike S4 on the engine's own per-command diff | F07-Q2 |
+| Shell changes to an already-dirty file are missed | A blind spot stays hidden | Known limit of the `git status` baseline, said in the spec. Spike S4 found the engine's per-command diff empty in `claude -p`; a file Claude changed itself is already marked | F07-Q2 |
 | Big repositories, small terminals | Unreadable graph | Node cap with an eviction order, label rule, list view | I5, F09-R6 |
 | `Raster` and `Svg` take no clicks | No pointer selection on the graph | Keyboard and list-row selection everywhere; spike S3 on a `Client` overlay | F08, F10-Q1 |
 | People worry a mod reads Claude's thinking | Trust | Short call list visible in `validate`, NFR-S1 in CI, capture can be switched off, README privacy section | NFR-S1, F14 |
@@ -230,3 +230,4 @@ Feature questions live in their feature specs as `Fxx-Qn`. Spikes that answer th
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added problem statement, solution, user stories, success checks and platform facts; principles P2 and P6 tightened; milestones moved to the roadmap.
 - 2026-10-11 Approved by the owner.
 - 2026-10-13 REL-Q1 closed for v0.1: `cc-graph` is still free.
+- 2026-10-15 Risk "shell changes to an already-dirty file": spike S4's answer.

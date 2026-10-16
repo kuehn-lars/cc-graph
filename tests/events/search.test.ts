@@ -227,3 +227,12 @@ test('F02-R9 a search whose output has 1,200 hit lines counts the first 1,000', 
   const files = (await graphOf())!.files
   expect(files['src/f0.ts']!.hits + files['src/f1.ts']!.hits).toBe(1000)
 })
+
+test('F02-AC20 after an earlier cd src, rg -n verify auth gives its hits to src/auth/login.ts', async ($, on) => {
+  const run = out['rg-n-verify-auth-in-src'] // captured in src
+  setup(on, run.stdout)
+  on('session.cwd', () => ({ value: '/w/src' })) // the Bash tool kept the cd
+  await start($)
+  await bash($, run.command)
+  expect(Object.keys((await graphOf())!.files).sort()).toEqual(['src/auth/login.ts', 'src/auth/password.ts'])
+})

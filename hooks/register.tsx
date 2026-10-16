@@ -1,18 +1,23 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { layout, reshaped } from './layout'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import type { Commanded } from './model/commanded'
+import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote } from './model/notes'
 import { editAction, notebookEditAction } from './parse/fileEdited'
-import { reattachedAction } from './parse/attachment'
+import { externalAction, reattachedAction } from './parse/attachment'
+import { PATHSPECS, importPattern, importersOf } from './parse/grep'
 import { readAction } from './parse/fileRead'
 import { writeAction } from './parse/fileWritten'
 import { mentionAction } from './parse/mention'
 import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
-import { shellChanges, statusOf } from './parse/status'
+import { shellReads } from './parse/shellReads'
+import { moves, namedPaths, removals, stashes, writes } from './parse/shell'
+import { linesOf, nameStatusOf, outsideChanges, shellChanges, statusOf, type ShellChange } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -39,6 +44,7 @@ const resetState = async ($: StateDollar) => {
   await update($, NOTES, () => [])
   await update($, LAYOUT, () => ({}))
   named.clear()
+  searched.clear()
 }
 
 const setView = ($: StateDollar, view: 'list' | 'graph') => update($, VIEW, () => view)
@@ -54,6 +60,15 @@ function enqueue($: Pick<CoreEngineInterface, 'clock'>, job: () => Promise<void>
   $.clock.after(QUEUE_DELAY_MS, async () => {
     for (let next = jobs.shift(); next; next = jobs.shift()) await next().catch(() => {})
     draining = false
+  })
+}
+
+// F07-R9: a `git` job that fails or runs past its timeout is dropped; the reason goes to the debug log and the footer says so once.
+const TIMED_OUT = 'Blind-spot search timed out'
+const gitJob = ($: StateDollar & Pick<CoreEngineInterface, 'ui'>, job: () => Promise<void>) => async () => {
+  await job().catch(async (err: unknown) => {
+    $.ui.log(`git job dropped: ${err instanceof Error ? err.message : String(err)}`, { to: 'debug' })
+    await update($, NOTES, ns => ((ns ?? []).includes(TIMED_OUT) ? ns ?? [] : [...(ns ?? []), TIMED_OUT]))
   })
 }
 
@@ -147,38 +162,126 @@ const inWorktree = <A extends FileAction | null>(a: A, path: string): A => {
 }
 
 // The observed tools: each turns its call and result into one action (F01-R11: the path is the call's own input).
-const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string) => FileAction | null> = {
+const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: any, result: any, text?: string, start?: string) => FileAction | null> = {
   Read: (e, r) => readAction(normalize(e.file_path, cwd), e.tool_use_id, r, cwd, importEdges),
   Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
-  Bash: (e, r, text) => searchAction(e.command, e.tool_use_id, r, cwd, text), // F02: the hits of a search command
+  Bash: (e, r, text, start) => together([searchAction(e.command, e.tool_use_id, r, cwd, text, start), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges, start), commandedAction(e.command, start)]), // F02: the hits of a search; F07-R19: the files it prints; R21, R22: what git cannot see
 }
+
+// F07-R21: what an `rm` removed last; R22: with no git (`root` null), the files a command writes. Only paths with a node change.
+function commandedAction(command: string, start?: string): Commanded | null {
+  const deleted = removals(command, cwd, start), edited = root ? [] : writes(command, cwd, start)
+  return deleted.length || edited.length ? { type: 'commanded', command, deleted, edited } : null
+}
+
+// F07-R7: the main loop's Bash commands this turn, to tell Claude's own edit from an outside one when Claude Code shows it.
+const turnCommands: { command: string; named: (path: string) => boolean }[] = []
 
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
 let root: string | null = null
-let baseline: Map<string, string> | null = null
+type Snap = { status: Map<string, string>; head: string | null }
+// F07-R16: one baseline per tree, by folder: the working tree (`cwd`) and each agent worktree.
+const bases = new Map<string, Snap>()
 const NO_GIT = 'Shell changes need git'
 const GIT = { timeoutMs: 5000, env: { GIT_OPTIONAL_LOCKS: '0' } } // NFR-S5: never the index lock
-async function status($: Pick<CoreEngineInterface, 'process'>) {
-  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd, ...GIT })
-  return r.exitCode === 0 ? statusOf(r.stdout) : null
+// F07-R14: each status takes `HEAD` with it (none in a repository without commits).
+async function status($: Pick<CoreEngineInterface, 'process'>, dir = cwd): Promise<Snap | null> {
+  const r = await $.process.run(['git', 'status', '--porcelain=v1', '-z', '--untracked-files=all'], { cwd: dir, ...GIT })
+  if (r.exitCode !== 0) return null
+  const h = await $.process.run(['git', 'rev-parse', 'HEAD'], { cwd: dir, ...GIT })
+  return { status: statusOf(r.stdout), head: h.exitCode === 0 ? h.stdout.trim() : null }
+}
+async function headDiff($: Pick<CoreEngineInterface, 'process'>, dir: string, from: string, to: string) {
+  const r = await $.process.run(['git', 'diff', '--name-status', '-z', '--no-renames', from, to], { cwd: dir, ...GIT })
+  return r.exitCode === 0 ? nameStatusOf(r.stdout) : undefined
+}
+// F07-R23: the lines of a file a command created (against /dev/null), or of a tracked edit the baseline did not hold (against the index), run where git's paths start (`top`: the root, or a worktree's folder).
+// The model keeps an untracked edit's count only on a node that is `created`. A failed run counts nothing, and its reason goes to the debug log (R9).
+// ponytail: at most 20 counts per call, one git process each; one `git diff --numstat` over all of them if commands that write many files matter.
+const MAX_COUNTS = 20
+async function withLines($: Pick<CoreEngineInterface, 'process' | 'ui'>, top: string, changes: ShellChange[]) {
+  let n = 0
+  const out: ShellChange[] = []
+  for (const c of changes) {
+    if (!c.count || (c.change !== 'created' && c.change !== 'edited') || n++ >= MAX_COUNTS) { out.push(c); continue }
+    const argv = c.count!.untracked ? ['git', 'diff', '--numstat', '--no-index', '--', '/dev/null', c.count!.path] : ['git', 'diff', '--numstat', '--', c.count!.path]
+    const r = await $.process.run(argv, { cwd: top, ...GIT }).catch((err: unknown) => ($.ui.log(`git count dropped: ${err instanceof Error ? err.message : String(err)}`, { to: 'debug' }), null))
+    const lines = r ? linesOf(r.stdout) : null // --no-index exits 1 when the file is not empty
+    out.push(lines ? { ...c, ...lines } : c)
+  }
+  return out
+}
+// Takes a tree's baseline anew (the working tree's, or a worktree's folder); a failing `git` keeps the old one.
+async function rebase($: Pick<CoreEngineInterface, 'process'>, dir = cwd) {
+  const now = await status($, dir)
+  if (now) bases.set(dir, now)
 }
 async function findRoot($: StateDollar & Pick<CoreEngineInterface, 'process'>) {
   const r = await $.process.run(['git', 'rev-parse', '--show-toplevel'], { cwd, ...GIT }).catch(() => null)
   root = r?.exitCode === 0 ? r.stdout.trim() : null
-  if (root) baseline = await status($)
+  bases.clear()
+  if (root) await rebase($)
   else await update($, NOTES, ns => (ns ?? []).includes(NO_GIT) ? ns ?? [] : [...(ns ?? []), NO_GIT])
+}
+
+// F07-R13: Claude's own change goes into the baseline, so a later command that removes the file is seen. One refresh waits at a time; it reads `git` when it runs, so it takes the latest.
+// A file under a worktree refreshes that worktree's baseline (R16); a worktree `git` cannot run in is dropped by the queue. ponytail: a Set of folders waiting. A refresh that runs after a command's effects absorbs them (an Edit and a Bash call within one queue delay), so that command's change goes unseen; order refresh and command jobs if it matters.
+const refreshQueued = new Set<string>()
+function queueRefresh($: StateDollar & Pick<CoreEngineInterface, 'clock' | 'process' | 'ui'>, path: string) {
+  const worktree = worktreeOf(path, cwd)
+  const dir = worktree ? `${cwd}/.claude/worktrees/${worktree}` : cwd
+  if (!root || refreshQueued.has(dir)) return
+  refreshQueued.add(dir)
+  enqueue($, gitJob($, async () => {
+    refreshQueued.delete(dir)
+    await rebase($, dir)
+  }))
+}
+
+// F07-R2, R3, R4: the files that import a path Claude changed and were never opened, found by `git grep` and confirmed with F06's rules. `grep` exits 1 when nothing matches.
+const searched = new Set<string>() // paths searched this main-loop turn, cleared at `turn.start`
+function queueImporters($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui'>, path: string) {
+  if (!root || searched.has(path)) return
+  searched.add(path)
+  enqueue($, gitJob($, async () => {
+    const r = await $.process.run(['git', 'grep', '-n', '-I', '--untracked', '-E', '-e', importPattern(path), '--', ...PATHSPECS], { cwd: root!, ...GIT })
+    const importers = r.exitCode === 0 ? importersOf(r.stdout, path, root!, cwd) : []
+    if (importers.length) await apply($, { type: 'importers', path, importers })
+  }))
+}
+
+// F07-R6, R14, R16: what one `Bash` call did. An agent's call looks in its worktree first, and in the working tree if `git` cannot run there.
+async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | 'clock' | 'ui' | 'agent'>, e: { command: string; agentId?: string }, start?: string) {
+  const wt = e.agentId ? `${cwd}/.claude/worktrees/agent-${e.agentId}` : null
+  const inWt = wt ? await status($, wt).catch(() => null) : null
+  const dir = inWt ? wt! : cwd
+  const now = inWt ?? (await status($))
+  const before = bases.get(dir) ?? (inWt ? { status: new Map<string, string>(), head: null } : undefined) // a new worktree is clean
+  if (!now || !before) return
+  const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
+  const reverts = !stashes(e.command) && (before.head === now.head || diff !== undefined) // F07-R6: `git stash pop` brings a stashed change back; a failed diff cannot tell a commit
+  const moved = moves(e.command, cwd, start) // F07-R17: a mv's new path takes what Claude had of the old one
+  const found = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts, new Set(writes(e.command, cwd, start))).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
+  bases.set(dir, now)
+  const changes = await withLines($, inWt ? dir : root!, found)
+  if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}), ...(e.agentId ? { agentId: e.agentId } : {}) }) // F15-R1
+  if (changes.length && e.agentId) await nameAgent($, e.agentId)
+  for (const c of changes) if (c.named) queueImporters($, c.path) // F07-R2: a change the command named is Claude's own
 }
 
 // F14-R3: the clamped `maxNodes` (I5). The engine already refuses a value outside 20 to 200 (F14-Q1); the clamp is for a build that does not.
 let maxNodes = 60
 // F06-R12, F14-R2: read once; off means no import is parsed.
 let importEdges = true
+// F07-R12, F14-R2: read once; off, `root` stays null, so no git job is ever queued, and the list has no Blind spots section. Shell reads need no git.
+let blindSpots = true
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   importEdges = options.importEdges !== false
+  blindSpots = options.blindSpots !== false
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
@@ -186,7 +289,7 @@ export const register: Register = (on, options) => {
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
     await refreshMemory($)
-    enqueue($, () => findRoot($))
+    if (blindSpots) enqueue($, () => findRoot($))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -199,24 +302,33 @@ export const register: Register = (on, options) => {
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
-    if (root) enqueue($, async () => { baseline = (await status($)) ?? baseline }) // F07-R5: what the person changed between turns is not the next command's doing
+    searched.clear()
+    turnCommands.length = 0
+    // F07-R5, R20: what changed between turns is not the next command's doing; it was changed outside Claude.
+    if (root) enqueue($, gitJob($, async () => {
+      const before = bases.get(cwd)
+      await rebase($)
+      const now = bases.get(cwd)
+      const changes = before && now && now !== before ? outsideChanges(before.status, now.status, root!, cwd) : []
+      if (changes.length) await apply($, { type: 'outside', changes })
+    }))
     return out
   }).catch(($, e, next) => next(e))
 
   on('tool.call', { tool: /^(Read|Edit|Write|NotebookEdit|Bash)$/ }, async ($, e: any, next) => {
+    // F02-R8: where a command starts, read before it runs: the Bash tool keeps a `cd` from one call for the next.
+    const start = e.tool === 'Bash' ? await $.session.cwd().then(d => (d === cwd ? undefined : d), () => undefined) : undefined
     const out = await next(e)
+    if (e.tool === 'Bash' && !out.deny && !e.agentId) turnCommands.push({ command: e.command, named: namedPaths(e.command, cwd, start) })
     if (!out.deny && !out.isError && out.result) {
-      const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text)
+      const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text, start)
       if (action) await record($, action, e.agentId)
     }
+    if (!out.deny && !out.isError && /^(Edit|Write|NotebookEdit)$/.test(e.tool)) queueRefresh($, e.file_path ?? e.notebook_path)
+    if (!out.deny && !out.isError && /^(Edit|Write)$/.test(e.tool)) queueImporters($, normalize(e.file_path, cwd)) // F07-R2
     // F07-R6: a command that ran, even one that failed, may have created, deleted or changed files.
-    if (e.tool === 'Bash' && !out.deny && root) enqueue($, async () => {
-      const now = await status($)
-      if (!now || !baseline) return
-      const changes = shellChanges(baseline, now, root!, cwd)
-      baseline = now
-      if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes })
-    })
+    // F07-R18: a call the engine held read-only changed no file.
+    if (e.tool === 'Bash' && !out.deny && !out.isReadOnly && root) enqueue($, gitJob($, () => shellJob($, e, start)))
     return out
   }).catch(($, e, next) => next(e))
 
@@ -254,6 +366,16 @@ export const register: Register = (on, options) => {
     const out = await next(e)
     const action = e.agentId ? null : reattachedAction(e.text, cwd)
     if (action) await apply($, action)
+    return out
+  }).catch(($, e, next) => next(e))
+
+  // F07-R7: a main-loop file changed outside Claude that Claude Code showed it. Not a blind spot. Needs no git.
+  on('prompt.attachment', { type: 'edited_text_file' }, async ($, e, next) => {
+    const out = await next(e)
+    const action = e.agentId ? null : externalAction(e.text, cwd)
+    const own = action?.path ? turnCommands.findLast(c => c.named(action.path!)) : undefined
+    if (own) await apply($, { type: 'commanded', command: own.command, deleted: [], edited: [action!.path!] }) // Claude's own edit, shown back to it
+    else if (action) await apply($, action)
     return out
   }).catch(($, e, next) => next(e))
 
@@ -304,7 +426,7 @@ export const register: Register = (on, options) => {
         </Box>
         {graphShown
           ? renderGraph(table, await readGraph($), await readLayout($), await readMemory($), await readFill($), notes, e.props.bodyColumns, rows, selected)
-          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path))}
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path), blindSpots)}
       </Box>
     )
   })

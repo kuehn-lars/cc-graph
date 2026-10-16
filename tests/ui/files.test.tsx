@@ -30,6 +30,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the five changes
     node('a/compacted', 5, { state: 'compacted' }),
     node('a/unread', 6, { state: 'unread' }),
     node('b/edited', 7, { change: 'edited', added: 3, removed: 1 }),
+    node('b/shell', 12, { change: 'edited' }),
     node('b/created', 8, { change: 'created', added: 12 }),
     node('b/external', 9, { change: 'external' }),
     node('b/blind', 10, { change: 'blind' }),
@@ -41,6 +42,7 @@ test('NFR-A1 each of the six states shows its glyph and each of the five changes
   for (const [p, glyph] of [['ghost', '⋯'], ['search', '◌'], ['partial', '◐'], ['read', '●'], ['compacted', '○'], ['unread', '!']])
     expect(row(`a/${p}`)?.startsWith(`${glyph} `)).toBe(true)
   expect(row('b/edited')).toContain('edited +3 −1')
+  expect(row('b/shell')).toContain('edited  ≈') // F07-R17: no counted lines, no counts
   expect(row('b/created')).toContain('created +12')
   expect(row('b/external')).toContain('external')
   expect(row('b/blind')).toContain('blind')
@@ -177,6 +179,22 @@ test('F15-R2 a subagent only row says "agent"; a main loop row does not', async 
   const got = await rows(await mount($, 'terminal'))
   expect(got.find(r => r.includes(' a/sub'))).toMatch(/\bagent\b/)
   expect(got.find(r => r.includes(' a/main'))).not.toMatch(/\bagent\b/)
+})
+
+test('F15-R2 a ghost no agent touched is not subagent only: its row says "never opened", not "agent"', async ($, on) => {
+  ui(on)
+  seed(on, node('src/api/users.ts', 1, { state: 'ghost', tokens: null, seen: '', mainLoop: false }))
+  await start($)
+  const [row] = await rows(await mount($, 'terminal'))
+  expect(row).toBe('⋯ src/api/users.ts  ≈? · never opened')
+})
+
+test('F15-AC10 a shell change made in a worktree says "worktree" too: its reason ends "in worktree agent-<id>"', async ($, on) => {
+  ui(on)
+  seed(on, node('src/routes/index.ts', 1, { state: 'unread', change: 'deleted', reason: 'deleted by `rm src/routes/index.ts` in worktree agent-a1' }))
+  await start($)
+  const [row] = await rows(await mount($, 'terminal', 120))
+  expect(row).toMatch(/deleted  worktree  /)
 })
 
 test('F15-AC10 a row whose reason names a worktree says "worktree"; one without does not', async ($, on) => {

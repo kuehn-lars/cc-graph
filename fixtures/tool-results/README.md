@@ -15,6 +15,7 @@ Real `tool_use` + `toolUseResult` pairs from Claude Code 2.1.296 (Haiku, `claude
 | `write-create` / `write-update` | `Write` a new `src/middleware/rateLimit.ts` / rewrite `src/api/users.ts` |
 | `notebook-edit` | `NotebookEdit` replacing cell `calc` |
 | `bash-persisted` | `Bash` `rg -n verify src`, whose 72,768 characters of output passed `bashOutputMaxChars` (F02) |
+| `bash-cat` / `bash-sed-n` | `Bash` `cat src/auth/login.ts` and `sed -n '1,5p' src/config.ts` (F07-R19), with `text` and `isReadOnly: true` beside `result` |
 
 **`bash-persisted` (F02).** Recorded with Claude Code 2.1.296 (Haiku, `claude -p`, 2026-10-12). Unlike the others it holds a fifth key, `text`: the tool result's content as the model read it (`<persisted-output>`, "Output too large (71.1KB). Full output saved to: …", "Preview (first 2KB):", the preview, `...`, `</persisted-output>`), which is what the hook's `text` carries. The finding that corrects the research note: `result.stdout` is **not** only the preview. It holds the first 30,000 characters of the output (the `bashOutputMaxChars` default, cut mid-line), `persistedOutputSize` is 72768, and the preview in `text` is about 2,000 of them. So `stdout` would overcount the hits Claude read about 15 times. The `big-search.log` the output came from is in the recording copy only.
 
@@ -37,3 +38,5 @@ Real `tool_use` + `toolUseResult` pairs from Claude Code 2.1.296 (Haiku, `claude
 1. In the copy, add `src/big-search.log`: 600 lines, `line N: verify the request handled by worker N%7 before it reaches the handler, then verify again` (about 59 KB, so `rg -n verify src` prints over 70,000 characters). Commit the copy.
 2. `claude -p --model haiku --permission-mode acceptEdits "Run exactly this one command with the Bash tool, once, and nothing else: rg -n verify src. Then reply with the word done."`
 3. Run `node scripts/record-tool-results.mjs fixtures/tool-results <transcript.jsonl>` on that transcript; it writes `bash-persisted.ts` (and reports the other picks as not found).
+
+`bash-cat` and `bash-sed-n` are not transcript rows: they are the `tool.call` rows of spike S4's probe (Claude Code 2.1.300, Haiku, `claude -p`, 2026-10-15; `specs/features/F07-blind-spots/spike-s4.md`), whose `next(e)` result carries `isReadOnly` and `text`, which a transcript does not. Only the probe's wrapper is dropped: `result` is the probe's `result.result`.

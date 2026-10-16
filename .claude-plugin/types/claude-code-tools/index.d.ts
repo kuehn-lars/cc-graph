@@ -948,6 +948,7 @@ declare module 'claude-code' {
       already_created?: true
       url: string
       version: string
+      owned?: boolean
       path?: string
       title?: string
       type: {
@@ -1033,6 +1034,7 @@ declare module 'claude-code' {
       url: string
       artifact_id: string
       title?: string
+      owned?: boolean
     } | {
       url: string
       path: string
@@ -1052,6 +1054,7 @@ declare module 'claude-code' {
       publishesResetAt?: number
       contract?: string
       updated?: boolean
+      owned?: boolean
       icon?: string
       faviconSent?: true
       iconDropped?: true
@@ -1069,6 +1072,8 @@ declare module 'claude-code' {
       }
       liveSubscription?: string
       verifyGuide?: string
+      editsApplied?: number
+      editsNotWritten?: "write_failed" | "not_writable" | "changed_during_publish" | "hard_linked"
       seededThread?: string
       copied?: {
         path: string
@@ -1122,6 +1127,7 @@ declare module 'claude-code' {
         durationMs: number
         title?: string
       }
+      owned?: boolean
       artifactRead?: {
         slug: string
         ver?: string
@@ -1162,9 +1168,17 @@ declare module 'claude-code' {
         content?: string
         chars?: number
         clipped?: boolean
-        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable"
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
         why?: string
       }
+      type_files_read?: Array<{
+        path: string
+        content?: string
+        chars?: number
+        clipped?: boolean
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
+        why?: string
+      }>
     } | {
       type_instances: {
         type?: string
@@ -1481,6 +1495,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       as_level?: string
       as_level_confirmed?: boolean
       db_write: {
@@ -1534,6 +1549,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_upload: {
         id: string
         url: string
@@ -1546,6 +1562,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_uploads: {
         url: string
         results: Array<{
@@ -1602,6 +1619,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_delete: {
         id: string
         deleted: boolean
@@ -1792,6 +1810,7 @@ declare module 'claude-code' {
       already_created?: true
       url: string
       version: string
+      owned?: boolean
       path?: string
       title?: string
       type: {
@@ -1877,6 +1896,7 @@ declare module 'claude-code' {
       url: string
       artifact_id: string
       title?: string
+      owned?: boolean
     } | {
       url: string
       path: string
@@ -1896,6 +1916,7 @@ declare module 'claude-code' {
       publishesResetAt?: number
       contract?: string
       updated?: boolean
+      owned?: boolean
       icon?: string
       faviconSent?: true
       iconDropped?: true
@@ -1913,6 +1934,8 @@ declare module 'claude-code' {
       }
       liveSubscription?: string
       verifyGuide?: string
+      editsApplied?: number
+      editsNotWritten?: "write_failed" | "not_writable" | "changed_during_publish" | "hard_linked"
       seededThread?: string
       copied?: {
         path: string
@@ -1966,6 +1989,7 @@ declare module 'claude-code' {
         durationMs: number
         title?: string
       }
+      owned?: boolean
       artifactRead?: {
         slug: string
         ver?: string
@@ -2006,9 +2030,17 @@ declare module 'claude-code' {
         content?: string
         chars?: number
         clipped?: boolean
-        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable"
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
         why?: string
       }
+      type_files_read?: Array<{
+        path: string
+        content?: string
+        chars?: number
+        clipped?: boolean
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
+        why?: string
+      }>
     } | {
       type_instances: {
         type?: string
@@ -2325,6 +2357,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       as_level?: string
       as_level_confirmed?: boolean
       db_write: {
@@ -2378,6 +2411,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_upload: {
         id: string
         url: string
@@ -2390,6 +2424,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_uploads: {
         url: string
         results: Array<{
@@ -2446,6 +2481,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_delete: {
         id: string
         deleted: boolean
@@ -2636,6 +2672,7 @@ declare module 'claude-code' {
       already_created?: true
       url: string
       version: string
+      owned?: boolean
       path?: string
       title?: string
       type: {
@@ -2721,6 +2758,7 @@ declare module 'claude-code' {
       url: string
       artifact_id: string
       title?: string
+      owned?: boolean
     } | {
       url: string
       path: string
@@ -2740,6 +2778,7 @@ declare module 'claude-code' {
       publishesResetAt?: number
       contract?: string
       updated?: boolean
+      owned?: boolean
       icon?: string
       faviconSent?: true
       iconDropped?: true
@@ -2757,6 +2796,8 @@ declare module 'claude-code' {
       }
       liveSubscription?: string
       verifyGuide?: string
+      editsApplied?: number
+      editsNotWritten?: "write_failed" | "not_writable" | "changed_during_publish" | "hard_linked"
       seededThread?: string
       copied?: {
         path: string
@@ -2810,6 +2851,7 @@ declare module 'claude-code' {
         durationMs: number
         title?: string
       }
+      owned?: boolean
       artifactRead?: {
         slug: string
         ver?: string
@@ -2850,9 +2892,17 @@ declare module 'claude-code' {
         content?: string
         chars?: number
         clipped?: boolean
-        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable"
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
         why?: string
       }
+      type_files_read?: Array<{
+        path: string
+        content?: string
+        chars?: number
+        clipped?: boolean
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
+        why?: string
+      }>
     } | {
       type_instances: {
         type?: string
@@ -3169,6 +3219,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       as_level?: string
       as_level_confirmed?: boolean
       db_write: {
@@ -3222,6 +3273,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_upload: {
         id: string
         url: string
@@ -3234,6 +3286,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_uploads: {
         url: string
         results: Array<{
@@ -3290,6 +3343,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_delete: {
         id: string
         deleted: boolean
@@ -3480,6 +3534,7 @@ declare module 'claude-code' {
       already_created?: true
       url: string
       version: string
+      owned?: boolean
       path?: string
       title?: string
       type: {
@@ -3565,6 +3620,7 @@ declare module 'claude-code' {
       url: string
       artifact_id: string
       title?: string
+      owned?: boolean
     } | {
       url: string
       path: string
@@ -3584,6 +3640,7 @@ declare module 'claude-code' {
       publishesResetAt?: number
       contract?: string
       updated?: boolean
+      owned?: boolean
       icon?: string
       faviconSent?: true
       iconDropped?: true
@@ -3601,6 +3658,8 @@ declare module 'claude-code' {
       }
       liveSubscription?: string
       verifyGuide?: string
+      editsApplied?: number
+      editsNotWritten?: "write_failed" | "not_writable" | "changed_during_publish" | "hard_linked"
       seededThread?: string
       copied?: {
         path: string
@@ -3654,6 +3713,7 @@ declare module 'claude-code' {
         durationMs: number
         title?: string
       }
+      owned?: boolean
       artifactRead?: {
         slug: string
         ver?: string
@@ -3694,9 +3754,17 @@ declare module 'claude-code' {
         content?: string
         chars?: number
         clipped?: boolean
-        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable"
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
         why?: string
       }
+      type_files_read?: Array<{
+        path: string
+        content?: string
+        chars?: number
+        clipped?: boolean
+        unread?: "withheld" | "not_listed" | "not_text" | "too_large" | "unavailable" | "result_full"
+        why?: string
+      }>
     } | {
       type_instances: {
         type?: string
@@ -4013,6 +4081,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       as_level?: string
       as_level_confirmed?: boolean
       db_write: {
@@ -4066,6 +4135,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_upload: {
         id: string
         url: string
@@ -4078,6 +4148,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_uploads: {
         url: string
         results: Array<{
@@ -4134,6 +4205,7 @@ declare module 'claude-code' {
       written?: {
         url: string
       }
+      owned?: boolean
       asset_delete: {
         id: string
         deleted: boolean
@@ -4378,6 +4450,8 @@ declare module 'claude-code' {
       isImage?: boolean
       /** ID of the background task if command is running in background */
       backgroundTaskId?: string
+      /** @internal Path of the background task's output file on the machine that keeps the command, when that is not this process */
+      backgroundOutputPath?: string
       /** True if the user manually backgrounded the command with Ctrl+B */
       backgroundedByUser?: boolean
       /** @internal True if a plugin's turn abort moved the running command to the background */
@@ -4457,19 +4531,23 @@ declare module 'claude-code' {
       humanSchedule: string
       recurring: boolean
       durable?: boolean
+      /** Epoch ms of the job's next run, the scheduler's per-job offset included */
+      nextFireAt?: number
     }
     CronDelete: {
       id: string
     }
     CronList: {
-      jobs: {
+      jobs: Array<{
         id: string
         cron: string
         humanSchedule: string
         prompt: string
         recurring?: boolean
         durable?: boolean
-      }[]
+        /** Epoch ms of the job's next run, the scheduler's per-job offset included */
+        nextFireAt?: number
+      }>
     }
     DesignSync: {
       method: "list_projects"
@@ -4875,6 +4953,8 @@ declare module 'claude-code' {
       method: "project_read"
       notice?: string
       path: string
+      /** @internal Lowercase hex SHA-256 of the UTF-8 bytes of a text doc's whole text. Set only where docVersionsOffered. */
+      version?: string
       file_kind?: string
       content?: string
       local_file?: string
@@ -4896,6 +4976,8 @@ declare module 'claude-code' {
       notice?: string
       path: string
       doc_uuid: string
+      /** @internal Lowercase hex SHA-256 of the UTF-8 bytes of a text doc's whole text. Set only where docVersionsOffered. */
+      version?: string
       replaced: boolean
       present_to_user?: boolean
       local_path?: string
@@ -5021,6 +5103,8 @@ declare module 'claude-code' {
       }
       /** Document page number of the first extracted page (1 when no range was requested); labels the page images in the model-facing tool_result */
       firstPage?: number
+      /** @internal Number of pages in the document. Set only when the call named no page range and the PDF was too long to read whole, so only its first pages were extracted */
+      totalPages?: number
       /** Extracted page images, in page order. Present only transiently in-process: the page image bytes are delivered solely as image blocks in the model-facing tool_result content and are not retained on the tool_use_result, so this key is absent on the emitted/persisted result */
       pages?: Array<{
         /** Base64-encoded page image; empty when the page could not be processed */

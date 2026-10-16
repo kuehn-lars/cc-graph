@@ -55,9 +55,9 @@ Import edges from text Claude already saw, in TypeScript and Python, switchable 
 
 ## v0.3 Blind spots
 
-Files that import a change but were never opened, and files a shell command changed behind Claude's back, named while the turn is still running.
+Files that import a change but were never opened, and files a shell command changed behind Claude's back, named while the turn is still running. What Claude does through the shell counts: reads with `cat`, `head` or `sed -n`, its own `sed -i` edits, deletions committed in the same command, merges, and changes in a subagent's worktree.
 
-**Exit gate:** every criterion of F07 and F14 (`blindSpots`); RS-2 and RS-3; NFR-P6, S4, S5 and R3; spike S4 decided and F07-Q2 closed.
+**Exit gate:** every criterion of F07 and F14 (`blindSpots`); RS-2 and RS-3; NFR-P6, S4, S5 and R3. Spike S4 is decided and F07-Q2 closed ([spike-s4.md](specs/features/F07-blind-spots/spike-s4.md)).
 
 ## v0.4 Why it did that
 
@@ -93,7 +93,7 @@ A spike is a throwaway probe mod that answers one question. Its notes go next to
 | S1 | What do `file` and `edited_text_file` attachments say, and do they name paths in a stable form? | F03-Q1, F07-Q1 | M0 | F03 approval |
 | S2 | Which models and settings stream thinking text to a mod? | F05-Q1 | Before v0.4 | F05 approval |
 | S3 | Does a transparent `Client` over the graph receive pointer events? | F10-Q1 | Start of v0.5 | F10-R5 |
-| S4 | Can the `Bash` result's per-command change list replace the `git status` baseline? | F07-Q2 | During v0.3 | v0.3 exit gate |
+| S4 | Can the `Bash` result's per-command change list replace the `git status` baseline? | F07-Q2: no, it was empty in `claude -p` (2026-10-15) | During v0.3 | v0.3 exit gate |
 | S5 | Does a plugin's own tool raise a permission prompt? | F12-Q1 | Start of v0.6 | F12 approval |
 
 F14-Q1 (out-of-range numbers) needs no spike: F14-AC5 answers it in the red phase of v0.1.
@@ -103,7 +103,6 @@ F14-Q1 (out-of-range numbers) needs no spike: F14-AC5 answers it in the red phas
 Ideas that fit the product but are not committed. Each needs its own spec first.
 
 - A graph filtered to the agent whose transcript is on screen (the pane's `view.agentId`).
-- Files read through the shell (`cat`, `head`, `sed -n`) tracked like reads.
 - A sharper terminal graph with `Image` where the terminal speaks the kitty graphics protocol.
 - A `claude plugin eval` suite that measures how well Claude logs decisions (F12).
 - Import edges for more languages.

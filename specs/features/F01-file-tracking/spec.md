@@ -104,7 +104,7 @@ Adds `FileNode` with the `read`, `partial` and `ghost` states and the `edited` a
 
 ## Out of scope
 
-- **Files read through the shell** (`cat`, `head`, `sed -n` in `Bash`). Only shell *searches* are tracked (F02). A later spec may parse simple shell reads.
+- **Files read through the shell** (`cat`, `head`, `sed -n` in `Bash`). Shell *searches* are F02's, and shell reads are F07's (F07-R19).
 - **Directory listings and globs.** They name files without showing content, and native builds register no `Glob` tool.
 - **Files changed by MCP tools.** Their results have no shared shape.
 
@@ -119,3 +119,4 @@ None.
 - 2026-10-11 Approved by the owner.
 - 2026-10-12 F01-R6: an empty patch counts the content's lines only for a create; an empty update patch adds nothing. Approved by the owner.
 - 2026-10-12 Recordings against the spec. AC4, AC5 and AC14 use the recorded numbers (patch counts, 14 lines, +6 −6); AC8 and R10 say deep equality, not identity; R1 keeps `readId` of a whole read; R2 singular counts and defaults; R7 changes only a missing or `ghost` node, adds the `offset`-only and `limit`-only wordings (AC17 to AC23); `file_unchanged` and other results no session returns are derived and marked. Approved by the owner.
+- 2026-10-15 Out of scope: shell reads moved to F07-R19. No requirement of F01 changes.

@@ -102,13 +102,6 @@ export default {
     "exitCode": 0,
     "stdout": " M package-lock.json\u0000 M package.json\u0000R  src/db/store.ts\u0000src/db/redis.ts\u0000 D test/helpers.ts\u0000?? notes with space.md\u0000?? src/middleware/rateLimit.ts\u0000"
   },
-  "git-rev-parse-outside": {
-    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
-    "cwd": "(not a repository)",
-    "exitCode": 128,
-    "stderr": true,
-    "stdout": "fatal: not a git repository (or any of the parent directories): .git\n"
-  },
   "cat-log-rg-n-error": {
     "command": "cat log.txt | rg -n error",
     "cwd": ".",
@@ -120,5 +113,72 @@ export default {
     "cwd": ".",
     "exitCode": 0,
     "stdout": "src/auth/password.ts:21:// verify compares in constant time, so a wrong guess takes as long as a right one.\nsrc/auth/password.ts:22:export async function verifyPassword(password: string, stored: string): Promise<boolean> {\nsrc/auth/login.ts:2:import { hashPassword, verifyPassword } from './password'\nsrc/auth/login.ts:23:  if (!(await verifyPassword(password, user.passwordHash))) {\n---\nsrc/config.ts\n\nsrc:\napi\nauth\nconfig.ts\ndb\nroutes\n\nsrc/api:\nusers.ts\n\nsrc/auth:\nCLAUDE.md\nlogin.ts\npassword.ts\nsessions.ts\n\nsrc/db:\nredis.ts\n\nsrc/routes:\nindex.ts\n"
+  },
+  "git-rev-parse-head": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "0f1ca9ba7ad0cc90cdb609af51689e368abb471e\n"
+  },
+  "git-diff-commit-delete": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "D\u0000test/helpers.ts\u0000"
+  },
+  "git-diff-merge-add": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "A\u0000side.txt\u0000"
+  },
+  "git-diff-commit-untracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --name-status -z --no-renames HEAD~1 HEAD",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "A\u0000notes/b.md\u0000"
+  },
+  "git-status-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git status --porcelain=v1 -z --untracked-files=all",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": " M src/db/redis.ts\u0000"
+  },
+  "git-rev-parse-outside": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git rev-parse --show-toplevel",
+    "cwd": "(not a repository)",
+    "exitCode": 128,
+    "stderr": true,
+    "stdout": "fatal: not a git repository (or any of the parent directories): .git\n"
+  },
+  "eza-missing-then-rg-n-log": {
+    "command": "eza src src/middleware 2>&1; rg -n log src",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "\"src/middleware\": No such file or directory (os error 2)\napi\nauth\nconfig.ts\ndb\nroutes\nsrc/api/users.ts:2:import { bearerToken, currentUser, registerUser, userCount } from '../auth/login'\nsrc/routes/index.ts:3:import { bearerToken, currentUser, login, logout } from '../auth/login'\nsrc/routes/index.ts:28:  const result = await login(email, password)\nsrc/routes/index.ts:38:  await logout(token)\nsrc/routes/index.ts:50:  'POST /login': postLogin,\nsrc/routes/index.ts:51:  'POST /logout': postLogout,\nsrc/routes/index.ts:108:  log(req, reply.status, Date.now() - started)\nsrc/routes/index.ts:111:function log(req: IncomingMessage, status: number, ms: number): void {\nsrc/routes/index.ts:113:  console.log(`${req.method} ${req.url} ${status} ${ms}ms`)\nsrc/routes/index.ts:118:  server.listen(port, () => console.log(`Listening on http://127.0.0.1:${port}`))\nsrc/config.ts:8:  logLevel: 'debug' | 'info' | 'warn' | 'error'\nsrc/config.ts:26:function level(raw: string): Config['logLevel'] {\nsrc/config.ts:39:  logLevel: level(text('LOG_LEVEL', 'info')),\nsrc/auth/login.ts:1:// Login and logout: checks a password, then opens or closes a session.\nsrc/auth/login.ts:20:export async function login(email: string, password: string): Promise<LoginResult> {\nsrc/auth/login.ts:30:export async function logout(token: string): Promise<void> {\nsrc/auth/CLAUDE.md:3:Passwords are hashed with PBKDF2 and never logged.\n"
+  },
+  "git-numstat-new": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "3\t0\t/dev/null => src/util.ts\n"
+  },
+  "git-numstat-appended": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null src/util.ts",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "4\t0\t/dev/null => src/util.ts\n"
+  },
+  "git-numstat-binary": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat --no-index -- /dev/null logo.bin",
+    "cwd": ".",
+    "exitCode": 1,
+    "stdout": "-\t-\t/dev/null => logo.bin\n"
+  },
+  "git-numstat-tracked": {
+    "command": "GIT_OPTIONAL_LOCKS=0 git diff --numstat -- src/db/redis.ts",
+    "cwd": ".",
+    "exitCode": 0,
+    "stdout": "1\t0\tsrc/db/redis.ts\n"
   }
 }

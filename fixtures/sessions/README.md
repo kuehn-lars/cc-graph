@@ -133,3 +133,8 @@ How the run differed from the ticket: it used the real config directory (a throw
 ## `spike-s1/`
 
 The five `file` attachment texts and the compaction result captured in spike S1 (F03-Q1); see `specs/features/F03-context-layer/spike-s1.md`.
+
+## `edited-text-file.ts`: an `edited_text_file` attachment (F07-Q1, F07-R7)
+
+Recorded 2026-10-16 from Claude Code 2.1.300 (Haiku, interactive, the person's own settings: auto mode with Bash first) in `/private/tmp/cc-graph-rec/sample-app`, a committed copy of `fixtures/sample-app`, with the spike S4 probe. Claude ran the two `Bash` calls in `calls`; the next request carried the attachment, whose `text` is kept as the probe logged it. The debug log replaced a secret-looking span with `[REDACTED]`; nothing else is edited. A person's edit between turns, to a file Claude had read, raised no attachment in the same session.
+

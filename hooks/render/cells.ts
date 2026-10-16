@@ -10,6 +10,7 @@ type Cells = Uint32Array
 // Box drawing by the directions a cell joins: up 1, down 2, left 4, right 8 (F09-R26).
 const UP = 1, DOWN = 2, LEFT = 4, RIGHT = 8
 const LINE = '│││─╯╮┤─╰╭├─┴┬┼' // by directions − 1
+const DASH: Record<string, string> = { '│': '╎', '─': '╌' } // F09-R26: a blind edge's straight runs
 const SOLID = { h: '─', v: '│' }, DASHED = { h: '┄', v: '┆' }
 
 /** F09-R27: the pulse's border colour, by step; the plain frame after it. */
@@ -48,25 +49,26 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
   for (const { g, left, top } of frames) taken.fill(4, top * columns + left + 2, top * columns + left + 2 + g.title.length) // a title hides a line as a box does
 
   // F09-R26: each import edge an orthogonal line between its ends' facing sides; where lines meet, the box-drawing character of all their directions.
-  const joins = new Uint8Array(columns * rows), lit = new Uint8Array(columns * rows)
+  const joins = new Uint8Array(columns * rows), lit = new Uint8Array(columns * rows), unseen = new Uint8Array(columns * rows) // unseen: a blind edge passes (dashed, error colour)
   const ends: { p: Placed; x: number; y: number; dir: number }[] = []
   const joined: number[] = [] // every line cell, to draw
-  const join = (x: number, y: number, dir: number, on: boolean) => {
+  const join = (x: number, y: number, dir: number, on: boolean, blind: boolean) => {
     if (x < 0 || y < 0 || x >= columns || y >= rows) return
     const i = y * columns + x
     if (!joins[i]) joined.push(i)
     joins[i]! |= dir
     if (on) lit[i] = 1
+    if (blind) unseen[i] = 1
   }
-  const run = (path: [number, number][], on: boolean) => {
+  const run = (path: [number, number][], on: boolean, blind: boolean) => {
     for (let k = 1; k < path.length; k++) {
       let [x, y] = path[k - 1]!
       const [tx, ty] = path[k]!
       while (x !== tx || y !== ty) {
         const dx = Math.sign(tx - x), dy = Math.sign(ty - y)
-        join(x, y, dx > 0 ? RIGHT : dx < 0 ? LEFT : dy > 0 ? DOWN : UP, on)
+        join(x, y, dx > 0 ? RIGHT : dx < 0 ? LEFT : dy > 0 ? DOWN : UP, on, blind)
         x += dx; y += dy
-        join(x, y, dx > 0 ? LEFT : dx < 0 ? RIGHT : dy > 0 ? UP : DOWN, on)
+        join(x, y, dx > 0 ? LEFT : dx < 0 ? RIGHT : dy > 0 ? UP : DOWN, on, blind)
       }
     }
   }
@@ -109,13 +111,17 @@ export function paint(graph: Graph, layout: Layout, columns: number, rows: numbe
       }
       if (round < fewest) path = [[x0, y0], [x0, out], [c, out], [c, into], [x1, into], [x1, y1]]
     }
-    join(x0, y0, UP, on); join(x1, y1, DOWN, on)
-    run(path, on)
+    join(x0, y0, UP, on, e.blind); join(x1, y1, DOWN, on, e.blind)
+    run(path, on, e.blind)
     ends.push({ p: upper, x: x0, y: y0 - 1, dir: DOWN }, { p: lower, x: x1, y: y1 + 1, dir: UP })
   }
   // F09-R30: the frames under the lines; where a line crosses a side, the side joins it (`┼`), in the line's colour. A box covers any line beneath it.
   for (const i of sides) set(i, LINE[frame[i]! - 1]!, TONE.subtle.rgb)
-  for (const i of joined) if (!boxes[i]) set(i, LINE[(joins[i]! | frame[i]!) - 1]!, lit[i] ? TONE.claude.rgb : TONE.subtle.rgb)
+  // F09-R26: a blind edge is dashed (`╌ ╎`) in the error colour, which wins over the focus's.
+  for (const i of joined) if (!boxes[i]) {
+    const line = LINE[(joins[i]! | frame[i]!) - 1]!
+    set(i, unseen[i] ? DASH[line] ?? line : line, unseen[i] ? TONE.blind.rgb : lit[i] ? TONE.claude.rgb : TONE.subtle.rgb)
+  }
   // The title over all of it, after `╭─`.
   for (const { g, left, top } of frames) [...g.title].forEach((c, k) => set(top * columns + left + 2 + k, c, c === ' ' ? DEFAULT : TONE.inactive.rgb))
 

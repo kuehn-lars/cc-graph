@@ -8,8 +8,8 @@ import { fullBreakdowns } from './full-breakdown.mjs'
 const root = resolve(process.argv[2] ?? '.')
 const ALLOWED = new Set([
   '$.agent.list', '$.clock.after', '$.clock.now', '$.command.register', '$.model.fork', '$.process.run',
-  '$.prompt.fill', '$.session.surfaces', '$.session.usage', '$.state.get', '$.state.set', '$.tool.register',
-  '$.ui.blit', '$.ui.open', '$.ui.resolve', '$.ui.toast',
+  '$.prompt.fill', '$.session.cwd', '$.session.surfaces', '$.session.usage', '$.state.get', '$.state.set', '$.tool.register',
+  '$.ui.blit', '$.ui.log', '$.ui.open', '$.ui.resolve', '$.ui.toast',
 ])
 const problems = []
 
@@ -48,8 +48,8 @@ for (const file of sources) {
     if (m[1] !== '[' && !/[\w$]/.test(m[1])) problems.push(`NFR-S4: ${at(m.index)}: process.run takes an argument list`)
   for (const m of src.matchAll(/\.process\.run\(\s*\[\s*['"`](sh|bash|zsh|cmd|powershell|pwsh)['"`]/g))
     problems.push(`NFR-S4: ${at(m.index)}: process.run through a shell (${m[1]})`)
-  for (const m of src.matchAll(/\[\s*['"`]git['"`]\s*,\s*['"`]([^'"`]+)['"`]/g))
-    if (!['rev-parse', 'status', 'grep'].includes(m[1])) problems.push(`NFR-S5: ${at(m.index)}: git ${m[1]} is not read-only`)
+  for (const m of src.matchAll(/\[\s*['"`]git['"`]\s*,\s*['"`]([^'"`]+)['"`](\s*,\s*['"`]--(name-status|numstat)['"`])?/g))
+    if (!['rev-parse', 'status', 'grep'].includes(m[1]) && !(m[1] === 'diff' && m[2])) problems.push(`NFR-S5: ${at(m.index)}: git ${m[1]} is not read-only`)
   if (/['"`]git['"`]/.test(src) && !/GIT_OPTIONAL_LOCKS\s*:\s*['"`]0['"`]/.test(src))
     problems.push(`NFR-S5: ${file}: git runs without GIT_OPTIONAL_LOCKS: '0'`)
   for (const i of fullBreakdowns(src)) problems.push(`NFR-S6: ${at(i)}: $.session.usage with breakdown 'full'`)

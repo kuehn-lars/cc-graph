@@ -36,6 +36,8 @@ run git-grep-n-verify . 'git grep -n verify'
 printf 'start\nerror: token expired\nlogin ok\nerror: store down\n' > log.txt
 run cat-log-rg-n-error . 'cat log.txt | rg -n error'
 run grep-rn-verify-then-ls . "grep -rn verify src ; echo '---'; ls src src/*"
+# `ls` aliased to eza, as in the owner's shell: a missing folder's error quotes its path (F02-AC19). Needs eza.
+run eza-missing-then-rg-n-log . 'eza src src/middleware 2>&1; rg -n log src'
 
 # Blind spots (F07): root, clean baseline, importers of login.ts
 git_ro='GIT_OPTIONAL_LOCKS=0 git'
@@ -53,6 +55,41 @@ git mv src/db/redis.ts src/db/store.ts
 rm test/helpers.ts
 printf 'x\n' > 'notes with space.md'
 run git-status-variety . "$git_ro status --porcelain=v1 -z --untracked-files=all"
+
+# Commits, merges (F07-R14): HEAD, and the diff of what a commit and a merge changed, in a repository of their own
+work2="$(mktemp -d)/sample-app"
+cp -R "$app" "$work2"
+cd "$work2"
+git init -q -b main && git add -A && git -c user.name=fixture -c user.email=fixture@example.com commit -qm init
+gc() { git -c user.name=fixture -c user.email=fixture@example.com "$@"; }
+work="$work2"
+run git-rev-parse-head . "$git_ro rev-parse HEAD"
+git rm -q test/helpers.ts && gc commit -qm "drop helpers"
+run git-diff-commit-delete . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+git checkout -q -b side && printf 'x\n' > side.txt && git add side.txt && gc commit -qm side && git checkout -q main
+printf 'y\n' > other.txt && git add other.txt && gc commit -qm other
+gc merge -q --no-ff -m merge side
+run git-diff-merge-add . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+mkdir -p notes && printf 'b\n' > notes/b.md && git add notes/b.md && gc commit -qm b
+run git-diff-commit-untracked . "$git_ro diff --name-status -z --no-renames HEAD~1 HEAD"
+
+# A named change (F07-R17): a line appended to a tracked file
+work3="$(mktemp -d)/sample-app"
+cp -R "$app" "$work3"
+cd "$work3"
+git init -q && git add -A && git -c user.name=fixture -c user.email=fixture@example.com commit -qm init
+work="$work3"
+printf '// probe\n' >> src/db/redis.ts
+run git-status-appended . "$git_ro status --porcelain=v1 -z --untracked-files=all"
+run git-numstat-tracked . "$git_ro diff --numstat -- src/db/redis.ts"
+
+# Lines of a new file (F07-R23): a heredoc, then a line appended, then a binary file
+printf 'export const a = 1\nexport const b = 2\nexport const c = 3\n' > src/util.ts
+run git-numstat-new . "$git_ro diff --numstat --no-index -- /dev/null src/util.ts"
+printf 'x\n' >> src/util.ts
+run git-numstat-appended . "$git_ro diff --numstat --no-index -- /dev/null src/util.ts"
+printf '\0\1\2' > logo.bin
+run git-numstat-binary . "$git_ro diff --numstat --no-index -- /dev/null logo.bin"
 
 # Outside a repository (F07-AC4)
 none="$(mktemp -d)"

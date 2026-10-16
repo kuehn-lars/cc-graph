@@ -2,6 +2,7 @@
 import type { Elements } from 'claude-code'
 import type { FileNode, Fill, Graph, MemoryNote } from '../../types'
 import { fileName } from '../layout/seed'
+import { blindSpots } from './blind'
 import { GLYPH } from './palette'
 import { count, meterLine } from './meter'
 import { cols, tail } from './width'
@@ -16,7 +17,7 @@ const MARK = '▸ '
 const MARK_COLUMNS = 2
 
 const badge = (n: FileNode) =>
-  n.change === 'edited' ? `edited +${n.added} −${n.removed}` : n.change === 'created' ? `created +${n.added}` : n.change
+  n.change === 'edited' ? (n.added || n.removed ? `edited +${n.added} −${n.removed}` : 'edited') : n.change === 'created' ? (n.added ? `created +${n.added}` : 'created') : n.change
 
 /** F09-R10 (NFR-A3): per path, "imports 2" for a file that imports, "imported by login.ts +1" for a ghost: its most recently touched importer and the count of the others. */
 export function edgeWords(graph: Graph) {
@@ -42,7 +43,7 @@ export function edgeWords(graph: Graph) {
 function row(n: FileNode, columns: number, edge = '') {
   const head = `${GLYPH[n.state]} `
   const name = fileName(n.path)
-  const parts = [badge(n), n.mainLoop ? '' : 'agent', n.reason?.startsWith('in worktree') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen}`, edge].filter(Boolean)
+  const parts = [badge(n), n.mainLoop || !n.agents.length ? '' : 'agent', /(^| )in worktree /.test(n.reason ?? '') ? 'worktree' : '', `≈${n.tokens ?? '?'} · ${n.seen || 'never opened'}`, edge].filter(Boolean) // F15-R2: a ghost nobody touched is no subagent's
   const suffix = () => parts.map(p => `  ${p}`).join('')
   const room = () => columns - cols(head + suffix())
   while (parts.length && cols(n.path) > room() && cols(name) + 1 > room()) parts.pop()
@@ -64,9 +65,10 @@ function memoryTotal(notes: MemoryNote[]) {
 
 const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.tokens === null ? '?' : count(n.tokens)}`].filter(Boolean).join('  ')}`
 
-export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void) {
+export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void, showBlind = true) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   const edges = edgeWords(graph)
+  const blind = blindSpots(graph)
   return (
     <Box flexDirection="column">
       <Text>{fit(meterLine(graph, fill), columns)}</Text>
@@ -81,6 +83,9 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       ))}
       {memory.length > 0 && <Text bold>{fit(memoryTotal(memory), columns)}</Text>}
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
+      {showBlind && <Text bold>Blind spots</Text>}
+      {showBlind && blind.length === 0 && <Text dimColor>No blind spots.</Text>}
+      {showBlind && blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
   )

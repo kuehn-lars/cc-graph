@@ -1,6 +1,6 @@
 // Pure: a Bash command that holds a search, and the hits in its output (F02-R1, R2, R9).
 import type { Searched } from '../model/searched'
-import { isAbs, normalize } from './path'
+import { dirAfter, resolve, segments, type Segment } from './shell'
 
 /** `dir`: where the search ran. Absent: the session's directory; a path: that of the `cd … &&` before it (F02-R8); `null`: unknown. */
 export type Search = { tool: string; flags: string[]; operands: string[]; dir?: string | null }
@@ -9,49 +9,6 @@ export type Hits = Record<string, { hits: number; chars: number }>
 
 const TOOLS = ['rg', 'grep', 'egrep', 'fgrep']
 const MAX_LINES = 1000
-
-/** `redirs`: indices of the unquoted words that are redirections (`2>&1`, `>file`). */
-type Segment = { words: string[]; sep: string; redirs: Set<number> }
-
-/** The segments of a command, split on `|`, `&&`, `||`, `;` and newlines outside quotes. Words: quotes and backslashes honoured, nothing expanded. `sep`: the separator before the segment. */
-function segments(command: string): Segment[] {
-  const out: Segment[] = []
-  let words: string[] = []
-  let cur = ''
-  let has = false
-  let quote = ''
-  let sep = ''
-  let quoted = false
-  let redirs = new Set<number>()
-  const word = () => {
-    if (has) (!quoted && /^(\d*|&)(>>?|<)/.test(cur) && redirs.add(words.length), words.push(cur))
-    cur = ''
-    has = false
-    quoted = false
-  }
-  for (let i = 0; i < command.length; i++) {
-    const c = command[i]!
-    if (quote === "'") c === "'" ? (quote = '') : (cur += c)
-    else if (quote === '"') {
-      if (c === '"') quote = ''
-      else if (c === '\\' && '"\\$`'.includes(command[i + 1] ?? ' ')) cur += command[++i]
-      else cur += c
-    } else if (c === '\\') (cur += command[++i] ?? ''), (has = true), (quoted = true)
-    else if (c === "'" || c === '"') (quote = c), (has = true), (quoted = true)
-    else if (c === ';' || c === '|' || c === '\n' || (c === '&' && command[i + 1] === '&')) {
-      word()
-      out.push({ words, sep, redirs })
-      words = []
-      redirs = new Set()
-      sep = c
-      if (c !== ';' && c !== '\n' && command[i + 1] === c) (sep += c), i++
-    } else if (/\s/.test(c)) word()
-    else (cur += c), (has = true)
-  }
-  word()
-  out.push({ words, sep, redirs })
-  return out
-}
 
 /** Flags that take a value, short (`-A 2`, `-tts`) and long (`--type ts`, `--type=ts`). `-r` and `-E` mean different things to rg and grep, so they are left out. */
 // ponytail: a fixed list; a value flag missing from it leaves its value as an operand. Add when seen.
@@ -100,20 +57,10 @@ function searchIn({ words: w, redirs }: Segment): Search | null {
   return { tool, flags, operands }
 }
 
-/** F02-R8: the directory after segment `s`, given the one before it (`undefined`: the session's, `null`: unknown). Only a literal `cd <path>` ended by `&&` is known; a subshell, any other `cd` or separator is not. */
-// ponytail: `cd a && make || rg …` is taken as in a; if the cd failed the search ran elsewhere. Needs a shell to know.
-function dirAfter(dir: string | null | undefined, s: Segment, next: string): string | null | undefined {
-  const [cmd = '', path = ''] = s.words
-  if (/^[({]/.test(cmd)) return null
-  if (cmd !== 'cd') return dir
-  if (s.words.length !== 2 || next !== '&&' || /[$`~*?[{\\]|^-/.test(path)) return null
-  return isAbs(path) ? path : dir === null ? null : dir === undefined ? path : `${dir}/${path}`
-}
-
-/** F02-R1, R3, R8: the searches of a command, one per segment that holds one, less those reading standard input: piped into and naming no path (the pattern is the first operand, so a path is a second one). */
-export function searchesIn(command: string): Search[] {
+/** F02-R1, R3, R8: the searches of a command, one per segment that holds one, less those reading standard input: piped into and naming no path (the pattern is the first operand, so a path is a second one). `start`: where the command starts, when not the session's directory. */
+export function searchesIn(command: string, start?: string): Search[] {
   const segs = segments(command)
-  let dir: string | null | undefined
+  let dir: string | null | undefined = start
   return segs.flatMap((s, i) => {
     const search = searchIn(s)
     const here = dir
@@ -131,7 +78,7 @@ const printsNoHits = (search: Search) =>
   has(search, 'c', '--count', '--count-matches') || has(search, 'q', '--quiet') || (search.tool !== 'rg' && has(search, 'L')) ||
   ['--files-without-match', '--files', '--json'].some(f => search.flags.includes(f))
 
-/** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space, or with neither a `/` nor a `.`, or a line that is its path and a colon, is no hit. F02-R3: modes that print no hits give none. */
+/** F02-R2: the `path:line:text` and `path:text` lines, a bare path per line for `-l`, and, for one path operand, lines with no path. A path with a space or a quote, or with neither a `/` nor a `.`, or a line that is its path and a colon, is no hit. F02-R3: modes that print no hits give none. */
 export function hitsIn(stdout: string, search: Search): Hits {
   if (printsNoHits(search)) return {}
   const listing = has(search, 'l', '--files-with-matches')
@@ -144,7 +91,7 @@ export function hitsIn(stdout: string, search: Search): Hits {
   const lines = stdout.split('\n', MAX_LINES)
   for (const line of lines) {
     const path = listing ? line : line.slice(0, Math.max(line.indexOf(':'), 0))
-    if (path === '' || /\s/.test(path) || !/[/.]/.test(path) || line === `${path}:`) continue // `src/auth:` heads an ls listing
+    if (path === '' || /[\s"']/.test(path) || !/[/.]/.test(path) || line === `${path}:`) continue // `src/auth:` heads an ls listing
     add(path, line)
   }
   // The pattern and one path: rg and grep print no path for a single file.
@@ -157,13 +104,10 @@ export function hitsIn(stdout: string, search: Search): Hits {
 const preview = (text: string) => text.split('\n').filter(l => !/^(<\/?persisted-output>|Output too large.*|Preview \(first .*\):|\.\.\.)$/.test(l)).join('\n')
 
 /** One Bash call's search as an action, or null when it holds none or did not finish (F02-R6, R7). */
-export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string): Searched | null {
-  const [search, ...more] = searchesIn(command)
+export function searchAction(command: string, readId: string, result: { stdout?: string; interrupted?: boolean; persistedOutputPath?: string }, cwd: string, text?: string, start?: string): Searched | null {
+  const [search, ...more] = searchesIn(command, start)
   if (!search || more.length || search.dir === null || result.interrupted) return null // F02-R10: two searches' outputs run together
-  // F02-R8: a relative hit is under the search's directory, which is under the session's unless absolute.
-  const join = (...p: (string | undefined)[]) => p.filter(Boolean).join('/') // cwd is '' before the session starts
-  const dir = search.dir && isAbs(search.dir) ? search.dir : join(cwd, search.dir)
   const files: Searched['files'] = {}
-  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[normalize(isAbs(path) ? path : join(dir, path), cwd)] = h
+  for (const [path, h] of Object.entries(hitsIn(result.persistedOutputPath ? preview(text ?? '') : result.stdout ?? '', search))) files[resolve(path, search.dir, cwd)] = h // F02-R8
   return Object.keys(files).length ? { type: 'searched', readId, files } : null
 }
