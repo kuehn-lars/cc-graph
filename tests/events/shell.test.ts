@@ -152,7 +152,7 @@ test('F07-AC10 README.md modified between two turns: the second turn\'s npm test
   await turn($, 't1'); await clock.advance(50)
   await turn($, 't2'); await clock.advance(50)
   await $.tool.call({ tool: 'Bash', command: 'npm test' }); await clock.advance(50)
-  expect(await nodeOf('README.md')).toBeUndefined()
+  expect(await nodeOf('README.md')).toMatchObject({ change: 'external', reason: 'changed outside Claude' }) // F07-R20, not the command's
 })
 
 test('NFR-P6 a burst of three Edits queues one baseline refresh', async ($, on) => {
@@ -424,6 +424,30 @@ test('F07-AC42 a commit whose diff names the deletion keeps it deleted', async (
   expect(written.graph).toBeUndefined() // nothing to change: the seeded node stays deleted
 })
 
+
+test('F07-AC44 a file the person changed between turns is external, "changed outside Claude", and no blind spot', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/config.ts': node('src/config.ts', 1) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, ' M src/config.ts\0 D test/helpers.ts\0?? notes.md\0'])
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'external', reason: 'changed outside Claude', state: 'read' })
+  expect(await nodeOf('test/helpers.ts')).toMatchObject({ change: 'deleted', reason: 'deleted outside Claude' })
+  expect(await nodeOf('notes.md')).toMatchObject({ change: 'external', state: 'unread' })
+})
+
+test('F07-R20 a reason saying Claude was shown it stays, and Claude\'s own change is kept', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  const shown = 'changed outside Claude; Claude was shown it'
+  seedGraph(on, { seq: 2, files: { 'a.ts': node('a.ts', 1, { change: 'external', reason: shown }), 'b.ts': node('b.ts', 2, { change: 'edited', added: 2 }) }, edges: [], decisions: [], compactions: [] })
+  git(on, [clean, ' M a.ts\0 M b.ts\0'])
+  await start($); await clock.advance(50)
+  await turn($); await clock.advance(50)
+  expect(await nodeOf('a.ts')).toMatchObject({ change: 'external', reason: shown })
+  expect(await nodeOf('b.ts')).toMatchObject({ change: 'edited', added: 2, reason: null })
+})
 
 const created = 'mkdir -p notes && printf x > notes/draft.md && cat notes/draft.md && rm notes/draft.md'
 

@@ -64,3 +64,8 @@ export function shellChanges(before: Map<string, string>, after: Map<string, str
   }
   return out
 }
+
+/** F07-R20: what changed between two baselines with no command of Claude's between them (a turn's start): a `D` deleted, any other new or changed letters external. */
+export function outsideChanges(before: Map<string, string>, after: Map<string, string>, root: string, cwd: string): { path: string; change: 'deleted' | 'external' }[] {
+  return [...after].filter(([p, code]) => before.get(p) !== code && !worktree(p)).map(([p, code]) => ({ path: normalize(`${root}/${p}`, cwd), change: code.includes('D') ? 'deleted' : 'external' }))
+}

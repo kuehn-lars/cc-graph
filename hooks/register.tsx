@@ -17,7 +17,7 @@ import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
 import { moves, namedPaths, removals, stashes, writes } from './parse/shell'
-import { nameStatusOf, shellChanges, statusOf } from './parse/status'
+import { nameStatusOf, outsideChanges, shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
 import { summarize } from './render/summary'
@@ -287,7 +287,14 @@ export const register: Register = (on, options) => {
     await update($, TURN, n => (n ?? 0) + 1)
     searched.clear()
     turnCommands.length = 0
-    if (root) enqueue($, gitJob($, () => rebase($))) // F07-R5: what the person changed between turns is not the next command's doing
+    // F07-R5, R20: what changed between turns is not the next command's doing; it was changed outside Claude.
+    if (root) enqueue($, gitJob($, async () => {
+      const before = bases.get(cwd)
+      await rebase($)
+      const now = bases.get(cwd)
+      const changes = before && now && now !== before ? outsideChanges(before.status, now.status, root!, cwd) : []
+      if (changes.length) await apply($, { type: 'outside', changes })
+    }))
     return out
   }).catch(($, e, next) => next(e))
 
