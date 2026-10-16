@@ -11,7 +11,7 @@ The specs behind every line are in [`specs/`](specs/README.md). A feature moves 
 | [M0](#m0-foundations) | Foundations | none | Done |
 | [v0.1](#v01-what-claude-knows) | What Claude knows | F01, F02, F03, F04, F08, F14 (`maxNodes`), F15 | Done |
 | [v0.2](#v02-the-graph) | The graph | F06, F09, F14 (`importEdges`) | Done |
-| [v0.3](#v03-blind-spots) | Blind spots | F07, F14 (`blindSpots`) | Planned |
+| [v0.3](#v03-blind-spots) | Blind spots | F07, F14 (`blindSpots`) | Done |
 | [v0.4](#v04-why-it-did-that) | Why it did that | F05, F11, F14 (`captureThinking`, `editorCommand`) | Planned |
 | [v0.5](#v05-desktop-graph-and-pointer) | Desktop graph and pointer | F10 | Planned |
 | [v0.6](#v06-decisions-and-timeline) | Decisions and timeline | F12, F13, F14 (`decisions`) | Planned |
@@ -114,5 +114,5 @@ These are [non-goals](specs/00-product/spec.md#non-goals): code intelligence, ne
 ## Releases and compatibility
 
 - Versions follow semver. Each milestone is a minor release (`0.1.0`, `0.2.0`, …); fixes are patches. Before 1.0 a release may change behaviour, and the CHANGELOG says how.
-- Every release bumps `version` in `plugin.json`, adds a CHANGELOG entry, and is tagged with `claude plugin tag --push` (`cc-graph--v0.1.0`).
+- Every release bumps `version` in `plugin.json`, adds a CHANGELOG entry, and is tagged `cc-graph--v<version>` (`cc-graph--v0.1.0`) on its merge commit, by a GitHub release or `claude plugin tag --push`.
 - Every release names the Claude Code versions it was tested on. CI runs the pinned version and `latest`; moving the pin updates the committed types and every spec header in one change.

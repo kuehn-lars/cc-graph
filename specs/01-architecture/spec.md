@@ -234,7 +234,7 @@ Every release:
 
 1. Bump `version` in `plugin.json` (semver) and add a CHANGELOG entry. Without a new version, people keep the cached copy.
 2. Run the CI checks locally, then test the install from the folder: `claude plugin marketplace add ./`, `claude plugin install cc-graph@cc-graph`, a fresh session.
-3. `claude plugin tag --push` creates and pushes `cc-graph--v<version>` after checking that `plugin.json` and the marketplace entry agree.
+3. After the merge, a GitHub release on the merge commit creates the tag `cc-graph--v<version>` and carries the CHANGELOG entry as its notes. `claude plugin tag --push` may create the tag instead; it also checks that `plugin.json` and the marketplace entry agree.
 
 People install with `/plugin install cc-graph --marketplace kuehn-lars/cc-graph` and update with `claude plugin update cc-graph@cc-graph`.
 
@@ -250,3 +250,4 @@ Before the first public tag: the README carries the install line, the supported 
 - 2026-10-11 Review. Checked against the 2.1.296 types. Added context diagram, decisions D1 to D9, the off-path work queue, the two test seams, strict validation through `check-calls.mjs` with the root `CLAUDE.md` warning as the one accepted exception, and the corrected API surface (`session.measure`, `classic.InstructionsLoaded`, `Read` result kinds, no `Grep` tool, `command.run` answering its own command).
 - 2026-10-12 CI step 2 runs `tsc` through `npx -p typescript@5`. ARCH-Q1 answered by spike S0. Approved by the owner.
 - 2026-10-13 The README screenshots per surface are no longer a condition of the first public tag; they follow in a later release. Approved by the owner.
+- 2026-10-16 Release step 3: the tag comes from a GitHub release on the merge commit, as for v0.1.0 and v0.2.0; `claude plugin tag --push` stays an option. The marketplace entry has no version for it to check. Approved by the owner.

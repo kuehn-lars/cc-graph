@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1280" height="270" viewBox="0 0 1280 270" role="img" aria-labelledby="t d">
   <title id="t">cc-graph roadmap</title>
-  <desc id="d">M0 Foundations, v0.1 What Claude knows and v0.2 The graph are shipped. Next: v0.3 Blind spots, then v0.4 Why it did that, v0.5 Desktop graph and pointer, v0.6 Decisions and timeline, v1.0 Hardening and listing.</desc>
+  <desc id="d">M0 Foundations, v0.1 What Claude knows, v0.2 The graph and v0.3 Blind spots are shipped. Next: v0.4 Why it did that, then v0.5 Desktop graph and pointer, v0.6 Decisions and timeline, v1.0 Hardening and listing.</desc>
   <defs>
     <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#1c1b1a"/><stop offset="1" stop-color="#121211"/></linearGradient>
     <radialGradient id="glow" cx="0.5" cy="0.5" r="0.5"><stop offset="0" stop-color="#D97757" stop-opacity="0.35"/><stop offset="1" stop-color="#D97757" stop-opacity="0"/></radialGradient>
@@ -22,12 +22,12 @@
   <g clip-path="url(#card)">
     <rect width="1280" height="270" fill="url(#bg)"/>
     <rect width="1280" height="270" fill="url(#dots)"/>
-    <circle cx="413" cy="112" r="170" fill="url(#glow)"/>
+    <circle cx="564" cy="112" r="170" fill="url(#glow)"/>
   </g>
   <rect x="0.5" y="0.5" width="1279" height="269" rx="18" fill="none" stroke="#2c2b28"/>
   <text x="96" y="44" class="s" fill="#8c8b86">// ROADMAP</text>
-  <path class="todo" d="M412.9 112 H1170.0"/>
-  <rect x="110.0" y="110.5" width="302.9" height="3" rx="1.5" fill="url(#done)"/>
+  <path class="todo" d="M564.3 112 H1170.0"/>
+  <rect x="110.0" y="110.5" width="454.3" height="3" rx="1.5" fill="url(#done)"/>
   <circle cx="110.0" cy="112" r="11" fill="#D97757"/><path d="M105.0 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="110.0" y="82" class="v" fill="#f5f4ef" text-anchor="middle">M0</text>
   <text x="110.0" y="154" class="l" fill="#b5b3ac" text-anchor="middle">Foundations</text>
@@ -37,20 +37,20 @@
   <text x="261.4" y="154" class="l" fill="#b5b3ac" text-anchor="middle">What Claude</text>
   <text x="261.4" y="173" class="l" fill="#b5b3ac" text-anchor="middle">knows</text>
   <text x="261.4" y="216" class="s" fill="#D97757" text-anchor="middle">SHIPPED</text>
-  <circle class="ring" cx="412.9" cy="112" r="11" fill="none" stroke="#D97757" stroke-width="2"/>
   <circle cx="412.9" cy="112" r="11" fill="#D97757"/><path d="M407.9 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
   <text x="412.9" y="82" class="v" fill="#f5f4ef" text-anchor="middle">v0.2</text>
-  <text x="412.9" y="154" class="l" fill="#ecebe7" text-anchor="middle">The graph</text>
-  <text x="412.9" y="216" class="s" fill="#D97757" text-anchor="middle">LATEST</text>
-  <circle cx="564.3" cy="112" r="9" fill="#171716" stroke="#B1B9F9" stroke-width="2"/>
-  <text x="564.3" y="82" class="v" fill="#ecebe7" text-anchor="middle">v0.3</text>
-  <text x="564.3" y="154" class="l" fill="#9b9a94" text-anchor="middle">Blind spots</text>
-  <text x="564.3" y="216" class="s" fill="#B1B9F9" text-anchor="middle">NEXT</text>
-  <circle cx="715.7" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
-  <text x="715.7" y="82" class="v" fill="#8c8b86" text-anchor="middle">v0.4</text>
-  <text x="715.7" y="154" class="l" fill="#6f6e69" text-anchor="middle">Why it did</text>
-  <text x="715.7" y="173" class="l" fill="#6f6e69" text-anchor="middle">that</text>
-  <text x="715.7" y="216" class="s" fill="#55544f" text-anchor="middle">PLANNED</text>
+  <text x="412.9" y="154" class="l" fill="#b5b3ac" text-anchor="middle">The graph</text>
+  <text x="412.9" y="216" class="s" fill="#D97757" text-anchor="middle">SHIPPED</text>
+  <circle class="ring" cx="564.3" cy="112" r="11" fill="none" stroke="#D97757" stroke-width="2"/>
+  <circle cx="564.3" cy="112" r="11" fill="#D97757"/><path d="M559.3 112 l3.5 3.5 l6.5 -7" fill="none" stroke="#1c1b1a" stroke-width="2.6" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="564.3" y="82" class="v" fill="#f5f4ef" text-anchor="middle">v0.3</text>
+  <text x="564.3" y="154" class="l" fill="#ecebe7" text-anchor="middle">Blind spots</text>
+  <text x="564.3" y="216" class="s" fill="#D97757" text-anchor="middle">LATEST</text>
+  <circle cx="715.7" cy="112" r="9" fill="#171716" stroke="#B1B9F9" stroke-width="2"/>
+  <text x="715.7" y="82" class="v" fill="#ecebe7" text-anchor="middle">v0.4</text>
+  <text x="715.7" y="154" class="l" fill="#9b9a94" text-anchor="middle">Why it did</text>
+  <text x="715.7" y="173" class="l" fill="#9b9a94" text-anchor="middle">that</text>
+  <text x="715.7" y="216" class="s" fill="#B1B9F9" text-anchor="middle">NEXT</text>
   <circle cx="867.1" cy="112" r="9" fill="#171716" stroke="#55544f" stroke-width="2"/>
   <text x="867.1" y="82" class="v" fill="#8c8b86" text-anchor="middle">v0.5</text>
   <text x="867.1" y="154" class="l" fill="#6f6e69" text-anchor="middle">Desktop graph</text>

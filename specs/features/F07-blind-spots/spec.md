@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F06, F08, F14, F15 |
+| Verified | v0.3 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F06, F08, F14, F15 |
 
 ## Problem
 
@@ -223,3 +223,4 @@ Adds the `blind` and `external` changes, `FileNode.reason`, the `unread` state, 
 - 2026-10-16 R23: a file a command creates shows its lines ("+3 new"), counted by `git diff --numstat --no-index` against `/dev/null`; R11 and NFR-S5 allow `diff --numstat`. AC47 to AC49 added, manual check step 12 updated. Asked for by the owner after a heredoc-created file showed only "new"; confirmed when step 12 is walked again.
 - 2026-10-16 R23 also counts a tracked file a command changes when the baseline did not hold it (`git diff --numstat -- ‹path›`, added and removed); AC50 added, and manual check step 15. The owner's test overwrote a committed `hi200.md` with `yes HI | head -n 200 >`, which the first R23 did not count.
 - 2026-10-16 The owner confirms R23 in a terminal session: a file a command creates shows "+‹n› new", and a committed file it rewrites shows its count.
+- 2026-10-16 Verified: CI green on PR #15. Tickets deleted.
