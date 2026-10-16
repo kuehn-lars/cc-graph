@@ -43,8 +43,9 @@
 | <kbd>1</kbd> … <kbd>9</kbd> | <samp>pick a row in the list</samp> |
 | `maxNodes` = `60` | <samp>most files in the graph, in /config</samp> |
 | `importEdges` = `on` | <samp>show file imports, in /config</samp> |
+| `blindSpots` = `on` | <samp>look for blind spots with git, in /config</samp> |
 
-<samp>Files a shell command created, deleted or changed show too, named with the command that did it.</samp>
+<samp>Files a shell command created, deleted or changed show too, named with the command that did it, and so do files Claude read with `cat`, `head` or `sed -n`. Files that import a change but were never opened are flagged as blind spots while the turn is still running.</samp>
 
 <a name="privacy"></a>
 <br>
@@ -61,7 +62,7 @@
 <br>
 <img src=".github/assets/h-roadmap.svg" alt="roadmap" width="100%">
 
-<img src=".github/assets/roadmap.svg" alt="Roadmap: M0 Foundations, v0.1 What Claude knows and v0.2 The graph shipped; next v0.3 Blind spots, then v0.4 Why it did that, v0.5 Desktop graph and pointer, v0.6 Decisions and timeline, v1.0 Hardening and listing" width="100%">
+<img src=".github/assets/roadmap.svg" alt="Roadmap: M0 Foundations, v0.1 What Claude knows, v0.2 The graph and v0.3 Blind spots shipped; next v0.4 Why it did that, then v0.5 Desktop graph and pointer, v0.6 Decisions and timeline, v1.0 Hardening and listing" width="100%">
 
 <samp>Features, exit gates and spikes per milestone are in [ROADMAP.md](ROADMAP.md).</samp>
 
