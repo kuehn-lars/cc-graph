@@ -55,13 +55,6 @@ declare module 'claude-code' {
         /** Servable media type; inferred from the extension for common types (css/js/json/png/…) — pass explicitly otherwise. */
         contentType?: string
       }> | {}
-      /** publish: small changes Claude makes to the file at `file_path` in this same call, instead of editing the file with Edit and publishing after. Use it on a page (add `url` to update an artifact from another conversation) or on one data file of an artifact made from a type (its `url`, with that file as `file_path`). Not allowed with `type_url`, `files` or `root`. Each old_str is text copied exactly from the file as it now stands and must occur in it exactly once; new_str takes its place (empty deletes it). The edits apply in order, all or none: the file is published with them and then saved with them on disk, so it stays the source for later changes; on a miss nothing is changed or published, and the result says which edit failed and why. */
-      edits?: Array<{
-        /** Text copied exactly from the file; must occur once. */
-        old_str: string
-        /** Its replacement; empty deletes old_str. */
-        new_str: string
-      }>
       /** The base directory that relative `files` sources resolve against, like a bundler root. It never changes published paths. It is relative to the working directory, or absolute within it or within Claude's scratchpad directory. It requires `files`, except on an Artifact made from a type, where a data `file_path` under it is served at its path relative to it. */
       root?: string
       /** publish only: true also pins the published artifact to the person's claude.ai sidebar once it is published. Claude passes it only when the person asked for that. A failed pin never fails the publish, and the result says so. */
@@ -4457,6 +4450,8 @@ declare module 'claude-code' {
       isImage?: boolean
       /** ID of the background task if command is running in background */
       backgroundTaskId?: string
+      /** @internal Path of the background task's output file on the machine that keeps the command, when that is not this process */
+      backgroundOutputPath?: string
       /** True if the user manually backgrounded the command with Ctrl+B */
       backgroundedByUser?: boolean
       /** @internal True if a plugin's turn abort moved the running command to the background */
