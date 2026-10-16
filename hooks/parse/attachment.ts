@@ -13,8 +13,8 @@ export function reattachedAction(text: string, cwd: string): Reattached | null {
     ? { type: 'reattached', path: normalize(file, cwd), tokens: estimateTokens(text) } : null
 }
 
-/** F07-R7: the file an `edited_text_file` attachment names, from its "Note: ‹path› was modified" line; null when the text has none (the reducer then matches it against known nodes). F07-Q1: the form is not confirmed by a recording. */
+/** F07-R7: the file an `edited_text_file` attachment names, from its "Note: ‹path› changed on disk since you last read it" line (F07-Q1, recorded); null when the text has none (the reducer then matches it against known nodes). */
 export function externalAction(text: string, cwd: string): External {
-  const path = /^Note: (.+?) was modified\b/m.exec(text)?.[1]
+  const path = /^Note: (.+?) (?:changed on disk|was modified)\b/m.exec(text)?.[1]
   return { type: 'external', path: path ? normalize(path, cwd) : null, text }
 }

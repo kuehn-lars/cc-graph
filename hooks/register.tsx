@@ -1,6 +1,7 @@
 import { read, update, type CoreEngineInterface, type Register, type StateDollar } from 'claude-code'
 import { layout, reshaped } from './layout'
 import { emptyGraph, reduce, type Action, type FileAction } from './model'
+import type { Commanded } from './model/commanded'
 import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
@@ -15,7 +16,7 @@ import { listed, memoryNote, nestedSize } from './parse/memory'
 import { normalize, worktreeOf } from './parse/path'
 import { searchAction } from './parse/search'
 import { shellReads } from './parse/shellReads'
-import { moves, namedPaths, stashes } from './parse/shell'
+import { moves, namedPaths, removals, stashes, writes } from './parse/shell'
 import { nameStatusOf, shellChanges, statusOf } from './parse/status'
 import { MIN_ROWS, TOO_SHORT, frame, graphColumns, graphRows, renderGraph } from './render/graph'
 import { renderList } from './render/list'
@@ -166,8 +167,17 @@ const parsers: Record<'Read' | 'Edit' | 'Write' | 'NotebookEdit' | 'Bash', (e: a
   Edit: (e, r) => inWorktree(editAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   Write: (e, r) => inWorktree(writeAction(normalize(e.file_path, cwd), r, cwd, importEdges), e.file_path),
   NotebookEdit: (e, r) => inWorktree(notebookEditAction(normalize(e.notebook_path, cwd), r), e.notebook_path),
-  Bash: (e, r, text, start) => together([searchAction(e.command, e.tool_use_id, r, cwd, text, start), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges, start)]), // F02: the hits of a search; F07-R19: the files it prints
+  Bash: (e, r, text, start) => together([searchAction(e.command, e.tool_use_id, r, cwd, text, start), ...shellReads(e.command, e.tool_use_id, r, cwd, text, importEdges, start), commandedAction(e.command, start)]), // F02: the hits of a search; F07-R19: the files it prints; R21, R22: what git cannot see
 }
+
+// F07-R21: what an `rm` removed last; R22: with no git (`root` null), the files a command writes. Only paths with a node change.
+function commandedAction(command: string, start?: string): Commanded | null {
+  const deleted = removals(command, cwd, start), edited = root ? [] : writes(command, cwd, start)
+  return deleted.length || edited.length ? { type: 'commanded', command, deleted, edited } : null
+}
+
+// F07-R7: the main loop's Bash commands this turn, to tell Claude's own edit from an outside one when Claude Code shows it.
+const turnCommands: { command: string; named: (path: string) => boolean }[] = []
 
 // F07-R1, R5, R6: what shell commands do to files, from git's status around each Bash call, off the hook's path (R8). `root` is null outside a repository.
 let root: string | null = null
@@ -237,7 +247,7 @@ async function shellJob($: StateDollar & Pick<CoreEngineInterface, 'process' | '
   const diff = !now.head || before.head === now.head ? undefined : before.head ? await headDiff($, dir, before.head, now.head) : 'first' // F07-R14
   const reverts = !stashes(e.command) && (before.head === now.head || diff !== undefined) // F07-R6: `git stash pop` brings a stashed change back; a failed diff cannot tell a commit
   const moved = moves(e.command, cwd, start) // F07-R17: a mv's new path takes what Claude had of the old one
-  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
+  const changes = shellChanges(before.status, now.status, root!, cwd, diff, namedPaths(e.command, cwd, start), reverts, new Set(writes(e.command, cwd, start))).map(c => (c.change === 'created' && moved.has(c.path) ? { ...c, from: moved.get(c.path) } : c))
   bases.set(dir, now)
   if (changes.length) await apply($, { type: 'shellChanged', command: e.command, changes, ...(inWt ? { worktree: `agent-${e.agentId}` } : {}), ...(e.agentId ? { agentId: e.agentId } : {}) }) // F15-R1
   if (changes.length && e.agentId) await nameAgent($, e.agentId)
@@ -276,6 +286,7 @@ export const register: Register = (on, options) => {
     const out = await next(e)
     await update($, TURN, n => (n ?? 0) + 1)
     searched.clear()
+    turnCommands.length = 0
     if (root) enqueue($, gitJob($, () => rebase($))) // F07-R5: what the person changed between turns is not the next command's doing
     return out
   }).catch(($, e, next) => next(e))
@@ -284,6 +295,7 @@ export const register: Register = (on, options) => {
     // F02-R8: where a command starts, read before it runs: the Bash tool keeps a `cd` from one call for the next.
     const start = e.tool === 'Bash' ? await $.session.cwd().then(d => (d === cwd ? undefined : d), () => undefined) : undefined
     const out = await next(e)
+    if (e.tool === 'Bash' && !out.deny && !e.agentId) turnCommands.push({ command: e.command, named: namedPaths(e.command, cwd, start) })
     if (!out.deny && !out.isError && out.result) {
       const action = parsers[e.tool as keyof typeof parsers](e, out.result, out.text, start)
       if (action) await record($, action, e.agentId)
@@ -336,7 +348,10 @@ export const register: Register = (on, options) => {
   // F07-R7: a main-loop file changed outside Claude that Claude Code showed it. Not a blind spot. Needs no git.
   on('prompt.attachment', { type: 'edited_text_file' }, async ($, e, next) => {
     const out = await next(e)
-    if (!e.agentId) await apply($, externalAction(e.text, cwd))
+    const action = e.agentId ? null : externalAction(e.text, cwd)
+    const own = action?.path ? turnCommands.findLast(c => c.named(action.path!)) : undefined
+    if (own) await apply($, { type: 'commanded', command: own.command, deleted: [], edited: [action!.path!] }) // Claude's own edit, shown back to it
+    else if (action) await apply($, action)
     return out
   }).catch(($, e, next) => next(e))
 

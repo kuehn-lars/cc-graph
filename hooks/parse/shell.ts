@@ -117,6 +117,51 @@ export function moves(command: string, cwd: string, start?: string): Map<string,
   return out
 }
 
+/** The words of a segment after its command, less flags (`-x`, `--x`) and empty words (BSD `sed -i ''`). */
+const operands = (w: string[], from: number) => w.slice(from).filter(x => x !== '' && !x.startsWith('-'))
+
+/** F07-R22: the node paths a command writes: the target of a `>`, `>>` or `&>` (not a descriptor, not `/dev/…`), and the file operands of `tee`, `sed -i` and `perl -i`. */
+export function writes(command: string, cwd: string, start?: string): string[] {
+  const out: string[] = []
+  const segs = segments(command)
+  let dir: string | null | undefined = start
+  segs.forEach((s, i) => {
+    const w = s.words
+    const add = (t: string | undefined) => t && dir !== null && !/[$`~*?[{]/.test(t) && !t.startsWith('/dev/') && out.push(resolve(t, dir, cwd))
+    w.forEach((x, j) => {
+      if (!s.redirs.has(j)) return
+      const m = /^(\d*|&)>>?(.*)$/.exec(x)
+      if (m && !m[2]!.startsWith('&')) add(m[2] || w[j + 1])
+    })
+    const plain = w.filter((_, j) => !s.redirs.has(j) && !s.redirs.has(j - 1))
+    const inPlace = plain.slice(1).some(f => /^-[a-zA-Z]*i/.test(f))
+    if (plain[0] === 'tee') operands(plain, 1).forEach(add)
+    if ((plain[0] === 'sed' || plain[0] === 'perl') && inPlace) {
+      const scripts = plain.some(f => f === '-e') ? plain.filter((f, k) => plain[k - 1] === '-e') : [operands(plain, 1)[0]]
+      operands(plain, 1).filter(f => !scripts.includes(f)).forEach(add)
+    }
+    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
+  })
+  return out
+}
+
+/** F07-R21: the node paths an `rm` or `git rm` of the command removes and no later segment names again. */
+export function removals(command: string, cwd: string, start?: string): string[] {
+  const last = new Map<string, number>()
+  const removed = new Map<string, number>()
+  const segs = segments(command)
+  let dir: string | null | undefined = start
+  segs.forEach((s, i) => {
+    if (dir !== null) {
+      for (const x of s.words) if (x && !/[$`~*?[{]/.test(x)) last.set(resolve(x.replace(/^(\d*|&)(>>?|<)/, ''), dir, cwd), i)
+      const at = s.words[0] === 'rm' ? 1 : s.words.slice(0, 2).join(' ') === 'git rm' ? 2 : -1
+      if (at > 0) for (const x of operands(s.words, at)) if (!/[$`~*?[{]/.test(x)) removed.set(resolve(x, dir, cwd), i)
+    }
+    dir = dirAfter(dir, s, segs[i + 1]?.sep ?? '')
+  })
+  return [...removed].filter(([p, i]) => p !== '' && last.get(p) === i).map(([p]) => p)
+}
+
 /** F07-R6: whether a segment runs `git stash`. Joined: a lone quoted git word in hooks/ makes check-calls.mjs ask for GIT_OPTIONAL_LOCKS (NFR-S5), and this runs nothing. */
 export const stashes = (command: string) => segments(command).some(s => s.words.slice(0, 2).join(' ') === 'git stash')
 

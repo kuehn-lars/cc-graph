@@ -423,3 +423,45 @@ test('F07-AC42 a commit whose diff names the deletion keeps it deleted', async (
   await session($, clock, 'git commit -qam drop')
   expect(written.graph).toBeUndefined() // nothing to change: the seeded node stays deleted
 })
+
+
+const created = 'mkdir -p notes && printf x > notes/draft.md && cat notes/draft.md && rm notes/draft.md'
+
+test('F07-AC45 a file created, printed and removed in one command is deleted, with git', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: { ...quiet, stdout: 'x' } })
+  git(on, [clean])
+  await session($, clock, created)
+  expect(await nodeOf('notes/draft.md')).toMatchObject({ change: 'deleted', reason: `deleted by \`${created.slice(0, 59)}…\`` })
+})
+
+test('F07-AC45 the same without git, and rm -rf of a folder deletes the nodes in it; a file named again after its rm is not deleted', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: { ...quiet, stdout: 'x' } })
+  seedGraph(on, { seq: 2, files: { 'tmp/a.ts': node('tmp/a.ts', 1), 'b.ts': node('b.ts', 2) }, edges: [], decisions: [], compactions: [] })
+  git(on, [''], null)
+  await session($, clock, created)
+  expect(await nodeOf('notes/draft.md')).toMatchObject({ change: 'deleted' })
+  await $.tool.call({ tool: 'Bash', command: 'rm -rf tmp && rm b.ts && echo x > b.ts' }); await clock.advance(50)
+  expect(await nodeOf('tmp/a.ts')).toMatchObject({ change: 'deleted' })
+  expect((await nodeOf('b.ts'))?.change).not.toBe('deleted')
+})
+
+test('F07-AC46 a second sed -i of a changed file is edited although its letters stay ( M before and after)', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  git(on, [' M src/config.ts\0'])
+  await session($, clock, "sed -i '' 's/a/b/' src/config.ts")
+  expect(await nodeOf('src/config.ts')).toMatchObject({ change: 'edited', reason: "changed by `sed -i '' 's/a/b/' src/config.ts`" })
+})
+
+test('F07-AC46 without git, printf >> of a file with a node makes it edited; a file with no node gets none', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: 'Bash', tool_use_id: 'x', input: {}, result: quiet })
+  seedGraph(on, { seq: 1, files: { 'src/routes/index.ts': node('src/routes/index.ts', 1) }, edges: [], decisions: [], compactions: [] })
+  git(on, [''], null)
+  await session($, clock, 'printf x >> src/routes/index.ts && printf y > other.ts 2>/dev/null')
+  expect(await nodeOf('src/routes/index.ts')).toMatchObject({ change: 'edited', state: 'read' })
+  expect(await nodeOf('other.ts')).toBeUndefined()
+  expect(await nodeOf('/dev/null')).toBeUndefined()
+})
