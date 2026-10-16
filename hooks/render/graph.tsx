@@ -32,16 +32,17 @@ export const graphColumns = (bodyColumns: number) => Math.min(bodyColumns, MAX_C
 export const frame = (graph: Graph, layout: Layout, columns: number, rows: number, selected: string | null, pulse: string[] = [], step = 0) =>
   encode(paint(graph, layout, columns, rows, selected, pulse, step))
 
-/** F09-R18: `⏺ now  src/auth/login.ts  +2 −0  · imports 3`, the mark in Claude's colour, the folder dimmed and the file name bold; the path gives way first, cut from its start. */
-function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {
-  const n = nowNode(graph)
+/** F09-R18: `⏺ now  src/auth/login.ts  +2 −0  · 49 lines · imports 3`, of the selected node (`⏺ selected`) or else the now node; the mark in Claude's colour, the folder dimmed and the file name bold. Its reason and what Claude saw follow, dimmed, until the card (F11) ships; what does not fit leaves from the end, then the path gives way, cut from its start. */
+function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number, selected: string | null) {
+  const n = (selected && graph.files[selected]) || nowNode(graph)
   if (!n) return <Text dimColor>Nothing read yet.</Text>
-  const head = '⏺ now  ', parts = changeParts(n), edge = edgeWords(graph).get(n.path)
-  // The list words go first, then the change word, while not even the file name fits beside them.
-  let change = parts.length ? `  ${parts.map(([t]) => t).join('')}` : '', words = edge ? `  · ${edge}` : ''
-  if (cols(head + fileName(n.path) + change + words) > columns) words = ''
+  const head = n.path === selected ? '⏺ selected  ' : '⏺ now  ', parts = changeParts(n), edge = edgeWords(graph).get(n.path)
+  let change = parts.length ? `  ${parts.map(([t]) => t).join('')}` : ''
+  const details = [n.reason, n.seen || (n.state === 'ghost' ? 'never opened' : ''), edge].filter((d): d is string => !!d)
+  const words = () => (details.length ? `  · ${details.join(' · ')}` : '')
+  while (details.length && cols(head + n.path + change + words()) > columns) details.pop() // the details leave before the path gives way
   if (cols(head + fileName(n.path) + change) > columns) change = ''
-  const room = columns - cols(head + change + words)
+  const room = columns - cols(head + change + words())
   const path = cols(n.path) <= room ? n.path : `…${tail(n.path, room - 1)}` // ponytail: a file name wider than the pane loses its start too
   const slash = path.lastIndexOf('/') + 1
   return (
@@ -51,7 +52,7 @@ function nowLine({ Text }: Pick<Table, 'Text'>, graph: Graph, columns: number) {
       <Text dimColor>{path.slice(0, slash)}</Text>
       <Text bold>{path.slice(slash)}</Text>
       {change && <Text>{'  '}{parts.map(([t, tone], i) => <Text key={`c${i}`} color={tone.key}>{t}</Text>)}</Text>}
-      {words && <Text dimColor>{words}</Text>}
+      {words() && <Text dimColor>{words()}</Text>}
     </Text>
   )
 }
@@ -72,7 +73,7 @@ export function renderGraph({ Box, Text, Raster }: Table, graph: Graph, layout: 
     <Box flexDirection="column">
       {segLine({ Text }, 'meter', meterSegs(graph, fill), columns)}
       <Raster key="graph" columns={width} rows={rows} cells={frame(graph, layout, width, rows, selected)} />
-      {nowLine({ Text }, graph, columns)}
+      {nowLine({ Text }, graph, columns, selected)}
       {legendLines(graph, memory).map((segs, i) => segLine({ Text }, `legend-${i + 1}`, segs, columns))}
       {notes.slice(-FOOTER_NOTES).map((n, i) => <Text key={`note-${i}`} dimColor>{fit(n, columns)}</Text>)}
     </Box>
