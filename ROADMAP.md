@@ -114,5 +114,5 @@ These are [non-goals](specs/00-product/spec.md#non-goals): code intelligence, ne
 ## Releases and compatibility
 
 - Versions follow semver. Each milestone is a minor release (`0.1.0`, `0.2.0`, …); fixes are patches. Before 1.0 a release may change behaviour, and the CHANGELOG says how.
-- Every release bumps `version` in `plugin.json`, adds a CHANGELOG entry, and is tagged with `claude plugin tag --push` (`cc-graph--v0.1.0`).
+- Every release bumps `version` in `plugin.json`, adds a CHANGELOG entry, and is tagged `cc-graph--v<version>` (`cc-graph--v0.1.0`) on its merge commit, by a GitHub release or `claude plugin tag --push`.
 - Every release names the Claude Code versions it was tested on. CI runs the pinned version and `latest`; moving the pin updates the committed types and every spec header in one change.
