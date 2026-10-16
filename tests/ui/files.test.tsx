@@ -189,6 +189,14 @@ test('F15-R2 a ghost no agent touched is not subagent only: its row says "never 
   expect(row).toBe('⋯ src/api/users.ts  ≈? · never opened')
 })
 
+test('F15-AC10 a shell change made in a worktree says "worktree" too: its reason ends "in worktree agent-<id>"', async ($, on) => {
+  ui(on)
+  seed(on, node('src/routes/index.ts', 1, { state: 'unread', change: 'deleted', reason: 'deleted by `rm src/routes/index.ts` in worktree agent-a1' }))
+  await start($)
+  const [row] = await rows(await mount($, 'terminal', 120))
+  expect(row).toMatch(/deleted  worktree  /)
+})
+
 test('F15-AC10 a row whose reason names a worktree says "worktree"; one without does not', async ($, on) => {
   ui(on)
   seed(on, node('a/plain', 1, { change: 'edited' }), node('a/wt', 2, { change: 'edited', reason: 'in worktree agent-a1', mainLoop: false, agents: ['ag1'] }))
