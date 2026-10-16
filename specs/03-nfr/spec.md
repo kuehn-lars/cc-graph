@@ -78,3 +78,4 @@ CC Graph handles the most sensitive things in a session: file contents in tool r
 - 2026-10-15 Back to Review with F07: NFR-S5 adds `diff --name-status`, which F07-R14 needs to see commits and merges. NFR-P6 counts `status` per writing `Bash` call (F07-R18 skips read-only ones) and per burst of Claude's own changes (F07-R13), each with a `rev-parse HEAD`. Approved by the owner.
 - 2026-10-15 NFR-S1 adds `$.ui.log`, only to the debug log: F07-R9 says a failed `git` job writes its reason there, and no allowed method does. Found implementing F07 ticket 08; proposed, the owner approves with the review.
 - 2026-10-15 NFR-S1 adds `$.session.cwd`: Claude Code's `Bash` tool keeps a `cd` for the next call, so F02-R8 reads where a command starts. It reads a path only. Found testing real sessions at the owner's request; proposed, the owner approves with the review.
+- 2026-10-16 NFR-S1's `$.ui.log` and `$.session.cwd` approved by the owner.
