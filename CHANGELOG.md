@@ -2,7 +2,12 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
-## Unreleased
+## 0.3.0 (2026-10-16)
+
+Blind spots: files that import a change but were never opened, and files a shell command changed behind Claude's back, named while the turn is still running. What Claude does through the shell counts: reads with `cat`, `head` or `sed -n`, its own `sed -i` and heredoc edits with their line counts, deletions committed in the same command, merges, and changes in a subagent's worktree. Switchable in `/config` (F07, F14 `blindSpots`). Tested on Claude Code 2.1.296 and 2.1.301.
+
+- Release: F07 Verified, ROADMAP v0.3 Done, F07's tickets deleted. The README names the `blindSpots` setting and marks v0.3 as the latest release.
+
 
 - F07 shell reads: a file Claude prints with `cat`, `bat`, `nl`, `head`, `tail` or `sed -n` shows as `read` or `partial` with what it saw ("48 lines", "lines 1 to 5"), and, for a single-file read, its tokens and import candidates; a piped `cat` is not a read. A search and the reads of one call land in one write of `graph`. A `Bash` call the engine held read-only raises no `git` at all (F07-AC23..AC25, R18, R19).
 - F07 own changes: after each `Write`, `Edit` or `NotebookEdit` the mod queues one refresh of its `git status` baseline (at most one waiting), so a file Claude wrote and a later command removed shows as `deleted` (F07-AC16, R13; AC3 and AC10 now have tests).
