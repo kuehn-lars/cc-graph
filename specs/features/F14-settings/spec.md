@@ -103,3 +103,4 @@ None.
 - 2026-10-13 AC2, AC4, AC6 and AC7 marked "(from vX.Y)" so an Implemented F14 does not need tests for fields that ship later (trace rule, specs/README.md). AC3 gets a kit test of the `userConfig` bound; `claude plugin validate` stays in the check command.
 - 2026-10-13 Verified for v0.1: CI green on PR #10.
 - 2026-10-13 Added `importEdges` (v0.2, read by F06 and F07's importer half). Its criteria live in F06 (F06-AC12).
+- 2026-10-16 Verified for v0.3: `blindSpots` (AC4), CI green on PR #15.
