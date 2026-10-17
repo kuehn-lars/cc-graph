@@ -36,3 +36,17 @@ test('F14-AC2 with captureThinking on, the same step stores its note', async ($,
   await streamStep($, on)
   expect(written.thinking).toMatchObject([{ turn: 1, step: 0, files: ['src/auth/login.ts', 'src/config.ts'] }])
 })
+
+// DERIVED: what an activation with capture on left in state, seeded beneath the mod; state outlives the reload a changed option brings.
+const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
+const held = [1, 2, 3].map(turn => ({ turn, step: 0, text: `Turn ${turn}.`, chars: 7, files: [] }))
+const seeded: Record<string, unknown> = { thinking: held, notes: ['blind spots need git', HIDDEN] }
+
+test('F05-AC14 with captureThinking: false, session.start empties thinking and removes the hidden footer note (DERIVED: the held state)', { options: { captureThinking: false } }, async ($, on) => {
+  on('state.get', async (_$, e: any, next) => (e.key in seeded ? ({ value: { value: seeded[e.key], version: 0 } } as any) : next(e)))
+  beneath(on)
+  observe(on)
+  await $.session.start(thinking.shown[0]!.input as any)
+  expect(written.thinking).toEqual([])
+  expect(written.notes).toEqual(['blind spots need git'])
+})

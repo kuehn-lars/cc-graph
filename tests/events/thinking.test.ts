@@ -179,6 +179,19 @@ test('F05-AC9 after the footer note, a step with thinking "Read the test." store
   expect(await footer($)).toEqual([])
 })
 
+test('F05-AC15 a step whose only thinking block is "\\n\\n" stores no note and adds the hidden footer note (DERIVED: the hidden recording\'s chunks with whitespace)', async ($, on) => {
+  ui(on)
+  observe(on)
+  const step = hiddenMain[0]!
+  const chunks = step.chunks.map((c: any) => (c.kind === 'thinking' ? { ...c, text: '\n' } : c))
+  model(on, [{ ...step, chunks }])
+  await start($)
+  await read($, step.input)
+  expect(written.thinking).toBeUndefined()
+  expect(written.notes).toEqual([HIDDEN])
+  expect(await footer($)).toEqual([HIDDEN])
+})
+
 test('F05-R6 a step with no thinking chunks at all adds no footer note (DERIVED: the recorded step 0 without its thinking)', async ($, on) => {
   observe(on)
   const step = withThinking([])

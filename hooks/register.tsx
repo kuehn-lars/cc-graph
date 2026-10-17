@@ -5,7 +5,7 @@ import type { Commanded } from './model/commanded'
 import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
-import { withCapNote } from './model/notes'
+import { withCapNote, withHiddenNote } from './model/notes'
 import { EXCERPT, thinkingNote, type Block } from './model/thinking'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { externalAction, reattachedAction } from './parse/attachment'
@@ -284,7 +284,6 @@ let blindSpots = true
 let captureThinking = true
 // F05-R4: the newest notes kept.
 const MAX_THINKING = 20
-const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
@@ -294,15 +293,16 @@ export const register: Register = (on, options) => {
 
   // F05-R1, R5, R7, R10, F14-R2: off, no hook at all. On, every chunk passes as it came and the stream's result is returned;
   // a stream that rejects or is closed passes that on, and stores nothing. Recording sits in a `try`, so it never costs a chunk.
-  // F05-R2, R4, NFR-P2: a main-loop step keeps per block its first 400 code points and its length; one write of `thinking` after the result.
+  // F05-R2, R4, NFR-P2: a main-loop step keeps per block its first 400 code points, its length and whether it is all whitespace; one write of `thinking` after the result.
   if (captureThinking) on('turn.step', async function* ($, e, next) {
     const stream = next(e)
     const blocks = new Map<number, Block>()
     for await (const chunk of stream) {
       try {
         if (!e.agentId && chunk.kind === 'thinking') {
-          const b = blocks.get(chunk.index) ?? { text: '', chars: 0 }
+          const b = blocks.get(chunk.index) ?? { text: '', chars: 0, blank: true }
           const cps = [...chunk.text]
+          b.blank &&= !/\S/.test(chunk.text)
           if (b.chars < EXCERPT) b.text += cps.slice(0, EXCERPT - b.chars).join('')
           b.chars += cps.length
           blocks.set(chunk.index, b)
@@ -313,17 +313,25 @@ export const register: Register = (on, options) => {
     const result = await stream.result
     try {
       const note = e.agentId ? null : thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
-      if (note) await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING))
-      // F05-R6, R9: a main-loop step of only empty thinking names the setting in the footer, once, while no note is held; a note removes it. `notes` is written only when that changes.
-      const notes = (await read($, NOTES)) ?? []
-      if (note && notes.includes(HIDDEN)) await update($, NOTES, ns => (ns ?? []).filter(n => n !== HIDDEN))
-      else if (!note && !e.agentId && blocks.size && !notes.includes(HIDDEN) && !(await read($, THINKING))?.length) await update($, NOTES, ns => (ns ?? []).includes(HIDDEN) ? ns ?? [] : [...(ns ?? []), HIDDEN])
+      // F05-R6, R9: after a step with thinking chunks, the footer names the setting while no note is held. `notes` is written only when that changes.
+      if (!e.agentId && blocks.size) {
+        const held = note ? await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING)) : await read($, THINKING)
+        const hidden = !held?.length
+        const notes = (await read($, NOTES)) ?? []
+        if (withHiddenNote(notes, hidden) !== notes) await update($, NOTES, ns => withHiddenNote(ns ?? [], hidden))
+      }
     } catch {}
     return result
   })
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
+    // F05-R5: state outlives the reload that switched capture off, so what it held goes; each key written only if it holds something.
+    if (!captureThinking) {
+      if ((await read($, THINKING))?.length) await update($, THINKING, () => [])
+      const notes = (await read($, NOTES)) ?? []
+      if (withHiddenNote(notes, false) !== notes) await update($, NOTES, ns => withHiddenNote(ns ?? [], false))
+    }
     await $.command.register({
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,
     })
