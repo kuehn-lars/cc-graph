@@ -31,6 +31,7 @@ Files only subagents touched are marked "subagent only", tagged with the agent's
 - **F15-R7** The card (F11) and the graph's legend (F09, F10) name each agent as "‹type›: ‹description›" when they ship. Until then the names are kept in `agents` only.
 - **F15-R8** Once `mainLoop` is true, `state`, `tokens`, `seen` and `readId` describe the main conversation only. A subagent's read or search of such a node adds its id to `agents` and changes nothing else. The main loop's first touch of a subagent-only node applies F01's or F02's rule as if the node were new, and keeps its `change`, `reason`, `added`, `removed`, `line`, `agents` and `firstTurn`.
 - **F15-R9** A path inside the working directory under `.claude/worktrees/‹name›/` (the git worktree an agent with `isolation: 'worktree'` runs in) names the same node as the path after that prefix (I4). A change made there sets `change` with `reason` "in worktree ‹name›", and the list adds the word "worktree" to the row. A later main-loop change to the node sets `reason` back to `null`, and so does a change to a node that already has a change made in this working tree (`change` set, `reason` `null`): the main tree really has that change, so a worktree change after it leaves `reason` `null`.
+- **F15-R10** A `turn.start` with `e.agentId` (raised for a subagent's run since Claude Code 2.1.301) leaves `turn`, the turn's searched paths and shell commands as they were, and starts no between-turns `git` check (F07-R5, R20).
 
 ## Acceptance criteria
 
@@ -47,6 +48,7 @@ Files only subagents touched are marked "subagent only", tagged with the agent's
 - **F15-AC11** Given the main loop edited `src/b.ts`, when a subagent edits `/w/.claude/worktrees/agent-a1/src/b.ts`, then `reason` is `null` and the row does not say "worktree".
 - **F15-AC12** Given a subagent's `Read` of `a.ts` answers `file_unchanged` and the main loop already holds `a.ts`, then `a.ts` keeps its state and the agent's id is in `agents`; given `a.ts` is subagent only and the main loop's `Read` answers `file_unchanged`, then it is `mainLoop: true`, `read`, with `seen` "unchanged since an earlier read".
 - **F15-AC13** Given a `prompt.mention` of `a.ts` with `agentId` set and no node for it, then `a.ts` is subagent only with that id in `agents`.
+- **F15-AC14** Given one main-loop `turn.start` and then one with an `agentId` (the `turn.start` rows of `fixtures/sessions/thinking.ts`), then `turn` is 1 and no `git` runs for the second.
 
 ## Implementation decisions
 
@@ -97,3 +99,6 @@ None.
 - 2026-10-12 Gaps from implementation settled: `file_unchanged` and `prompt.mention` follow R1 (AC12, AC13); a worktree change never overwrites a change made in this tree (R9, AC11).
 - 2026-10-12 Manual check walked with the owner in a terminal and in the desktop app; step 3 follows R2. Implemented.
 - 2026-10-12 CI green. Verified.
+- 2026-10-17 Spike S2 (F05) found `turn.start` raised for subagents since 2.1.301: a subagent's turn start is ignored (R10, AC14). Approved by the owner.
+- 2026-10-17 F15-AC14 implemented and walked in real sessions on 2.1.302: an Explore agent's `turn.start` left `turn` at 1. Implemented; Verified once CI is green.
+- 2026-10-18 CI green on PR #17. Verified.

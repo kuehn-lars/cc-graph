@@ -2,6 +2,14 @@
 
 Versions follow semver. Each release names the Claude Code versions it was tested on.
 
+## Unreleased
+
+- F05 thinking layer: Claude's visible thinking is kept per main-loop step as an excerpt (its first 400 characters, its full length, its turn and step) and linked to the files that step read, edited or wrote. The list's Thinking section, between Memory and Blind spots, shows the newest three as `turn 4  Check the limiter.  → login.ts, rateLimit.ts`; a long line shortens its text so the file names stay. The newest 20 are kept, in session memory only, and `/clear`, `/resume` and `/branch` drop them. Every chunk and the step's result pass on unchanged, and so does a stream that fails or is closed; a subagent's thinking is not kept (F05-AC1..AC13).
+- F05 hidden thinking: Claude Code streams thinking text only with `showThinkingSummaries` on, for every 5.5 model (spike S2). Without it the footer says "Thinking is hidden: turn on showThinkingSummaries to see it." until the first note; thinking of only whitespace counts as hidden (F05-AC7, AC9, AC15).
+- F14 the `captureThinking` setting (`/config`, "Keep thinking excerpts"): off, no `turn.step` hook is registered, the excerpts already held are dropped and the list has no Thinking section (F14-AC2, F05-AC12, AC14).
+- F15 since Claude Code 2.1.301 a subagent's run raises its own `turn.start`: it no longer counts as a turn, clears the turn's searches and commands, or runs the between-turns `git` check (F15-AC14).
+- F08 a list row cut at the pane's edge counts wide characters as two columns.
+
 ## 0.3.0 (2026-10-16)
 
 Blind spots: files that import a change but were never opened, and files a shell command changed behind Claude's back, named while the turn is still running. What Claude does through the shell counts: reads with `cat`, `head` or `sed -n`, its own `sed -i` and heredoc edits with their line counts, deletions committed in the same command, merges, and changes in a subagent's worktree. Switchable in `/config` (F07, F14 `blindSpots`). Tested on Claude Code 2.1.296 and 2.1.301.

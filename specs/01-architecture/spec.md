@@ -110,7 +110,7 @@ Every row was checked against the Claude Code 2.1.296 types on 2026-10-11. The c
 | Need | Event or method | Spec |
 | --- | --- | --- |
 | Session working directory | `session.start`: `next(e)` resolves `{ cwd }`. Fires at load and again after each hot reload, never on `/clear` | 02 (I4) |
-| Main-loop turn numbers | `turn.start` (`turnId`); a subagent's run raises none | 02 |
+| Main-loop turn numbers | `turn.start` (`turnId`, `agentId`). Since 2.1.301 a subagent's run raises one too, with `agentId`; the mod ignores it (F15-R10) | 02, F15 |
 | `/graph` | `$.command.register({ name: 'graph', description, argumentHint, immediate: true })` in `session.start`; a `command.run` hook matched to `{ command: 'graph' }` answers `{ text }` itself | F08 |
 | Reads, edits, writes, notebook edits | `tool.call` on `Read`, `Edit`, `Write`, `NotebookEdit`, after `await next(e)`. `result` is typed per tool: `Read` is one of `text`, `image`, `notebook`, `pdf`, `parts`, `file_unchanged`; `Edit` and `Write` carry `structuredPatch` and `staged`; `Write` carries `type: 'create' \| 'update'` | F01 |
 | Files the person `@`-mentions | `prompt.mention` (`path`, `offset`, `limit`), after `next(e)`: `{ type: 'file' \| 'already_read_file' \| 'pdf_reference' \| null }`. No `tool.call` is raised for these reads | F01 |

@@ -102,7 +102,7 @@ declare module 'claude-code' {
       thinking: ThinkingNote[]         // newest 20
       timeline: Timeline               // newest 50 snapshots over a base
       agents: Record<string, Agent>
-      notes: string[]                  // one-line footer notes, e.g. "blind spots need git"
+      notes: string[]                  // one-line footer notes, e.g. "blind spots need git", "Thinking is hidden: …" (F05-R6)
       view: 'graph' | 'list'           // UI: kept across /clear
       selected: string | null          // UI
       viewTurn: number | null          // UI: null means live
@@ -202,3 +202,4 @@ On `/clear`, `/resume` and `/branch` (F03-R7) every key returns to its empty val
 - 2026-10-13 F07 shell changes pulled into v0.2: `deleted` joins the changes, and a file a shell command created is `created` (F07-R6, I2).
 - 2026-10-15 F07 back to Review: shell reads give `read` and `partial` as F01's reads do (F07-R19), and a shell change the command names is `edited`, not `blind` (F07-R17). Approved by the owner.
 - 2026-10-16 F07-R23: `added` of a file a shell command created holds the lines it has, and `added` and `removed` of a clean tracked file a command changed are git's count.
+- 2026-10-17 `notes` also carries F05-R6's hidden-thinking note.

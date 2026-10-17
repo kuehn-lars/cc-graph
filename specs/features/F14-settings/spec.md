@@ -104,3 +104,5 @@ None.
 - 2026-10-13 Verified for v0.1: CI green on PR #10.
 - 2026-10-13 Added `importEdges` (v0.2, read by F06 and F07's importer half). Its criteria live in F06 (F06-AC12).
 - 2026-10-16 Verified for v0.3: `blindSpots` (AC4), CI green on PR #15.
+- 2026-10-17 Added `captureThinking` (v0.4, read by F05): F14-AC2 has its test. Verified for v0.4 once CI is green.
+- 2026-10-18 Verified for v0.4: `captureThinking` (AC2), CI green on PR #17.
