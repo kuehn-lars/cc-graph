@@ -52,7 +52,7 @@ test('F05-AC13 a long first line at 48 columns is cut before the files: "turn 1 
   expect(await rows(await mount($, 'terminal', 48))).toEqual(['turn 1  For step 1, I ne…  → login.ts, config.ts'])
 })
 
-test('F05-R8 a row is as wide as its wide characters: a CJK first line is cut by columns, not by characters', async ($, on) => {
+test('F08-R6 no Thinking row is wider than bodyColumns: a CJK first line is cut by columns, not by characters', async ($, on) => {
   ui(on); seed(on, { thinking: [{ turn: 1, step: 0, text: '先读取登录文件然后检查配置文件', chars: 15, files: ['src/a.ts'] }] })
   await start($)
   expect(await rows(await mount($, 'terminal', 30))).toEqual(['turn 1  先读取登录文…  → a.ts'])

@@ -295,11 +295,12 @@ export const register: Register = (on, options) => {
   // a stream that rejects or is closed passes that on, and stores nothing. Recording sits in a `try`, so it never costs a chunk.
   // F05-R2, R4, NFR-P2: a main-loop step keeps per block its first 400 code points, its length and whether it is all whitespace; one write of `thinking` after the result.
   if (captureThinking) on('turn.step', async function* ($, e, next) {
+    if (e.agentId) return yield* next(e) // F05-R7: a subagent's step is forwarded and costs nothing
     const stream = next(e)
     const blocks = new Map<number, Block>()
     for await (const chunk of stream) {
       try {
-        if (!e.agentId && chunk.kind === 'thinking') {
+        if (chunk.kind === 'thinking') {
           const b = blocks.get(chunk.index) ?? { text: '', chars: 0, blank: true }
           const cps = [...chunk.text]
           b.blank &&= !/\S/.test(chunk.text)
@@ -312,9 +313,9 @@ export const register: Register = (on, options) => {
     }
     const result = await stream.result
     try {
-      const note = e.agentId ? null : thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
+      const note = thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
       // F05-R6, R9: after a step with thinking chunks, the footer names the setting while no note is held. `notes` is written only when that changes.
-      if (!e.agentId && blocks.size) {
+      if (blocks.size) {
         const held = note ? await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING)) : await read($, THINKING)
         const hidden = !held?.length
         const notes = (await read($, NOTES)) ?? []

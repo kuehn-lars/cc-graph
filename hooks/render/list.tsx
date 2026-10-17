@@ -51,7 +51,7 @@ function row(n: FileNode, columns: number, edge = '') {
   return head + path + suffix()
 }
 
-// F08-R6: the meter is cut from its end and closed by "…". ponytail: the line is ASCII plus "≈ · –", one column each; no width table.
+// F08-R6: a line is cut from its end to `columns` and closed by "…"; wide characters count two columns (cutSegs).
 export const fit = (line: string, columns: number) => (cols(line) <= columns ? line : cutSegs([{ text: line }], columns).map(s => s.text).join(''))
 
 // F08-R5, 02 Data model (retention): the footer shows the newest five notes, one line each.
