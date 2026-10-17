@@ -282,6 +282,14 @@ export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   importEdges = options.importEdges !== false
   blindSpots = options.blindSpots !== false
+
+  // F05-R1, R5, R7, R10, F14-R2: off, no hook at all. On, every chunk passes as it came and the stream's result is returned;
+  // a stream that rejects or is closed passes that on. Per-chunk recording (ticket 03) goes in a `try`, so it never costs a chunk.
+  if (options.captureThinking !== false) on('turn.step', async function* ($, e, next) {
+    const stream = next(e)
+    for await (const chunk of stream) yield chunk
+    return await stream.result
+  })
   on('session.start', async ($, e, next) => {
     const out = await next(e)
     cwd = out.cwd
