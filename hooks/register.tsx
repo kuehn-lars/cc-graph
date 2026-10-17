@@ -6,7 +6,7 @@ import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote, withHiddenNote } from './model/notes'
-import { EXCERPT, thinkingNote, type Block } from './model/thinking'
+import { EMPTY_BLOCK, addChunk, thinkingNote, type Block } from './model/thinking'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { externalAction, reattachedAction } from './parse/attachment'
 import { PATHSPECS, importPattern, importersOf } from './parse/grep'
@@ -285,6 +285,12 @@ let captureThinking = true
 // F05-R4: the newest notes kept.
 const MAX_THINKING = 20
 
+/** F05-R6, R9: the footer's hidden-thinking note on or off; `notes` is written only when that changes. */
+async function hiddenNote($: StateDollar, hidden: boolean) {
+  const notes = (await read($, NOTES)) ?? []
+  if (withHiddenNote(notes, hidden) !== notes) await update($, NOTES, ns => withHiddenNote(ns ?? [], hidden))
+}
+
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   importEdges = options.importEdges !== false
@@ -298,30 +304,27 @@ export const register: Register = (on, options) => {
     if (e.agentId) return yield* next(e) // F05-R7: a subagent's step is forwarded and costs nothing
     const stream = next(e)
     const blocks = new Map<number, Block>()
+    let failed: unknown = null
     for await (const chunk of stream) {
       try {
-        if (chunk.kind === 'thinking') {
-          const b = blocks.get(chunk.index) ?? { text: '', chars: 0, blank: true }
-          const cps = [...chunk.text]
-          b.blank &&= !/\S/.test(chunk.text)
-          if (b.chars < EXCERPT) b.text += cps.slice(0, EXCERPT - b.chars).join('')
-          b.chars += cps.length
-          blocks.set(chunk.index, b)
-        }
-      } catch {}
+        if (chunk.kind === 'thinking' && !failed) blocks.set(chunk.index, addChunk(blocks.get(chunk.index) ?? EMPTY_BLOCK, chunk.text))
+      } catch (err) {
+        failed = err
+      }
       yield chunk
     }
     const result = await stream.result
     try {
+      if (failed) throw failed
       const note = thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
-      // F05-R6, R9: after a step with thinking chunks, the footer names the setting while no note is held. `notes` is written only when that changes.
+      // F05-R6, R9: after a step with thinking chunks, the footer names the setting while no note is held.
       if (blocks.size) {
         const held = note ? await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING)) : await read($, THINKING)
-        const hidden = !held?.length
-        const notes = (await read($, NOTES)) ?? []
-        if (withHiddenNote(notes, hidden) !== notes) await update($, NOTES, ns => withHiddenNote(ns ?? [], hidden))
+        await hiddenNote($, !held?.length)
       }
-    } catch {}
+    } catch (err) {
+      $.ui.log(`thinking note dropped: ${err instanceof Error ? err.message : String(err)}`, { to: 'debug' })
+    }
     return result
   })
   on('session.start', async ($, e, next) => {
@@ -330,8 +333,7 @@ export const register: Register = (on, options) => {
     // F05-R5: state outlives the reload that switched capture off, so what it held goes; each key written only if it holds something.
     if (!captureThinking) {
       if ((await read($, THINKING))?.length) await update($, THINKING, () => [])
-      const notes = (await read($, NOTES)) ?? []
-      if (withHiddenNote(notes, false) !== notes) await update($, NOTES, ns => withHiddenNote(ns ?? [], false))
+      await hiddenNote($, false)
     }
     await $.command.register({
       name: 'graph', description: 'Show what Claude read, searched and changed', argumentHint: '[list|graph]', immediate: true,

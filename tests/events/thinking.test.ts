@@ -100,6 +100,14 @@ test('F05-AC2 the recorded step 0 leaves one note of its joined block, with its 
   expect(written.thinking).toMatchObject([{ turn: 0, step: 0, chars: text.length, text }])
 })
 
+test('F05-R2 a block that opens with 500 spaces keeps its text, not the spaces, and counts them in chars (DERIVED: the texts)', async ($, on) => {
+  observe(on)
+  const step = withThinking([' '.repeat(300), ' '.repeat(200) + '\n', 'Check the limiter.'])
+  model(on, [step])
+  await read($, step.input)
+  expect(written.thinking).toMatchObject([{ text: 'Check the limiter.', chars: 519 }])
+})
+
 test('F05-AC3 a 2,000-character thinking block leaves 400 characters and chars 2000 (DERIVED: the recorded texts, cycled)', async ($, on) => {
   observe(on)
   const recorded = main[0]!.chunks.filter((c: any) => c.kind === 'thinking').map((c: any) => c.text)

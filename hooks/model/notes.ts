@@ -10,7 +10,7 @@ export function withCapNote(notes: string[], files: number, max: number): string
 }
 
 /** F05-R6: the footer note of thinking that streams without text. */
-export const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
+const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
 
 /** F05-R5, R6, R9: the notes with the hidden note once while `hidden`, without it otherwise; `notes` itself when that changes nothing. */
 export function withHiddenNote(notes: string[], hidden: boolean): string[] {

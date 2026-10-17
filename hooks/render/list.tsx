@@ -96,7 +96,7 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
       {thinking && <Text bold>Thinking</Text>}
       {thinking && thinking.length === 0 && <Text dimColor>{fit('No thinking captured yet.', columns)}</Text>}
-      {thinking?.slice(-THINKING_ROWS).reverse().map((n, i) => <Text key={`thinking-${i}`}>{thinkingRow(n, columns)}</Text>)}
+      {thinking?.slice(-THINKING_ROWS).reverse().map(n => <Text key={`thinking-${n.turn}-${n.step}`}>{thinkingRow(n, columns)}</Text>)}
       {showBlind && <Text bold>Blind spots</Text>}
       {showBlind && blind.length === 0 && <Text dimColor>No blind spots.</Text>}
       {showBlind && blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
