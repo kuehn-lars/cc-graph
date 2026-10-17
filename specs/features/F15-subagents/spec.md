@@ -48,7 +48,7 @@ Files only subagents touched are marked "subagent only", tagged with the agent's
 - **F15-AC11** Given the main loop edited `src/b.ts`, when a subagent edits `/w/.claude/worktrees/agent-a1/src/b.ts`, then `reason` is `null` and the row does not say "worktree".
 - **F15-AC12** Given a subagent's `Read` of `a.ts` answers `file_unchanged` and the main loop already holds `a.ts`, then `a.ts` keeps its state and the agent's id is in `agents`; given `a.ts` is subagent only and the main loop's `Read` answers `file_unchanged`, then it is `mainLoop: true`, `read`, with `seen` "unchanged since an earlier read".
 - **F15-AC13** Given a `prompt.mention` of `a.ts` with `agentId` set and no node for it, then `a.ts` is subagent only with that id in `agents`.
-- **F15-AC14** Given one main-loop `turn.start` and then one with `agentId` `agent_1` (the `turn.start` rows of `fixtures/sessions/thinking.ts`), then `turn` is 1 and no `git` runs for the second.
+- **F15-AC14** Given one main-loop `turn.start` and then one with an `agentId` (the `turn.start` rows of `fixtures/sessions/thinking.ts`), then `turn` is 1 and no `git` runs for the second.
 
 ## Implementation decisions
 
