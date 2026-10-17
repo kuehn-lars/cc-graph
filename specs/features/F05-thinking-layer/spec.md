@@ -28,11 +28,11 @@ Claude's visible thinking is kept per step as a short excerpt and linked to the 
 ## Requirements
 
 - **F05-R1** While `captureThinking` is on, the mod hooks `turn.step` as an async generator that yields every chunk it reads from `next(e)`, unchanged and in order, and returns the stream's result unchanged, even if recording fails.
-- **F05-R2** For a main-loop step (no `e.agentId`), the mod joins the `text` of the step's `thinking` chunks per block `index`, and when the step ends stores one note: the non-empty blocks joined by a blank line and cut to their first 400 characters (code points), the joined length as `chars`, the `turn` key's value as `turn`, and the step's `index` as `step`.
+- **F05-R2** For a main-loop step (no `e.agentId`), the mod joins the `text` of the step's `thinking` chunks per block `index`, and when the step ends stores one note: the blocks with text other than whitespace joined by a blank line and cut to their first 400 characters (code points), the joined length as `chars`, the `turn` key's value as `turn`, and the step's `index` as `step`.
 - **F05-R3** The mod sets a note's `files` to the paths named by the `file_path` or `notebook_path` input of the step result's `toolUses`, normalized by I4, in order and without duplicates.
 - **F05-R4** The mod keeps the newest 20 notes and writes thinking nowhere but `$.state` (I8, NFR-S2).
-- **F05-R5** While `captureThinking` is off, the mod registers no `turn.step` hook at all, and the list view draws no Thinking section.
-- **F05-R6** If a main-loop step streams `thinking` chunks and every one has empty text, then the mod stores no note, and while `thinking` holds no note it adds the footer note "Thinking is hidden: turn on showThinkingSummaries to see it." once.
+- **F05-R5** While `captureThinking` is off, the mod registers no `turn.step` hook at all, and the list view draws no Thinking section. Since `$.state` outlives the reload that a changed option brings, `session.start` then empties `thinking` and removes the footer note of F05-R6.
+- **F05-R6** If a main-loop step streams `thinking` chunks and none has text other than whitespace, then the mod stores no note, and while `thinking` holds no note it adds the footer note "Thinking is hidden: turn on showThinkingSummaries to see it." once.
 - **F05-R7** If a step carries `e.agentId`, then the mod forwards it and records nothing.
 - **F05-R8** The list view's Thinking section, between Memory and Blind spots, shows the newest 3 notes, newest first, each one row `turn ‹turn›  ‹first non-empty line of text›  → ‹file names, comma-separated›` no wider than the pane (F08-R6); the arrow part is left out when `files` is empty. A row that does not fit cuts the text and closes it with "…", so the arrow part stays whole; only when `turn ‹turn›  …  → ‹file names›` does not fit either is the whole row cut at the pane's edge. With no note, the section shows F08-R7's "No thinking captured yet."
 - **F05-R9** When the mod stores a note, it removes the footer note of F05-R6.
@@ -54,6 +54,8 @@ Claude's visible thinking is kept per step as a short excerpt and linked to the 
 - **F05-AC11** Given three notes, when `classic.SessionStart` fires with `source` `clear`, then `thinking` is empty.
 - **F05-AC12** Given `captureThinking: false`, then the list view draws no Thinking heading and no "No thinking captured yet." line.
 - **F05-AC13** Given a note of turn 1 with the text "For step 1, I need to read two files using absolute paths within the sample-app directory." and `files` `['src/auth/login.ts', 'src/config.ts']`, at 48 columns, then its row is `turn 1  For step 1, I ne…  → login.ts, config.ts` (DERIVED: the text of the `shown` recording's first step, cut).
+- **F05-AC14** Given three notes and the footer note of F05-AC7, when `session.start` fires with `captureThinking: false`, then `thinking` is empty and the footer note is gone.
+- **F05-AC15** Given a main-loop step whose only thinking block is "\n\n" and no note held, then no note is stored and the footer note of F05-AC7 is added (DERIVED: the `hidden` recording's chunks with whitespace).
 
 ## Implementation decisions
 
@@ -121,3 +123,4 @@ None to add: [02 Data model](../../02-data-model/spec.md) already holds `Thinkin
 - 2026-10-17 Approved by the owner.
 - 2026-10-17 Testing decisions: what the test kit's seam cannot carry (engine chunks, a stand-in's own throw) named for F05-AC1 and AC10.
 - 2026-10-17 A recorded first line is longer than the pane, so a row cut at the edge never named its files: the text is cut first and the arrow part kept (R8, AC13). Approved by the owner.
+- 2026-10-17 From the code review: switching capture off drops what it held, since state outlives the reload (R5, AC14); a block of only whitespace counts as empty (R2, R6, AC15). Approved by the owner.
