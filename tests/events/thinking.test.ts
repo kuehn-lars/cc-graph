@@ -44,7 +44,7 @@ test('F05-AC1 a step of text, thinking, tool, input and stop chunks leaves the h
   expect([...seen].sort()).toEqual(['input', 'stop', 'text', 'thinking', 'tool'])
 })
 
-test('F05-AC4 a subagent step (agentId agent_1) streaming thinking stores no note and passes every chunk', async ($, on) => {
+test('F05-AC4 a subagent step (agentId agent_1) streaming thinking stores no note and passes every chunk (DERIVED: the recorded agentId replaced by agent_1)', async ($, on) => {
   observe(on)
   model(on, [sub])
   const out = await read($, { ...sub.input, agentId: 'agent_1' })
@@ -53,7 +53,7 @@ test('F05-AC4 a subagent step (agentId agent_1) streaming thinking stores no not
   expect(written.thinking).toBeUndefined()
 })
 
-test('F05-AC10 a stream that yields a thinking chunk and then throws hands up that chunk and the same error, and stores no note (DERIVED: the throw)', async ($, on) => {
+test('F05-AC10 a stream that yields a thinking chunk and then throws hands up that chunk and the error from beneath, and stores no note (DERIVED: the throw)', async ($, on) => {
   observe(on)
   const step = main[0]!
   const first = step.chunks.find((c: any) => c.kind === 'thinking')!
@@ -117,6 +117,22 @@ test('F05-AC3 a 2,000-character thinking block leaves 400 characters and chars 2
   expect(written.thinking[0].chars).toBe(2000)
 })
 
+test('F05-R2 two blocks with text are joined by a blank line, and chars counts the separator (DERIVED: the texts)', async ($, on) => {
+  observe(on)
+  const step = withThinking([])
+  model(on, [{ ...step, chunks: [{ kind: 'thinking', index: 0, text: 'First.' }, { kind: 'thinking', index: 1, text: 'Second.' }, ...step.chunks] }])
+  await read($, step.input)
+  expect(written.thinking).toMatchObject([{ text: 'First.\n\nSecond.', chars: 15 }])
+})
+
+test('F05-R10 a caller that stops reading after the first thinking chunk stores no note', async ($, on) => {
+  observe(on)
+  model(on, [main[0]])
+  for await (const c of $.turn.step(main[0]!.input)) if (c.kind === 'thinking') break
+  expect(written.thinking).toBeUndefined()
+  expect(written.notes).toBeUndefined()
+})
+
 test('F05-AC5 after 25 main-loop steps with thinking, the newest 20 notes remain (DERIVED: 25 steps from the recorded step 0)', async ($, on) => {
   observe(on)
   const steps = Array.from({ length: 25 }, (_, i) => withThinking([`Step ${i}.`], { input: { index: i }, result: { index: i } }))
@@ -135,6 +151,16 @@ test('F05-AC6 a Read and an Edit of /w/src/a.ts in cwd /w give files [src/a.ts] 
   await start($)
   await read($, step.input)
   expect(written.thinking[0].files).toEqual(['src/a.ts'])
+})
+
+test('F05-R3 a NotebookEdit of /w/nb/a.ipynb in cwd /w gives files [nb/a.ipynb] (DERIVED: the toolUses)', async ($, on) => {
+  const step = { ...main[0]!, result: { ...main[0]!.result, toolUses: [{ name: 'NotebookEdit', input: { notebook_path: '/w/nb/a.ipynb', new_source: '' } }] } }
+  beneath(on)
+  observe(on)
+  model(on, [step])
+  await start($)
+  await read($, step.input)
+  expect(written.thinking[0].files).toEqual(['nb/a.ipynb'])
 })
 
 test('F05-AC6 the recorded step 0 in its recorded cwd names src/auth/login.ts and src/config.ts', async ($, on) => {

@@ -21,6 +21,5 @@ test('NFR-P2 a 2,000-chunk step through the turn.step hook takes under 1 ms per 
     runs.push((Date.now() - t) / n)
     expect(n).toBe(2000)
   }
-  ;(globalThis as any).console?.log(`NFR-P2 ms per chunk: ${runs.map(r => r.toFixed(4)).join(', ')}`)
   expect(Math.min(...runs)).toBeLessThan(1)
 })
