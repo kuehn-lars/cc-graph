@@ -1,5 +1,6 @@
 import subagents from '../../fixtures/sessions/subagents'
-import { expect, test } from 'claude-code/testing'
+import thinking from '../../fixtures/sessions/thinking'
+import { expect, mock, test } from 'claude-code/testing'
 import type { FileNode } from '../../types'
 import { engine, graphOf, nodeOf, seedGraph, written, writes } from './kit'
 
@@ -251,4 +252,22 @@ test('F15-AC13 a mention with agentId and no node is subagent only (DERIVED: the
   await session($, on)
   await $.prompt.mention({ mention: 'src/auth/password.ts', path: `${cwd}/src/auth/password.ts`, agentId: AGENT })
   expect(await nodeOf('src/auth/password.ts')).toMatchObject({ mainLoop: false, agents: [AGENT] })
+})
+
+// F15-R10: the recorded main-loop `turn.start`, then the subagent's (2.1.302, fixtures/sessions/thinking.ts), in a repository whose `git` answers clean.
+test('F15-AC14 a main-loop turn.start, then a subagent\'s: turn is 1 and no git runs for the second', async ($, on) => {
+  const clock = mock.clock(on)
+  engine(on, { tool: '', tool_use_id: '', input: {}, result: null })
+  on('command.register', (_$: any, e: any) => ({ value: { command: e.name } }))
+  const runs: string[][] = []
+  const started = thinking.shown[0]!.input as any
+  on('process.run', (_$, e) => (runs.push([...e.argv]), { value: { exitCode: 0, stdout: e.argv[1] === 'rev-parse' ? `${started.cwd}\n` : '', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }))
+  const [main, agent] = thinking.shown.filter(r => r.event === 'turn.start') as any[]
+  await $.session.start(started); await clock.advance(50)
+  await $.turn.start(main.input); await clock.advance(50)
+  const before = runs.length
+  await $.turn.start(agent.input); await clock.advance(50)
+  expect(agent.input.agentId).toBeTruthy()
+  expect(written.turn).toBe(1)
+  expect(runs).toHaveLength(before)
 })
