@@ -130,3 +130,4 @@ None. UX-Q1 (offer to open by itself on wide terminals) is a product question in
 - 2026-10-12 Manual check. Selecting a row drew nothing until F11's card, so the check could not be seen. Added F08-R13 and F08-AC11: the selected row carries a "▸ " marker. Approved by the owner.
 - 2026-10-12 F02 shipped: F08-AC2 and AC8 replay the reference session instead of seeding; AC2 is checked at `bodyColumns` 80. Approved by the owner.
 - 2026-10-13 R10 asks for `Raster` on the `terminal` surface: the test kit's table holds `Raster` on every surface.
+- 2026-10-17 F08-R6 holds for wide characters too: a row is cut by columns, a CJK character counting two (found with F05's Thinking rows).

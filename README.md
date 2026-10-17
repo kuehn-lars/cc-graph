@@ -48,7 +48,7 @@
 
 <samp>Files a shell command created, deleted or changed show too, named with the command that did it, and so do files Claude read with `cat`, `head` or `sed -n`. Files that import a change but were never opened are flagged as blind spots while the turn is still running.</samp>
 
-<samp>The list also shows Claude's newest thinking: a short excerpt per step, with its turn and the files that step read or changed. Claude Code passes thinking text to mods only when `"showThinkingSummaries": true` is in your settings (or with `--thinking-display summarized`). This holds for every model: Opus, Sonnet and Haiku. Without it, the footer says thinking is hidden.</samp>
+<samp>The list also shows Claude's newest thinking: a short excerpt per step, with its turn and the files that step read or changed. Claude Code passes thinking text to mods only when `"showThinkingSummaries": true` is in your settings (or with `--thinking-display summarized`). This holds for every 5.5 model: Opus, Sonnet and Haiku. Without it, the footer says thinking is hidden.</samp>
 
 <a name="privacy"></a>
 <br>
@@ -57,7 +57,7 @@
 <samp>cc-graph only watches. Its hooks pass every tool result on untouched and record what happened in session memory.</samp>
 
 - <samp>**Nothing leaves your machine.** No network requests, no model calls, no files written.</samp>
-- <samp>**Paths, sizes and counts**, never file contents. The one exception is the first 400 characters of Claude's thinking in each of its last 20 steps, and only while `captureThinking` is on. All of it is gone when the conversation ends or on /clear.</samp>
+- <samp>**Paths, sizes and counts**, never file contents. The one exception is Claude's newest 20 thinking excerpts, at most 400 characters each, and only while `captureThinking` is on. All of it is gone when the conversation ends or on /clear.</samp>
 - <samp>**The only process it starts is read-only git**, by argument list, never through a shell.</samp>
 - <samp>**Check it yourself:** claude plugin validate lists every event cc-graph hooks and every API method it calls. CI fails if the code goes beyond the [allowed list](specs/03-nfr/spec.md#privacy-and-security).</samp>
 

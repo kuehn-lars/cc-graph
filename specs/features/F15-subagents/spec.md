@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Approved | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
+| Implemented | v0.1 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.296 | F01, F02, F03, F08 |
 
 ## Problem
 
@@ -100,3 +100,4 @@ None.
 - 2026-10-12 Manual check walked with the owner in a terminal and in the desktop app; step 3 follows R2. Implemented.
 - 2026-10-12 CI green. Verified.
 - 2026-10-17 Spike S2 (F05) found `turn.start` raised for subagents since 2.1.301: a subagent's turn start is ignored (R10, AC14). Approved by the owner.
+- 2026-10-17 F15-AC14 implemented and walked in real sessions on 2.1.302: an Explore agent's `turn.start` left `turn` at 1. Implemented; Verified once CI is green.
