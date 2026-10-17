@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Implemented | v0.4 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.301 | F01, F03, F08, F14 |
+| Verified | v0.4 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.301 | F01, F03, F08, F14 |
 
 ## Problem
 
@@ -125,3 +125,4 @@ None to add: [02 Data model](../../02-data-model/spec.md) already holds `Thinkin
 - 2026-10-17 A recorded first line is longer than the pane, so a row cut at the edge never named its files: the text is cut first and the arrow part kept (R8, AC13). Approved by the owner.
 - 2026-10-17 From the code review: switching capture off drops what it held, since state outlives the reload (R5, AC14); a block of only whitespace counts as empty (R2, R6, AC15). Approved by the owner.
 - 2026-10-17 Manual check walked with the owner in a terminal (notes in the list, capture switched off); hidden thinking and `/clear` also walked in driven interactive sessions. Implemented.
+- 2026-10-18 CI green on PR #17 (Claude Code 2.1.296 and latest). Verified.
