@@ -2,7 +2,7 @@
 
 | Status | Milestone | Owner | Checked against | Depends on |
 | --- | --- | --- | --- | --- |
-| Review | v0.4 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.301 | F01, F03, F08, F14 |
+| Approved | v0.4 | Lars Kühn (@kuehn-lars) | Claude Code 2.1.301 | F01, F03, F08, F14 |
 
 ## Problem
 
@@ -116,3 +116,4 @@ None to add: [02 Data model](../../02-data-model/spec.md) already holds `Thinkin
 - 2026-10-11 Review. Checked against the 2.1.296 types. Files now come from the step result's `toolUses` inputs (there are no call ids to join on); no hook is registered when capture is off; hidden thinking is said in the pane; moved to v0.4 with the card that shows it.
 - 2026-10-17 Review. Checked against the 2.1.301 types (`turn.step` unchanged). Forwarding uses `for await` and the stream's `result`; the hook holds at most 400 code points per block. Hidden thinking moved to a footer note that the first visible note removes (R6, R9), since sessions mix blocks with and without text. Added the list row format (R8, AC8), a failed or closed stream (R10, AC10), reset (R11, AC11) and no section while off (R5, AC12). F05-Q1 now holds the transcript evidence and names the requirements it blocks.
 - 2026-10-17 Spike S2 answers F05-Q1 on 2.1.302 (no blocking question left). The hidden note names `showThinkingSummaries`; the manual check sets it; fixtures named. S2 also found that `turn.start` fires for subagents since 2.1.301, which the note's `turn` depends on (see spike-s2.md).
+- 2026-10-17 Approved by the owner.
