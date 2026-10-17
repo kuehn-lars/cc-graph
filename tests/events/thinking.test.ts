@@ -1,6 +1,6 @@
 import thinking from '../../fixtures/sessions/thinking'
 import { expect, test } from 'claude-code/testing'
-import { observe, written } from './kit'
+import { beneath, observe, start, written } from './kit'
 
 // F05: the test's `turn.step` hook sits beneath the mod and stands in for the model, streaming a recorded step.
 // The kit refuses an `engine` chunk from a link that never pulled it, and the test's link is the bottom: the recorded steps stream without theirs.
@@ -69,4 +69,79 @@ test('F05-AC10 a stream that yields a thinking chunk and then throws hands up th
   expect(got).toEqual([first])
   expect(caught?.message).toBe('no implementation for turn.step')
   expect(written.thinking).toBeUndefined()
+})
+
+/** The recorded step 0 with its thinking chunks replaced by chunks of `texts` in block 0 (refs dropped: a ref is the recorded step's only). */
+const withThinking = (texts: string[], over: any = {}) => {
+  const step = main[0]!
+  return {
+    ...step, ...over,
+    input: { ...step.input, ...over.input },
+    result: { ...step.result, ...over.result },
+    chunks: [...texts.map(text => ({ kind: 'thinking', index: 0, text })), ...step.chunks.filter((c: any) => c.kind !== 'thinking')],
+  }
+}
+
+test('F05-AC2 two thinking chunks "Look at " and "login.ts" in block 0 make one note "Look at login.ts" (DERIVED: the texts)', async ($, on) => {
+  observe(on)
+  const step = withThinking(['Look at ', 'login.ts'])
+  model(on, [step])
+  await read($, step.input)
+  expect(written.thinking).toHaveLength(1)
+  expect(written.thinking[0]).toMatchObject({ text: 'Look at login.ts', chars: 16, step: 0 })
+})
+
+test('F05-AC2 the recorded step 0 leaves one note of its joined block, with its turn and step', async ($, on) => {
+  observe(on)
+  model(on, [main[0]])
+  await read($, main[0]!.input)
+  const text = 'For step 1, I need to read two files using absolute paths within the sample-app directory: login.ts under src/auth and config.ts in src.\n\n'
+  expect(written.thinking).toMatchObject([{ turn: 0, step: 0, chars: text.length, text }])
+})
+
+test('F05-AC3 a 2,000-character thinking block leaves 400 characters and chars 2000 (DERIVED: the recorded texts, cycled)', async ($, on) => {
+  observe(on)
+  const recorded = main[0]!.chunks.filter((c: any) => c.kind === 'thinking').map((c: any) => c.text)
+  const texts: string[] = []
+  for (let i = 0, n = 0; n < 2000; i++) {
+    const t = [...recorded[i % recorded.length]].slice(0, 2000 - n).join('')
+    texts.push(t)
+    n += [...t].length
+  }
+  const step = withThinking(texts)
+  model(on, [step])
+  await read($, step.input)
+  expect([...written.thinking[0].text]).toHaveLength(400)
+  expect(written.thinking[0].text).toBe(texts.join('').slice(0, 400))
+  expect(written.thinking[0].chars).toBe(2000)
+})
+
+test('F05-AC5 after 25 main-loop steps with thinking, the newest 20 notes remain (DERIVED: 25 steps from the recorded step 0)', async ($, on) => {
+  observe(on)
+  const steps = Array.from({ length: 25 }, (_, i) => withThinking([`Step ${i}.`], { input: { index: i }, result: { index: i } }))
+  model(on, steps)
+  for (const s of steps) await read($, s.input)
+  expect(written.thinking.map((n: any) => n.step)).toEqual(Array.from({ length: 20 }, (_, i) => i + 5))
+  expect(written.thinking.map((n: any) => n.text)).toEqual(Array.from({ length: 20 }, (_, i) => `Step ${i + 5}.`))
+})
+
+test('F05-AC6 a Read and an Edit of /w/src/a.ts in cwd /w give files [src/a.ts] (DERIVED: the toolUses)', async ($, on) => {
+  const toolUses = [{ name: 'Read', input: { file_path: '/w/src/a.ts' } }, { name: 'Edit', input: { file_path: '/w/src/a.ts' } }]
+  const step = { ...main[0]!, result: { ...main[0]!.result, toolUses } }
+  beneath(on)
+  observe(on)
+  model(on, [step])
+  await start($)
+  await read($, step.input)
+  expect(written.thinking[0].files).toEqual(['src/a.ts'])
+})
+
+test('F05-AC6 the recorded step 0 in its recorded cwd names src/auth/login.ts and src/config.ts', async ($, on) => {
+  beneath(on)
+  observe(on)
+  model(on, [main[0]])
+  await $.session.start(thinking.shown[0]!.input as any)
+  await $.turn.start(thinking.shown[1]!.input as any)
+  await read($, main[0]!.input)
+  expect(written.thinking).toMatchObject([{ turn: 1, step: 0, files: ['src/auth/login.ts', 'src/config.ts'] }])
 })

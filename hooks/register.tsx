@@ -6,6 +6,7 @@ import { together } from './model/batch'
 import { evict } from './model/evict'
 import { loaded, refreshed, sized } from './model/memory'
 import { withCapNote } from './model/notes'
+import { EXCERPT, thinkingNote, type Block } from './model/thinking'
 import { editAction, notebookEditAction } from './parse/fileEdited'
 import { externalAction, reattachedAction } from './parse/attachment'
 import { PATHSPECS, importPattern, importersOf } from './parse/grep'
@@ -32,6 +33,7 @@ const AGENTS = { plugin: 'cc-graph', key: 'agents' } as const
 const MEMORY = { plugin: 'cc-graph', key: 'memory' } as const
 const NOTES = { plugin: 'cc-graph', key: 'notes' } as const
 const LAYOUT = { plugin: 'cc-graph', key: 'layout' } as const
+const THINKING = { plugin: 'cc-graph', key: 'thinking' } as const
 
 // F03-R7: every key but `view` back to its empty value; each later feature adds its key here (the scan wants literal refs, so no table).
 const resetState = async ($: StateDollar) => {
@@ -43,6 +45,7 @@ const resetState = async ($: StateDollar) => {
   await update($, MEMORY, () => [])
   await update($, NOTES, () => [])
   await update($, LAYOUT, () => ({}))
+  await update($, THINKING, () => []) // F05-R11
   named.clear()
   searched.clear()
 }
@@ -277,18 +280,41 @@ let maxNodes = 60
 let importEdges = true
 // F07-R12, F14-R2: read once; off, `root` stays null, so no git job is ever queued, and the list has no Blind spots section. Shell reads need no git.
 let blindSpots = true
+// F05-R5, F14-R2: read once; off, no `turn.step` hook and no Thinking section.
+let captureThinking = true
+// F05-R4: the newest notes kept.
+const MAX_THINKING = 20
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
   importEdges = options.importEdges !== false
   blindSpots = options.blindSpots !== false
+  captureThinking = options.captureThinking !== false
 
   // F05-R1, R5, R7, R10, F14-R2: off, no hook at all. On, every chunk passes as it came and the stream's result is returned;
-  // a stream that rejects or is closed passes that on. Per-chunk recording (ticket 03) goes in a `try`, so it never costs a chunk.
-  if (options.captureThinking !== false) on('turn.step', async function* ($, e, next) {
+  // a stream that rejects or is closed passes that on, and stores nothing. Recording sits in a `try`, so it never costs a chunk.
+  // F05-R2, R4, NFR-P2: a main-loop step keeps per block its first 400 code points and its length; one write of `thinking` after the result.
+  if (captureThinking) on('turn.step', async function* ($, e, next) {
     const stream = next(e)
-    for await (const chunk of stream) yield chunk
-    return await stream.result
+    const blocks = new Map<number, Block>()
+    for await (const chunk of stream) {
+      try {
+        if (!e.agentId && chunk.kind === 'thinking') {
+          const b = blocks.get(chunk.index) ?? { text: '', chars: 0 }
+          const cps = [...chunk.text]
+          if (b.chars < EXCERPT) b.text += cps.slice(0, EXCERPT - b.chars).join('')
+          b.chars += cps.length
+          blocks.set(chunk.index, b)
+        }
+      } catch {}
+      yield chunk
+    }
+    const result = await stream.result
+    try {
+      const note = e.agentId ? null : thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
+      if (note) await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING))
+    } catch {}
+    return result
   })
   on('session.start', async ($, e, next) => {
     const out = await next(e)
@@ -435,7 +461,7 @@ export const register: Register = (on, options) => {
         </Box>
         {graphShown
           ? renderGraph(table, await readGraph($), await readLayout($), await readMemory($), await readFill($), notes, e.props.bodyColumns, rows, selected)
-          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path), blindSpots)}
+          : renderList(table, await readGraph($), await readFill($), await readMemory($), wantsGraph ? [...notes, TOO_SHORT] : notes, e.props.bodyColumns, selected, path => update($, SELECTED, () => path), blindSpots, captureThinking ? (await read($, THINKING)) ?? [] : null)}
       </Box>
     )
   })

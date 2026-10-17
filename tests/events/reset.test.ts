@@ -27,13 +27,21 @@ test('F03-AC8 a graph with nodes and view graph, then source clear: the graph is
 })
 
 for (const source of ['resume', 'fork'] as const) {
-  test(`F03-AC8 source ${source} empties graph, turn, selected, fill, agents, memory, notes and layout, and leaves view`, async ($, on) => {
+  test(`F03-AC8 source ${source} empties graph, turn, selected, fill, agents, memory, notes, layout and thinking, and leaves view`, async ($, on) => {
     setup(on)
     await $.classic.SessionStart({ source })
-    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null, agents: {}, memory: [], notes: [], layout: {} })
-    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill', 'agents', 'memory', 'notes', 'layout'])
+    expect(written).toEqual({ graph: emptyGraph, turn: 0, selected: null, fill: null, agents: {}, memory: [], notes: [], layout: {}, thinking: [] })
+    expect(writes).toEqual(['graph', 'turn', 'selected', 'fill', 'agents', 'memory', 'notes', 'layout', 'thinking'])
   })
 }
+
+test('F05-AC11 three notes, then source clear: thinking is empty', async ($, on) => {
+  held.thinking = [1, 2, 3].map(step => ({ turn: 1, step, text: 'Read the test.', chars: 14, files: [] }))
+  setup(on)
+  await $.classic.SessionStart({ source: 'clear' })
+  delete held.thinking
+  expect(written.thinking).toEqual([])
+})
 
 for (const source of ['compact', 'startup'] as const) {
   test(`F03-AC10 source ${source} changes nothing`, async ($, on) => {

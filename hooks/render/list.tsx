@@ -1,6 +1,6 @@
 // Pure: the list view. Takes the element table from `$.ui.resolve(e)` and the graph; returns a tree.
 import type { Elements } from 'claude-code'
-import type { FileNode, Fill, Graph, MemoryNote } from '../../types'
+import type { FileNode, Fill, Graph, MemoryNote, ThinkingNote } from '../../types'
 import { fileName } from '../layout/seed'
 import { blindSpots } from './blind'
 import { GLYPH } from './palette'
@@ -65,7 +65,12 @@ function memoryTotal(notes: MemoryNote[]) {
 
 const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.tokens === null ? '?' : count(n.tokens)}`].filter(Boolean).join('  ')}`
 
-export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void, showBlind = true) {
+// F05-R8: the newest 3 notes, newest first: `turn 4  Check the limiter.  → login.ts, rateLimit.ts`; no arrow part without files.
+const THINKING_ROWS = 3
+const thinkingRow = (n: ThinkingNote) => [`turn ${n.turn}`, n.text.split('\n')[0], n.files.length ? `→ ${n.files.map(fileName).join(', ')}` : ''].filter(Boolean).join('  ')
+
+/** `thinking` null: capture is off, and the section is left out (F05-R5). */
+export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void, showBlind = true, thinking: ThinkingNote[] | null = null) {
   const files = Object.values(graph.files).sort((a, b) => b.touched - a.touched)
   const edges = edgeWords(graph)
   const blind = blindSpots(graph)
@@ -83,6 +88,9 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       ))}
       {memory.length > 0 && <Text bold>{fit(memoryTotal(memory), columns)}</Text>}
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
+      {thinking && <Text bold>Thinking</Text>}
+      {thinking && thinking.length === 0 && <Text dimColor>{fit('No thinking captured yet.', columns)}</Text>}
+      {thinking?.slice(-THINKING_ROWS).reverse().map((n, i) => <Text key={`thinking-${i}`}>{fit(thinkingRow(n), columns)}</Text>)}
       {showBlind && <Text bold>Blind spots</Text>}
       {showBlind && blind.length === 0 && <Text dimColor>No blind spots.</Text>}
       {showBlind && blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
