@@ -284,6 +284,7 @@ let blindSpots = true
 let captureThinking = true
 // F05-R4: the newest notes kept.
 const MAX_THINKING = 20
+const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
 
 export const register: Register = (on, options) => {
   maxNodes = Math.min(200, Math.max(20, Number(options.maxNodes ?? 60)))
@@ -313,6 +314,10 @@ export const register: Register = (on, options) => {
     try {
       const note = e.agentId ? null : thinkingNote(blocks.values(), result.toolUses, cwd, (await read($, TURN)) ?? 0, e.index)
       if (note) await update($, THINKING, ts => [...(ts ?? []), note].slice(-MAX_THINKING))
+      // F05-R6, R9: a main-loop step of only empty thinking names the setting in the footer, once, while no note is held; a note removes it. `notes` is written only when that changes.
+      const notes = (await read($, NOTES)) ?? []
+      if (note && notes.includes(HIDDEN)) await update($, NOTES, ns => (ns ?? []).filter(n => n !== HIDDEN))
+      else if (!note && !e.agentId && blocks.size && !notes.includes(HIDDEN) && !(await read($, THINKING))?.length) await update($, NOTES, ns => (ns ?? []).includes(HIDDEN) ? ns ?? [] : [...(ns ?? []), HIDDEN])
     } catch {}
     return result
   })
