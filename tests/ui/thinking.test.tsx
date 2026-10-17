@@ -36,14 +36,26 @@ test('F05-AC8 four notes: the Thinking section, between Memory and Blind spots, 
   expect(at('turn 2')).toBeLessThan(at('Blind spots'))
 })
 
-test('F05-AC8 at 30 columns the rows are cut at the pane edge and closed by "…"', async ($, on) => {
+test('F05-R8 at 30 columns a row cuts its text and keeps its files; one whose files do not fit either is cut at the pane edge', async ($, on) => {
   ui(on); seed(on, { thinking: notes })
   await start($)
   expect(await rows(await mount($, 'terminal', 30))).toEqual([
     'turn 4  Check the limiter.  →…',
-    'turn 3  Find the route.  → au…',
+    'turn 3  Find the r…  → auth.ts',
     'turn 2  Moving on to step 2.',
   ])
+})
+
+test('F05-AC13 a long first line at 48 columns is cut before the files: "turn 1  For step 1, I ne…  → login.ts, config.ts" (DERIVED: the shown recording\'s first text)', async ($, on) => {
+  ui(on); seed(on, { thinking: [{ turn: 1, step: 0, text: 'For step 1, I need to read two files using absolute paths within the sample-app directory.', chars: 90, files: ['src/auth/login.ts', 'src/config.ts'] }] })
+  await start($)
+  expect(await rows(await mount($, 'terminal', 48))).toEqual(['turn 1  For step 1, I ne…  → login.ts, config.ts'])
+})
+
+test('F05-R8 a row is as wide as its wide characters: a CJK first line is cut by columns, not by characters', async ($, on) => {
+  ui(on); seed(on, { thinking: [{ turn: 1, step: 0, text: '先读取登录文件然后检查配置文件', chars: 15, files: ['src/a.ts'] }] })
+  await start($)
+  expect(await rows(await mount($, 'terminal', 30))).toEqual(['turn 1  先读取登录文…  → a.ts'])
 })
 
 test('F05-AC8 at 120 columns the rows stay whole', async ($, on) => {

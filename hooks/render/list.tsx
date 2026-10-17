@@ -5,7 +5,7 @@ import { fileName } from '../layout/seed'
 import { blindSpots } from './blind'
 import { GLYPH } from './palette'
 import { count, meterLine } from './meter'
-import { cols, tail } from './width'
+import { cols, cutSegs, tail } from './width'
 
 type Table = Pick<Elements['terminal'], 'Box' | 'Text' | 'Button'>
 
@@ -52,7 +52,7 @@ function row(n: FileNode, columns: number, edge = '') {
 }
 
 // F08-R6: the meter is cut from its end and closed by "…". ponytail: the line is ASCII plus "≈ · –", one column each; no width table.
-export const fit = (line: string, columns: number) => (cols(line) <= columns ? line : `${[...line].slice(0, columns - 1).join('')}…`)
+export const fit = (line: string, columns: number) => (cols(line) <= columns ? line : cutSegs([{ text: line }], columns).map(s => s.text).join(''))
 
 // F08-R5, 02 Data model (retention): the footer shows the newest five notes, one line each.
 export const FOOTER_NOTES = 5
@@ -66,8 +66,14 @@ function memoryTotal(notes: MemoryNote[]) {
 const memoryRow = (n: MemoryNote) => `■ ${[n.type, n.path, n.reason, `≈${n.tokens === null ? '?' : count(n.tokens)}`].filter(Boolean).join('  ')}`
 
 // F05-R8: the newest 3 notes, newest first: `turn 4  Check the limiter.  → login.ts, rateLimit.ts`; no arrow part without files.
+// The text gives way first, so the files stay; only when not even "…" fits beside them is the whole row cut.
 const THINKING_ROWS = 3
-const thinkingRow = (n: ThinkingNote) => [`turn ${n.turn}`, n.text.split('\n')[0], n.files.length ? `→ ${n.files.map(fileName).join(', ')}` : ''].filter(Boolean).join('  ')
+function thinkingRow(n: ThinkingNote, columns: number) {
+  const head = `turn ${n.turn}  `, line = n.text.split('\n').find(l => l.trim()) ?? ''
+  const arrow = n.files.length ? `  → ${n.files.map(fileName).join(', ')}` : ''
+  const room = columns - cols(head) - cols(arrow)
+  return room < 1 ? fit(head + line + arrow, columns) : head + fit(line, room) + arrow
+}
 
 /** `thinking` null: capture is off, and the section is left out (F05-R5). */
 export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fill | null, memory: MemoryNote[], notes: string[], columns: number, selected: string | null, select: (path: string) => void, showBlind = true, thinking: ThinkingNote[] | null = null) {
@@ -90,7 +96,7 @@ export function renderList({ Box, Text, Button }: Table, graph: Graph, fill: Fil
       {memory.map(n => <Text key={n.path}>{fit(memoryRow(n), columns)}</Text>)}
       {thinking && <Text bold>Thinking</Text>}
       {thinking && thinking.length === 0 && <Text dimColor>{fit('No thinking captured yet.', columns)}</Text>}
-      {thinking?.slice(-THINKING_ROWS).reverse().map((n, i) => <Text key={`thinking-${i}`}>{fit(thinkingRow(n), columns)}</Text>)}
+      {thinking?.slice(-THINKING_ROWS).reverse().map((n, i) => <Text key={`thinking-${i}`}>{thinkingRow(n, columns)}</Text>)}
       {showBlind && <Text bold>Blind spots</Text>}
       {showBlind && blind.length === 0 && <Text dimColor>No blind spots.</Text>}
       {showBlind && blind.map(b => <Text key={b}>{fit(b, columns)}</Text>)}
