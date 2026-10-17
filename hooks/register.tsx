@@ -301,6 +301,7 @@ export const register: Register = (on, options) => {
 
   on('turn.start', async ($, e, next) => {
     const out = await next(e)
+    if (e.agentId) return out // F15-R10: a subagent's run is no main-loop turn
     await update($, TURN, n => (n ?? 0) + 1)
     searched.clear()
     turnCommands.length = 0
