@@ -4,16 +4,16 @@
 
 Requirements: All of F05; NFR-P2, S2.
 
-**Blocked by:** 01, 02, 03, 04
+**Blocked by:** None (01 to 04 are merged on `feat/f05-thinking-layer`)
 
 **Touches:** README, the spec, CHANGELOG.
 
 **Status:** ready-for-agent
 
-- [ ] README names `showThinkingSummaries`
+- [x] README names `showThinkingSummaries`
 - [ ] Manual check walked with the owner in a terminal
 - [ ] Spec status set to Implemented
-- [ ] `node scripts/trace.mjs --check` passes
-- [ ] CHANGELOG has an F05 entry
+- [x] `node scripts/trace.mjs --check` passes
+- [x] CHANGELOG has an F05 entry
 - [ ] Spec status set to Verified once CI is green
 - [ ] This `tickets/` folder is deleted
