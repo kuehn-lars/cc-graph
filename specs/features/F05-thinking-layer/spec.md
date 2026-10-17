@@ -34,7 +34,7 @@ Claude's visible thinking is kept per step as a short excerpt and linked to the 
 - **F05-R5** While `captureThinking` is off, the mod registers no `turn.step` hook at all, and the list view draws no Thinking section.
 - **F05-R6** If a main-loop step streams `thinking` chunks and every one has empty text, then the mod stores no note, and while `thinking` holds no note it adds the footer note "Thinking is hidden: turn on showThinkingSummaries to see it." once.
 - **F05-R7** If a step carries `e.agentId`, then the mod forwards it and records nothing.
-- **F05-R8** The list view's Thinking section, between Memory and Blind spots, shows the newest 3 notes, newest first, each one row `turn ‹turn›  ‹first line of text›  → ‹file names, comma-separated›` cut to the pane's width (F08-R6); the arrow part is left out when `files` is empty. With no note, the section shows F08-R7's "No thinking captured yet."
+- **F05-R8** The list view's Thinking section, between Memory and Blind spots, shows the newest 3 notes, newest first, each one row `turn ‹turn›  ‹first non-empty line of text›  → ‹file names, comma-separated›` no wider than the pane (F08-R6); the arrow part is left out when `files` is empty. A row that does not fit cuts the text and closes it with "…", so the arrow part stays whole; only when `turn ‹turn›  …  → ‹file names›` does not fit either is the whole row cut at the pane's edge. With no note, the section shows F08-R7's "No thinking captured yet."
 - **F05-R9** When the mod stores a note, it removes the footer note of F05-R6.
 - **F05-R10** If the stream beneath rejects or is closed before its result, then the mod stores nothing for that step and lets the rejection or close pass unchanged.
 - **F05-R11** When F03-R7 resets the state, `thinking` becomes empty.
@@ -53,6 +53,7 @@ Claude's visible thinking is kept per step as a short excerpt and linked to the 
 - **F05-AC10** Given a step whose stream beneath yields a thinking chunk and then throws, then the hook yields that chunk, the same error reaches the caller, and no note is stored (DERIVED: no recording fails mid-stream).
 - **F05-AC11** Given three notes, when `classic.SessionStart` fires with `source` `clear`, then `thinking` is empty.
 - **F05-AC12** Given `captureThinking: false`, then the list view draws no Thinking heading and no "No thinking captured yet." line.
+- **F05-AC13** Given a note of turn 1 with the text "For step 1, I need to read two files using absolute paths within the sample-app directory." and `files` `['src/auth/login.ts', 'src/config.ts']`, at 48 columns, then its row is `turn 1  For step 1, I ne…  → login.ts, config.ts` (DERIVED: the text of the `shown` recording's first step, cut).
 
 ## Implementation decisions
 
@@ -119,3 +120,4 @@ None to add: [02 Data model](../../02-data-model/spec.md) already holds `Thinkin
 - 2026-10-17 Spike S2 answers F05-Q1 on 2.1.302 (no blocking question left). The hidden note names `showThinkingSummaries`; the manual check sets it; fixtures named. S2 also found that `turn.start` fires for subagents since 2.1.301, which the note's `turn` depends on (see spike-s2.md).
 - 2026-10-17 Approved by the owner.
 - 2026-10-17 Testing decisions: what the test kit's seam cannot carry (engine chunks, a stand-in's own throw) named for F05-AC1 and AC10.
+- 2026-10-17 A recorded first line is longer than the pane, so a row cut at the edge never named its files: the text is cut first and the arrow part kept (R8, AC13). Approved by the owner.
