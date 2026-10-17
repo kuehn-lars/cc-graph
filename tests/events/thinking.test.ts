@@ -1,6 +1,7 @@
 import thinking from '../../fixtures/sessions/thinking'
 import { expect, test } from 'claude-code/testing'
 import { beneath, observe, start, written } from './kit'
+import { mount, ui } from '../ui/kit'
 
 // F05: the test's `turn.step` hook sits beneath the mod and stands in for the model, streaming a recorded step.
 // The kit refuses an `engine` chunk from a link that never pulled it, and the test's link is the bottom: the recorded steps stream without theirs.
@@ -144,4 +145,52 @@ test('F05-AC6 the recorded step 0 in its recorded cwd names src/auth/login.ts an
   await $.turn.start(thinking.shown[1]!.input as any)
   await read($, main[0]!.input)
   expect(written.thinking).toMatchObject([{ turn: 1, step: 0, files: ['src/auth/login.ts', 'src/config.ts'] }])
+})
+
+const hidden = thinking.hidden.filter(r => r.event === 'turn.step').map((s: any) => ({ ...s, chunks: s.chunks.filter((c: any) => c.kind !== 'engine') }))
+const hiddenMain = hidden.filter(s => !s.input.agentId)
+const HIDDEN = 'Thinking is hidden: turn on showThinkingSummaries to see it.'
+/** The footer note of F05-R6 as the list view draws it. */
+const footer = async ($: any) => (await (await mount($, 'terminal')).findAll({ type: 'Text', text: /Thinking is hidden/ })).map((t: any) => t.text)
+
+test('F05-AC7 steps whose thinking chunks are all empty store no note, and the footer says once that thinking is hidden', async ($, on) => {
+  ui(on)
+  observe(on)
+  model(on, hiddenMain)
+  await start($)
+  await read($, hiddenMain[0]!.input)
+  await read($, hiddenMain[1]!.input)
+  expect(written.thinking).toBeUndefined()
+  expect(written.notes).toEqual([HIDDEN])
+  expect(await footer($)).toEqual([HIDDEN])
+})
+
+test('F05-AC9 after the footer note, a step with thinking "Read the test." stores a note and the footer note is gone (DERIVED: the text)', async ($, on) => {
+  ui(on)
+  observe(on)
+  const shown = withThinking(['Read the test.'])
+  model(on, [hiddenMain[0], shown])
+  await start($)
+  await read($, hiddenMain[0]!.input)
+  expect(written.notes).toEqual([HIDDEN])
+  await read($, shown.input)
+  expect(written.thinking).toMatchObject([{ text: 'Read the test.' }])
+  expect(written.notes).toEqual([])
+  expect(await footer($)).toEqual([])
+})
+
+test('F05-R6 a step with no thinking chunks at all adds no footer note (DERIVED: the recorded step 0 without its thinking)', async ($, on) => {
+  observe(on)
+  const step = withThinking([])
+  model(on, [step])
+  await read($, step.input)
+  expect(written.notes).toBeUndefined()
+})
+
+test('F05-R6 a subagent step whose thinking is empty adds no footer note', async ($, on) => {
+  observe(on)
+  const step = hidden.find(s => s.input.agentId)!
+  model(on, [step])
+  await read($, step.input)
+  expect(written.notes).toBeUndefined()
 })
