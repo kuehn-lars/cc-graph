@@ -138,3 +138,13 @@ The five `file` attachment texts and the compaction result captured in spike S1 
 
 Recorded 2026-10-16 from Claude Code 2.1.300 (Haiku, interactive, the person's own settings: auto mode with Bash first) in `/private/tmp/cc-graph-rec/sample-app`, a committed copy of `fixtures/sample-app`, with the spike S4 probe. Claude ran the two `Bash` calls in `calls`; the next request carried the attachment, whose `text` is kept as the probe logged it. The debug log replaced a secret-looking span with `[REDACTED]`; nothing else is edited. A person's edit between turns, to a file Claude had read, raised no attachment in the same session.
 
+
+## `thinking.ts`: thinking chunks shown and hidden (F05, spike S2)
+
+Two interactive runs of Claude Code 2.1.302 (Haiku, effort high, 2026-10-17) in `/private/tmp/claude-501/rec-thinking/sample-app`, a committed copy of `fixtures/sample-app`, with the throwaway probe `thinking-probe/`. `export default { claudeCode, shown, hidden }`; each is the probe's rows in the order the hooks ran: `session.start`, `turn.start` (a subagent's carries `agentId`) and `turn.step` as `{ event, input, chunks, result }`, `chunks` being every chunk the hook read from `next(e)`. `shown` ran with `--settings '{"showThinkingSummaries":true}'`, so every thinking chunk has text; `hidden` ran without it, so every thinking chunk has empty text. The prompt is `thinking-turn1.txt`. One edit, for the public repository: the account context the recording session added to the agent's read named a connected MCP server, and the sentences of thinking and text that describe it (in the chunks, `result.answer` and the task notification's `input.text`) read `[redacted: account context]`; the chunks the redaction emptied are dropped, so no step mixes chunks with and without text. Nothing else is edited. What the runs answer: [spike-s2.md](../../specs/features/F05-thinking-layer/spike-s2.md).
+
+### Record again
+
+1. Copy `fixtures/sample-app` to `/private/tmp/claude-501/rec-thinking/sample-app` (this exact folder: streamed tool input splits paths across chunks, so a path cannot be rewritten afterwards), `git init`, commit. Between runs: `git checkout . && git clean -fdx`, and empty `/tmp/cc-graph-thinking/`.
+2. From inside the copy, in a terminal: `claude --model haiku --effort high --settings '{"showThinkingSummaries":true}' --setting-sources project --plugin-dir <repo>/fixtures/sessions/thinking-probe --permission-mode acceptEdits "$(cat <repo>/fixtures/sessions/thinking-turn1.txt)"`, wait for the agent's report, `/exit`. Then the same without `--settings`.
+3. `node scripts/record-thinking-session.mjs fixtures/sessions/thinking.ts <shown log> <hidden log>`; it refuses a log that holds a personal path.
